@@ -23,6 +23,7 @@ const version = 0.1
 
 let doingInitialSetup = false
 
+let eventKey
 let event_data
 let scouting_data
 let pit_data = {}
@@ -30,7 +31,7 @@ let team_data = {}
 let api_data = {}
 let mapping
 
-let theme = 0
+let theme
 
 let starred
 let usingStar
@@ -77,6 +78,7 @@ let graphSettings = {
 
 let showNamesInTeamComments
 
+let tbaKey
 let usingTBA
 let usingTBAMatches
 let usingTBAMedia
@@ -132,25 +134,25 @@ document.addEventListener("click", () => {
 //#region API Key, Event Loading, Year setting
 document.querySelector("#top-setapi").onclick = function() {
     let x = prompt("What is your TBA API key? 'get' to get it, leave blank to skip")
-    if (x === "get") alert(window.localStorage.getItem(TBA_KEY))
+    if (x === "get") alert(tbaKey)
     else if (x === "clear") {
-        window.localStorage.removeItem(TBA_KEY)
+        localforage.removeItem(TBA_KEY)
         window.location.reload()
     }
     else if (x !== "") {
-        window.localStorage.setItem(TBA_KEY, x)
+        localforage.setItem(TBA_KEY, x)
         window.location.reload()
     }
 }
 document.querySelector("#top-load-event").onclick = function() {
     let x = prompt("What event code do you want?")
-    if (x === "get") alert(window.localStorage.getItem(EVENT))
+    if (x === "get") alert(eventKey)
     else if (x === "clear") {
-        window.localStorage.removeItem(EVENT)
+        localforage.removeItem(EVENT)
         window.location.reload()
     }
     else if (x !== "") {
-        window.localStorage.setItem(EVENT, x.toLowerCase())
+        localforage.setItem(EVENT, x.toLowerCase())
         window.location.reload()
         clearSavedTeams()
     }
@@ -158,9 +160,9 @@ document.querySelector("#top-load-event").onclick = function() {
 }
 document.querySelector("#top-year").onclick = function() {
     let x = prompt("Change year").trim()
-    if (x === "get") alert(window.localStorage.getItem(YEAR))
+    if (x === "get") alert(year)
     else if (x !== "") {
-        window.localStorage.setItem(YEAR, x)
+        localforage.setItem(YEAR, x)
         window.location.reload()
         clearSavedTeams()
     }
@@ -176,7 +178,7 @@ document.querySelector("#top-clear-event").onclick = function() {
 function loadEvent() {
     loading++
     if (usingTBA) {
-        load("event/" + year + window.localStorage.getItem(EVENT) + "/teams", function (data) {
+        load("event/" + year + eventKey + "/teams", function (data) {
             event_data = data
             for (let team of data) {
                 // Todo - just replace all team["team_number"] with a variable you don't need to keep getting it 3 trillion times
@@ -187,7 +189,7 @@ function loadEvent() {
                 team_data[team["team_number"]].TBA["matches"] = {}
                 if (usingTBAMatches) {
                     loading++
-                    load("team/frc" + team["team_number"] + "/event/" + year + window.localStorage.getItem(EVENT) + "/matches", function (data) {
+                    load("team/frc" + team["team_number"] + "/event/" + year + eventKey + "/matches", function (data) {
                         loading--
                         checkLoading()
                         let matchesWon = 0
@@ -232,7 +234,7 @@ function loadEvent() {
                 }
                 if (usingStatbotics) {
                     loading++
-                    loadOther("https://api.statbotics.io/v3/team_event/" + team["team_number"] + "/" + year + window.localStorage.getItem(EVENT), function(data) {
+                    loadOther("https://api.statbotics.io/v3/team_event/" + team["team_number"] + "/" + year + eventKey, function(data) {
                         team_data[team["team_number"]]["statbotics"] = data
                         team_data[team["team_number"]]["District Points"] = data["district_points"]
                         team_data[team["team_number"]]["EPA"] = data["epa"]["total_points"]["mean"]
@@ -279,7 +281,7 @@ document.querySelector("#top-data").onclick = function() {
         }
         setColumnOptions()
         if (mapping !== undefined) processData()
-        window.localStorage.setItem(SCOUTING_DATA, JSON.stringify(scouting_data))
+        localforage.setItem(SCOUTING_DATA, JSON.stringify(scouting_data))
         document.querySelector("#top-data-download").disabled = false
         delete maintainedTeamPageSettings["graph"]
         saveGeneralSettings()
@@ -298,7 +300,7 @@ document.querySelector("#top-pit").onclick = function() {
         }
         setColumnOptions()
         if (mapping !== undefined) processData()
-        window.localStorage.setItem(PIT, JSON.stringify(pit_data))
+        localforage.setItem(PIT, JSON.stringify(pit_data))
         document.querySelector("#top-pit-download").disabled = false
         delete maintainedTeamPageSettings["graph"]
         saveGeneralSettings()
@@ -309,7 +311,7 @@ document.querySelector("#top-pit").onclick = function() {
 document.querySelector("#top-mapping").onclick = function() {
     loadFile(".json", (result) => {
         mapping = JSON.parse(result)
-        window.localStorage.setItem(MAPPING, JSON.stringify(mapping))
+        localforage.setItem(MAPPING, JSON.stringify(mapping))
         setColumnOptions()
         //columns = JSON.parse(JSON.stringify(availableColumns))
         autoIgnore()
@@ -820,37 +822,27 @@ function getPitScoutingImages(team) {
 }
 
 document.querySelector("#top-clear-files").addEventListener("click", () => {
-    window.localStorage.removeItem(SCOUTING_DATA)
-    window.localStorage.removeItem(PIT)
-    window.localStorage.removeItem(MAPPING)
+    localforage.removeItem(SCOUTING_DATA)
+    localforage.removeItem(PIT)
+    localforage.removeItem(MAPPING)
     window.location.reload()
 })
 
 //#endregion
 
 //#region Theme, Projector Mode
-// Updates the theme in document and handles theme in localStorage
-function updateTheme() {
-    theme = parseInt(window.localStorage.getItem(THEME))
-    if (isNaN(theme)) { // If theme isn't set in localStorage
-        window.localStorage.setItem(THEME, "0")
-        updateTheme()
-        return
-    }
-    changeThemeTo(theme)
-}
-function changeThemeTo(theme) {
+function changeThemeTo(to) {
     let root = document.querySelector(":root").classList
     root.remove("dark")
     root.remove("spartronics_theme")
-    if (theme === 1) root.add("dark")
-    if (theme === 2) root.add("spartronics_theme")
-    window.localStorage.setItem(THEME, ""+theme)
+    theme = to
+    if (theme === "dark") root.add("dark")
+    if (theme === "4915") root.add("spartronics_theme")
+    localforage.setItem(THEME, theme)
 }
 // Theme toggle button
 document.querySelector("#top-theme").onclick = function() {
-    window.localStorage.setItem(THEME, ""+((theme + 1) % 3))
-    updateTheme()
+    changeThemeTo(theme == "light" ? "dark" : theme == "dark" ? "4915" : "light")
 }
 document.querySelector("#top-projector").addEventListener("click", () => {
     projectorMode = !projectorMode
@@ -2454,7 +2446,7 @@ document.querySelector("#top-show-hide-ignored").addEventListener("click", () =>
 //#region File and API loading functions (+ download, API Toggles)
 // Loads data from TheBlueAlliance
 async function load(sub, onload) {
-    let url = (`https://www.thebluealliance.com/api/v3/${sub}?X-TBA-Auth-Key=${window.localStorage.getItem(TBA_KEY)}`)
+    let url = (`https://www.thebluealliance.com/api/v3/${sub}?X-TBA-Auth-Key=${tbaKey}`)
     if (usingOffline) {
         onload(api_data[url])
         return api_data[url]
@@ -2555,9 +2547,9 @@ document.querySelector("#top-toggle-use-statbotics").addEventListener("click", (
     setEnabledAPIS()
 })
 
-// Sets the localStorage enabled apis
+// Saves enabled apis
 function setEnabledAPIS() {
-    window.localStorage.setItem(ENABLED_APIS, JSON.stringify({
+    localforage.setItem(ENABLED_APIS, JSON.stringify({
         tbaevent: usingTBA,
         tbamatch: usingTBAMatches,
         tbamedia: usingTBAMedia,
@@ -2725,7 +2717,7 @@ function closeContextMenu() {
 
 //#region Save Settings, Load Config File, Credits Page
 function saveGeneralSettings() {
-    window.localStorage.setItem(SETTINGS, JSON.stringify({
+    localforage.setItem(SETTINGS, JSON.stringify({
         "keyboardControls": keyboardControls,
         "showNamesInTeamComments": showNamesInTeamComments,
         "showIgnoredTeams": showIgnoredTeams,
@@ -2737,7 +2729,7 @@ function saveGeneralSettings() {
     }))
 }
 function saveTeams() {
-    window.localStorage.setItem(TEAM_SAVES, JSON.stringify({
+    localforage.setItem(TEAM_SAVES, JSON.stringify({
         "starred": starred,
         "ignored": ignored,
         "usingStar": usingStar,
@@ -2745,7 +2737,7 @@ function saveTeams() {
     }))
 }
 function clearSavedTeams() {
-    window.localStorage.setItem(TEAM_SAVES, JSON.stringify({
+    localforage.setItem(TEAM_SAVES, JSON.stringify({
         "starred": [],
         "ignored": [],
         "usingStar": true,
@@ -2753,7 +2745,7 @@ function clearSavedTeams() {
     }))
 }
 function saveColumns() {
-    window.localStorage.setItem(COLUMNS, JSON.stringify(columns))
+    localforage.setItem(COLUMNS, JSON.stringify(columns))
 }
 function saveAPIData() {
     api_data["lastSaved"] = new Date().toLocaleString([], {year: 'numeric', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit'})
@@ -2766,7 +2758,7 @@ function saveAPIData() {
     }
     document.querySelector("#top-last-saved-apis").innerText = "Last Saved for offline use: \n" + api_data["lastSaved"]
 
-    window.localStorage.setItem(SAVED_API_DATA, JSON.stringify(api_data))
+    localforage.setItem(SAVED_API_DATA, JSON.stringify(api_data))
 }
 
 function exportSettings() {
@@ -2801,9 +2793,9 @@ function exportSettings() {
             statbotics: usingStatbotics
         },
         pit: pit_data,
-        tbakey: window.localStorage.getItem(TBA_KEY),
-        event: window.localStorage.getItem(EVENT),
-        theme: window.localStorage.getItem(THEME),
+        tbakey: tbaKey,
+        event: eventKey,
+        theme: theme,
         notes: notes
     }
     notes.open = notesOpen
@@ -2828,14 +2820,14 @@ function importSettings(settings) {
     saveGeneralSettings()
     saveTeams()
     mapping = settings.mapping
-    window.localStorage.setItem(MAPPING, JSON.stringify(mapping))
+    localforage.setItem(MAPPING, JSON.stringify(mapping))
     scouting_data = settings.scouting_data
-    window.localStorage.setItem(SCOUTING_DATA, JSON.stringify(scouting_data))
+    localforage.setItem(SCOUTING_DATA, JSON.stringify(scouting_data))
     pit_data = settings.pit
-    window.localStorage.setItem(PIT, JSON.stringify(pit_data))
-    window.localStorage.setItem(YEAR, settings.year)
-    window.localStorage.setItem(EVENT, settings.event)
-    window.localStorage.setItem(TBA_KEY, settings.tbakey)
+    localforage.setItem(PIT, JSON.stringify(pit_data))
+    localforage.setItem(YEAR, settings.year)
+    localforage.setItem(EVENT, settings.event)
+    localforage.setItem(TBA_KEY, settings.tbakey)
     usingTBA = settings.apis.tbaevent
     usingTBAMatches = settings.apis.tbamatch
     usingTBAMedia = settings.apis.tbamedia
@@ -2881,7 +2873,7 @@ document.querySelector("#close-credits").addEventListener("click", closeCredits)
 
 document.querySelector("#top-reset-preferences").addEventListener("click", () => {
     if (!confirm("Are you sure? This will clear all saved data, preferences, columns, etc, and cannot be undone.")) return
-    for (let key of LOCAL_STORAGE_KEYS) localStorage.removeItem(key)
+    for (let key of LOCAL_STORAGE_KEYS) localforage.removeItem(key)
     window.location.reload()
 })
 
@@ -3098,7 +3090,7 @@ document.querySelector("#top-notebook-clear").addEventListener("click", () => {
 function saveNotes() {
     let isOpen = notes.open
     notes.open = false
-    window.localStorage.setItem(NOTES, JSON.stringify(notes))
+    localforage.setItem(NOTES, JSON.stringify(notes))
     notes.open = isOpen
 }
 
@@ -3405,96 +3397,216 @@ function viewRobots() {
 
 //#region Init
 
+let initLoading = 13
+
 // Year
-year = window.localStorage.getItem(YEAR)
-if (year === null || year < 1992) {
-    window.localStorage.setItem(YEAR, new Date().getFullYear().toString())
-    window.location.reload()
-}
-document.querySelector("#top-year").innerText = year
+localforage.getItem(THEME, (err, val) => {
+    if (val === null) theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"
+    else theme = val
+    changeThemeTo(theme)
+    if (--initLoading === 0) finishInit()
+})
+
+localforage.getItem(YEAR, (err, val) => {
+    year = val
+    if (year === null || year < 1992) {
+        year = new Date().getFullYear().toString()
+        localforage.setItem(YEAR, new Date().getFullYear().toString())
+    }
+    document.querySelector("#top-year").innerText = year
+    if (--initLoading === 0) finishInit()
+})
 
 // General Settings Setup
-if (window.localStorage.getItem(SETTINGS) === null) {
-    window.localStorage.setItem(SETTINGS, JSON.stringify({
-        "keyboardControls": true,
-        "showNamesInTeamComments": true,
-        "showIgnoredTeams": true,
-        "rounding": 3,
-        "teamPageSettings": {
-            "teamInfoWidth": 450,
-            "graphHeight": 500,
-            "showMatches": true,
-        },
-        "graphSettings": {
-            x: "relative", // relative or absolute
-            points: true,
-            bestfit: true,
-        },
-        "showTeamIcons": true,
-    }))
-}
-let generalSettings = JSON.parse(window.localStorage.getItem(SETTINGS))
-keyboardControls = generalSettings.keyboardControls
-document.querySelector("#top-keyboard").innerText = "Keyboard Controls: " + (keyboardControls ? "Enabled" : "Disabled")
-showNamesInTeamComments = generalSettings.showNamesInTeamComments
-document.querySelector("#top-show-hide-comment-names").innerText = "Names in Comments: " + (showNamesInTeamComments ? "Shown" : "Hidden")
-showIgnoredTeams = generalSettings.showIgnoredTeams
-document.querySelector("#top-show-hide-ignored").innerText = "Ignored Teams: " + (showIgnoredTeams ? "Shown" : "Hidden")
-roundingDigits = generalSettings.rounding
-rounding = Math.pow(10, roundingDigits)
-setRoundingEl()
-showTeamIcons = generalSettings.showTeamIcons
+localforage.getItem(SETTINGS, (err, settings) => {
+    if (settings === null) {
+        settings = {
+            "keyboardControls": true,
+            "showNamesInTeamComments": true,
+            "showIgnoredTeams": true,
+            "rounding": 3,
+            "teamPageSettings": {
+                "teamInfoWidth": 450,
+                "graphHeight": 500,
+                "showMatches": true,
+            },
+            "graphSettings": {
+                x: "relative", // relative or absolute
+                points: true,
+                bestfit: true,
+            },
+            "showTeamIcons": true,
+        }
+        localforage.setItem(SETTINGS, JSON.stringify(settings))
+    } else settings = JSON.parse(settings)
 
-if (generalSettings.robotViewScope !== undefined)
-    robotViewScope = generalSettings.robotViewScope
+    keyboardControls = settings.keyboardControls
+    document.querySelector("#top-keyboard").innerText = "Keyboard Controls: " + (keyboardControls ? "Enabled" : "Disabled")
+    showNamesInTeamComments = settings.showNamesInTeamComments
+    document.querySelector("#top-show-hide-comment-names").innerText = "Names in Comments: " + (showNamesInTeamComments ? "Shown" : "Hidden")
+    showIgnoredTeams = settings.showIgnoredTeams
+    document.querySelector("#top-show-hide-ignored").innerText = "Ignored Teams: " + (showIgnoredTeams ? "Shown" : "Hidden")
+    roundingDigits = settings.rounding
+    rounding = Math.pow(10, roundingDigits)
+    setRoundingEl()
+    showTeamIcons = settings.showTeamIcons
 
-maintainedTeamPageSettings = generalSettings.teamPageSettings
+    if (settings.robotViewScope !== undefined)
+        robotViewScope = settings.robotViewScope
 
-graphSettings = generalSettings.graphSettings
-document.querySelector("#top-graph-x").innerText = "X Axis: " + (graphSettings.x === "relative" ? "Relative" : "Absolute")
-if (graphSettings.points) {
-    if (graphSettings.bestfit) document.querySelector("#top-graph-display").innerText = "Graphs: Points & Lines"
-    else document.querySelector("#top-graph-display").innerText = "Graphs: Only Points"
-} else document.querySelector("#top-graph-display").innerText = "Graphs: Only lines of best fit"
+    maintainedTeamPageSettings = settings.teamPageSettings
+
+    graphSettings = settings.graphSettings
+    document.querySelector("#top-graph-x").innerText = "X Axis: " + (graphSettings.x === "relative" ? "Relative" : "Absolute")
+    if (graphSettings.points) {
+        if (graphSettings.bestfit) document.querySelector("#top-graph-display").innerText = "Graphs: Points & Lines"
+        else document.querySelector("#top-graph-display").innerText = "Graphs: Only Points"
+    } else document.querySelector("#top-graph-display").innerText = "Graphs: Only lines of best fit"
+
+    if (--initLoading === 0) finishInit()
+})
 
 // Stars and Ignore setup
-if (window.localStorage.getItem(TEAM_SAVES) === null) clearSavedTeams()
-let teamSaves = JSON.parse(window.localStorage.getItem(TEAM_SAVES))
-starred = teamSaves.starred
-ignored = teamSaves.ignored
-usingStar = teamSaves.usingStar
-usingIgnore = teamSaves.usingIgnore
+localforage.getItem(TEAM_SAVES, (err, val) => {
+    if (val === null) {
+        val = {
+            "starred": [],
+            "ignored": [],
+            "usingStar": true,
+            "usingIgnore": true,
+        }
+        teamSaves = val
+    } else teamSaves = JSON.parse(val)
+    starred = teamSaves.starred
+    ignored = teamSaves.ignored
+    usingStar = teamSaves.usingStar
+    usingIgnore = teamSaves.usingIgnore
+    saveTeams()
+
+    if (--initLoading === 0) finishInit()
+})
 
 // Loading saved mappings or data
-scouting_data = window.localStorage.getItem(SCOUTING_DATA)
-scouting_data = scouting_data == null ? undefined : JSON.parse(scouting_data)
-document.querySelector("#top-data-download").disabled = scouting_data === undefined
-pit_data = window.localStorage.getItem(PIT)
-pit_data = pit_data == null ? undefined : JSON.parse(pit_data)
-document.querySelector("#top-pit-download").disabled = pit_data === undefined
-mapping = window.localStorage.getItem(MAPPING)
-mapping = mapping == null ? undefined : JSON.parse(mapping)
-document.querySelector("#top-mapping-download").disabled = mapping === undefined
+localforage.getItem(SCOUTING_DATA, (err, val) => {
+    scouting_data = val == null ? undefined : JSON.parse(val)
+    document.querySelector("#top-data-download").disabled = scouting_data === undefined
+    if (--initLoading === 0) finishInit()
+})
+localforage.getItem(PIT, (err, val) => {
+    pit_data = val == null ? undefined : JSON.parse(val)
+    document.querySelector("#top-pit-download").disabled = pit_data === undefined
+    if (--initLoading === 0) finishInit()
+})
+localforage.getItem(MAPPING, (err, val) => {
+    mapping = val == null ? undefined : JSON.parse(val)
+    document.querySelector("#top-mapping-download").disabled = mapping === undefined
+    if (--initLoading === 0) finishInit()
+})
 
 // Loading saved columns
-if (window.localStorage.getItem(COLUMNS) !== null) {
-    columns = JSON.parse(window.localStorage.getItem(COLUMNS))
-}
+localforage.getItem(COLUMNS, (err, val) => {
+    if (val !== null) columns = JSON.parse(val)
+    if (--initLoading === 0) finishInit()
+})
 
-updateTheme()
-document.querySelector("#projector-styles").removeAttribute("disabled")
 setProjectorModeSheet()
 
-api_data = JSON.parse(window.localStorage.getItem(SAVED_API_DATA))
-if (api_data === null) api_data = {}
-if (!navigator.onLine) {
-    document.querySelector(":root").classList.add("offline")
-    console.log("No Internet")
-    usingOffline = true
-} else {
-    api_data = {}
+// Saved API Data
+localforage.getItem(SAVED_API_DATA, (err, val) => {
+    api_data = val
+    if (api_data === null) api_data = {}
+    if (!navigator.onLine) {
+        document.querySelector(":root").classList.add("offline")
+        console.log("No Internet")
+        usingOffline = true
+    } else {
+        api_data = {}
+        saveAPIData()
+    }
+    if (--initLoading === 0) finishInit()
+})
+if (!usingOffline) {
     saveAPIData()
 }
+
+// Apis
+localforage.getItem(ENABLED_APIS, (err, apis) => {
+    if (apis === null) {
+        localforage.setItem(ENABLED_APIS, JSON.stringify({tbaevent: true, tbamatch: true, tbamedia: true, desmos: true, statbotics: true}))
+        apis = {tbaevent: true, tbamatch: true, tbamedia: true, desmos: true, statbotics: true}
+    } else apis = JSON.parse(apis)
+
+    if (usingOffline) {
+        apis = api_data.apis
+    }
+    document.querySelector("#top-last-saved-apis").innerText = "Last Saved for offline use: \n" + api_data["lastSaved"]
+
+    usingTBA = apis.tbaevent
+    document.querySelector("#top-toggle-use-tbaevent").innerText = "TBA API: " + (usingTBA ? "Enabled" : "Disabled")
+
+    usingTBAMatches = apis.tbamatch
+    document.querySelector("#top-toggle-use-tbamatch").innerText = "TBA API (Matches): " + (usingTBAMatches ? "Enabled" : "Disabled")
+    if (!usingTBA) {
+        usingTBAMatches = false
+        document.querySelector("#top-toggle-use-tbamatch").innerText = "TBA API (Media): Disabled"
+        document.querySelector("#top-toggle-use-tbamatch").disabled = true
+    }
+
+    usingTBAMedia = apis.tbamedia
+    document.querySelector("#top-toggle-use-tbamedia").innerText = "TBA API (Media): " + (usingTBAMedia ? "Enabled" : "Disabled")
+    if (!usingTBA) {
+        usingTBAMedia = false
+        document.querySelector("#top-toggle-use-tbamedia").innerText = "TBA API (Media): Disabled"
+        document.querySelector("#top-toggle-use-tbamedia").disabled = true
+    }
+    showTeamIcons = showTeamIcons ? (usingTBA && usingTBAMedia) : false
+    saveGeneralSettings()
+
+    usingDesmos = apis.desmos
+    document.querySelector("#top-toggle-use-desmos").innerText = "Desmos API: " + (usingDesmos ? "Enabled" : "Disabled")
+    if (usingDesmos) {
+        let desmosScript = document.createElement("script")
+        document.head.appendChild(desmosScript)
+        desmosScript.src = desmosScriptSrc
+        loading++
+        checkLoading()
+        desmosScript.addEventListener("load", () => {
+            loading--
+            if (initLoading === 0) checkLoading()
+        })
+    }
+    // TODO: if desmos is disabled then disable the graph settings options
+
+    usingStatbotics = apis.statbotics
+    document.querySelector("#top-toggle-use-statbotics").innerText = "Statbotics: " + (usingStatbotics ? "Enabled" : "Disabled")
+
+    if (--initLoading === 0) finishInit()
+})
+
+// Notes
+localforage.getItem(NOTES, (err, val) => {
+    if (val == null) {
+        notes = {
+            activeTab: "Tab 1",
+            open: false,
+            tabs: {
+                "Tab 1": "",
+            }
+        }
+        saveNotes()
+    } else notes = JSON.parse(val)
+    if (--initLoading === 0) finishInit()
+})
+
+localforage.getItem(TBA_KEY, (err, val) => {
+    if (val !== null) tbaKey = val
+    if (--initLoading === 0) finishInit()
+})
+
+localforage.getItem(EVENT, (err, val) => {
+    if (val != null) eventKey = val
+    if (--initLoading === 0) finishInit()
+})
 
 // Version and Title
 for (let el of document.querySelectorAll(".tool-name"))
@@ -3502,117 +3614,50 @@ for (let el of document.querySelectorAll(".tool-name"))
 for (let el of document.querySelectorAll(".version"))
     el.innerText = toolName + " v"+version
 
-// Apis
-let apis = window.localStorage.getItem(ENABLED_APIS)
-if (apis === null) {
-    window.localStorage.setItem(ENABLED_APIS, JSON.stringify({tbaevent: true, tbamatch: true, tbamedia: true, desmos: true, statbotics: true}))
-    apis = {tbaevent: true, tbamatch: true, tbamedia: true, desmos: true, statbotics: true}
-} else apis = JSON.parse(apis)
+function finishInit() {
+    // Welcome Checklist
+    doingInitialSetup = false
+    function welcomeChecklistItem(name, checked) {
+        let el = document.createElement("div")
+        el.className = "welcome-item"
+        let icon = document.createElement("span")
+        icon.className = "material-symbols-outlined"
+        icon.innerText = (checked ? "check_circle" : "radio_button_unchecked")
+        el.appendChild(icon)
+        let text = document.createElement("div")
+        text.innerText = name
+        el.appendChild(text)
+        document.querySelector(".welcome").appendChild(el)
 
-if (usingOffline) {
-    apis = api_data.apis
-}
-document.querySelector("#top-last-saved-apis").innerText = "Last Saved for offline use: \n" + api_data["lastSaved"]
-
-usingTBA = apis.tbaevent
-document.querySelector("#top-toggle-use-tbaevent").innerText = "TBA API: " + (usingTBA ? "Enabled" : "Disabled")
-
-usingTBAMatches = apis.tbamatch
-document.querySelector("#top-toggle-use-tbamatch").innerText = "TBA API (Matches): " + (usingTBAMatches ? "Enabled" : "Disabled")
-if (!usingTBA) {
-    usingTBAMatches = false
-    document.querySelector("#top-toggle-use-tbamatch").innerText = "TBA API (Media): Disabled"
-    document.querySelector("#top-toggle-use-tbamatch").disabled = true
-}
-
-usingTBAMedia = apis.tbamedia
-document.querySelector("#top-toggle-use-tbamedia").innerText = "TBA API (Media): " + (usingTBAMedia ? "Enabled" : "Disabled")
-if (!usingTBA) {
-    usingTBAMedia = false
-    document.querySelector("#top-toggle-use-tbamedia").innerText = "TBA API (Media): Disabled"
-    document.querySelector("#top-toggle-use-tbamedia").disabled = true
-}
-showTeamIcons = showTeamIcons ? (usingTBA && usingTBAMedia) : false
-saveGeneralSettings()
-
-usingDesmos = apis.desmos
-document.querySelector("#top-toggle-use-desmos").innerText = "Desmos API: " + (usingDesmos ? "Enabled" : "Disabled")
-if (usingDesmos) {
-    let desmosScript = document.createElement("script")
-    document.head.appendChild(desmosScript)
-    desmosScript.src = desmosScriptSrc
-    loading++
-    checkLoading()
-    desmosScript.addEventListener("load", () => {
-        loading--
-        checkLoading()
-    })
-}
-// TODO: if desmos is disabled then disable the graph settings options
-
-usingStatbotics = apis.statbotics
-document.querySelector("#top-toggle-use-statbotics").innerText = "Statbotics: " + (usingStatbotics ? "Enabled" : "Disabled")
-
-// Notes
-if (window.localStorage.getItem(NOTES) == null) {
-    notes = {
-        activeTab: "Tab 1",
-        open: false,
-        tabs: {
-            "Tab 1": "",
-        }
+        if (!checked) doingInitialSetup = true
     }
-    saveNotes()
-}
-notes = JSON.parse(window.localStorage.getItem(NOTES))
+    document.querySelector("#setup-checklist-title").innerText = toolName + " Setup Checklist"
+    document.querySelector("#welcome-hide").addEventListener("click", () => {
+        document.querySelector(".welcome").remove()
+    })
+    welcomeChecklistItem("The Blue Alliance API Key", !usingTBA || tbaKey)
+    welcomeChecklistItem("Select an Event", !usingTBA || eventKey)
+    welcomeChecklistItem("Upload your scouting data", scouting_data)
+    welcomeChecklistItem("Upload a mapping for your data", mapping)
+    if (!doingInitialSetup)
+        document.querySelector(".welcome").remove()
 
-// View robots
-if (usingTBAMedia || (mapping["pit_scouting"] !== undefined && mapping["pit_scouting"]["image"] !== undefined)) {
-    document.querySelector("#top-pictures").disabled = false
-}
+    // View robots
+    if (usingTBAMedia || (mapping["pit_scouting"] !== undefined && mapping["pit_scouting"]["image"] !== undefined)) {
+        document.querySelector("#top-pictures").disabled = false
+    }
 
-// Saved API Data
-if (!usingOffline) {
-    saveAPIData()
+    // Final Prep
+    setColumnOptions()
+    selectedSort = columns[0]
+    if (eventKey)
+        document.querySelector("#top-load-event").innerText = eventKey.toUpperCase()
+    if (usingTBA) {
+        loading++
+        checkLoading()
+        loading--
+    }
+    loadEvent()
 }
-
-// Welcome Checklist
-doingInitialSetup = false
-function welcomeChecklistItem(name, checked) {
-    let el = document.createElement("div")
-    el.className = "welcome-item"
-    let icon = document.createElement("span")
-    icon.className = "material-symbols-outlined"
-    icon.innerText = (checked ? "check_circle" : "radio_button_unchecked")
-    el.appendChild(icon)
-    let text = document.createElement("div")
-    text.innerText = name
-    el.appendChild(text)
-    document.querySelector(".welcome").appendChild(el)
-
-    if (!checked) doingInitialSetup = true
-}
-document.querySelector("#setup-checklist-title").innerText = toolName + " Setup Checklist"
-document.querySelector("#welcome-hide").addEventListener("click", () => {
-    document.querySelector(".welcome").remove()
-})
-welcomeChecklistItem("The Blue Alliance API Key", !usingTBA || window.localStorage.getItem(TBA_KEY) !== null)
-welcomeChecklistItem("Select an Event", !usingTBA || window.localStorage.getItem(EVENT) !== null)
-welcomeChecklistItem("Upload your scouting data", scouting_data !== undefined)
-welcomeChecklistItem("Upload a mapping for your data", mapping !== undefined)
-if (!doingInitialSetup)
-    document.querySelector(".welcome").remove()
-
-// Final Prep
-setColumnOptions()
-selectedSort = columns[0]
-if (window.localStorage.getItem(EVENT) !== null)
-    document.querySelector("#top-load-event").innerText = window.localStorage.getItem(EVENT).toUpperCase()
-if (usingTBA) {
-    loading++
-    checkLoading()
-    loading--
-}
-loadEvent()
 
 //#endregion

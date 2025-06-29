@@ -10,11 +10,12 @@
     <link rel="stylesheet" href="styles/table.css"/>
     <link rel="stylesheet" href="styles/team_showcase.css"/>
     <link rel="stylesheet" href="styles/context_menu.css"/>
-    <link rel="stylesheet" href="styles/projector.css" title="projector" id="projector-styles" disabled/>
+    <link rel="stylesheet" href="styles/projector.css" title="projector" id="projector-styles"/>
     <link rel="stylesheet" href="styles/credits.css"/>
     <link rel="stylesheet" href="styles/notes.css"/>
     <link rel="stylesheet" href="styles/view_robots.css"/>
     <link rel="stylesheet" href="styles/overrides.css"/>
+    <script src="localForage/dist/localforage.js"></script>
     <script src="scripts/yearConstants.js"></script>
     <script src="scripts/evaluate.js"></script>
     <script src="scripts/script.js" defer></script>
@@ -153,6 +154,10 @@
             <a class="big" href="https://www.statbotics.io/">Statbotics</a> <br/>
             Statbotics is a very cool website that calculates a bunch of statistics such as Expected Points Added (EPA).
         </div>
+        <div class="credits-section">
+            <a class="big" href="https://github.com/localForage/localForage">localForage</a> <br/>
+            localForage is a simple library for storing data, implementing IndexedDB, WebSQl, and localStorage in an to use API.
+        </div>
         <div class="credits-section horizontal">
             <h2><u>Open Source</u></h2>
             This project is open source and can be found on Github <a href="https://github.com/FinnSpartronics/Orpheus">here.</a> Feel free to contribute or make your own version :) <br/>
@@ -183,9 +188,9 @@
 
         </div>
         <div class="context-menu-themes">
-            <button class="context-theme" onclick="changeThemeTo(0)"><span class="material-symbols-outlined">light_mode</span></button>
-            <button class="context-theme" onclick="changeThemeTo(1)"><span class="material-symbols-outlined">dark_mode</span></button>
-            <button class="context-theme" onclick="changeThemeTo(2)"><img src="https://mtssdhosting.s3.amazonaws.com/spartronics4915.com/wp-content/uploads/20151121091749/favicon.ico"></button>
+            <button class="context-theme" onclick="changeThemeTo('light')"><span class="material-symbols-outlined">light_mode</span></button>
+            <button class="context-theme" onclick="changeThemeTo('dark')"><span class="material-symbols-outlined">dark_mode</span></button>
+            <button class="context-theme" onclick="changeThemeTo('4915')"><img src="https://mtssdhosting.s3.amazonaws.com/spartronics4915.com/wp-content/uploads/20151121091749/favicon.ico"></button>
         </div>
     </div>
 
