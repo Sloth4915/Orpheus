@@ -281,7 +281,7 @@ document.querySelector("#top-data").onclick = function() {
         }
         setColumnOptions()
         if (mapping !== undefined) processData()
-        localforage.setItem(SCOUTING_DATA, JSON.stringify(scouting_data))
+        localforage.setItem(SCOUTING_DATA, scouting_data)
         document.querySelector("#top-data-download").disabled = false
         delete maintainedTeamPageSettings["graph"]
         saveGeneralSettings()
@@ -300,7 +300,7 @@ document.querySelector("#top-pit").onclick = function() {
         }
         setColumnOptions()
         if (mapping !== undefined) processData()
-        localforage.setItem(PIT, JSON.stringify(pit_data))
+        localforage.setItem(PIT, pit_data)
         document.querySelector("#top-pit-download").disabled = false
         delete maintainedTeamPageSettings["graph"]
         saveGeneralSettings()
@@ -311,7 +311,7 @@ document.querySelector("#top-pit").onclick = function() {
 document.querySelector("#top-mapping").onclick = function() {
     loadFile(".json", (result) => {
         mapping = JSON.parse(result)
-        localforage.setItem(MAPPING, JSON.stringify(mapping))
+        localforage.setItem(MAPPING, mapping)
         setColumnOptions()
         //columns = JSON.parse(JSON.stringify(availableColumns))
         autoIgnore()
@@ -2549,13 +2549,13 @@ document.querySelector("#top-toggle-use-statbotics").addEventListener("click", (
 
 // Saves enabled apis
 function setEnabledAPIS() {
-    localforage.setItem(ENABLED_APIS, JSON.stringify({
+    localforage.setItem(ENABLED_APIS, {
         tbaevent: usingTBA,
         tbamatch: usingTBAMatches,
         tbamedia: usingTBAMedia,
         desmos: usingDesmos,
         statbotics: usingStatbotics
-    }))
+    })
     location.reload()
 }
 //#endregion
@@ -2717,7 +2717,7 @@ function closeContextMenu() {
 
 //#region Save Settings, Load Config File, Credits Page
 function saveGeneralSettings() {
-    localforage.setItem(SETTINGS, JSON.stringify({
+    localforage.setItem(SETTINGS, {
         "keyboardControls": keyboardControls,
         "showNamesInTeamComments": showNamesInTeamComments,
         "showIgnoredTeams": showIgnoredTeams,
@@ -2726,26 +2726,26 @@ function saveGeneralSettings() {
         "graphSettings": graphSettings,
         "showTeamIcons": showTeamIcons,
         "robotViewScope": robotViewScope
-    }))
+    })
 }
 function saveTeams() {
-    localforage.setItem(TEAM_SAVES, JSON.stringify({
+    localforage.setItem(TEAM_SAVES, {
         "starred": starred,
         "ignored": ignored,
         "usingStar": usingStar,
         "usingIgnore": usingIgnore
-    }))
+    })
 }
 function clearSavedTeams() {
-    localforage.setItem(TEAM_SAVES, JSON.stringify({
+    localforage.setItem(TEAM_SAVES, {
         "starred": [],
         "ignored": [],
         "usingStar": true,
         "usingIgnore": true,
-    }))
+    })
 }
 function saveColumns() {
-    localforage.setItem(COLUMNS, JSON.stringify(columns))
+    localforage.setItem(COLUMNS, columns)
 }
 function saveAPIData() {
     api_data["lastSaved"] = new Date().toLocaleString([], {year: 'numeric', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit'})
@@ -2758,7 +2758,7 @@ function saveAPIData() {
     }
     document.querySelector("#top-last-saved-apis").innerText = "Last Saved for offline use: \n" + api_data["lastSaved"]
 
-    localforage.setItem(SAVED_API_DATA, JSON.stringify(api_data))
+    localforage.setItem(SAVED_API_DATA, api_data)
 }
 
 function exportSettings() {
@@ -2820,11 +2820,11 @@ function importSettings(settings) {
     saveGeneralSettings()
     saveTeams()
     mapping = settings.mapping
-    localforage.setItem(MAPPING, JSON.stringify(mapping))
+    localforage.setItem(MAPPING, mapping)
     scouting_data = settings.scouting_data
-    localforage.setItem(SCOUTING_DATA, JSON.stringify(scouting_data))
+    localforage.setItem(SCOUTING_DATA, scouting_data)
     pit_data = settings.pit
-    localforage.setItem(PIT, JSON.stringify(pit_data))
+    localforage.setItem(PIT, pit_data)
     localforage.setItem(YEAR, settings.year)
     localforage.setItem(EVENT, settings.event)
     localforage.setItem(TBA_KEY, settings.tbakey)
@@ -3090,7 +3090,7 @@ document.querySelector("#top-notebook-clear").addEventListener("click", () => {
 function saveNotes() {
     let isOpen = notes.open
     notes.open = false
-    localforage.setItem(NOTES, JSON.stringify(notes))
+    localforage.setItem(NOTES, notes)
     notes.open = isOpen
 }
 
@@ -3437,8 +3437,8 @@ localforage.getItem(SETTINGS, (err, settings) => {
             },
             "showTeamIcons": true,
         }
-        localforage.setItem(SETTINGS, JSON.stringify(settings))
-    } else settings = JSON.parse(settings)
+        localforage.setItem(SETTINGS, settings)
+    }
 
     keyboardControls = settings.keyboardControls
     document.querySelector("#top-keyboard").innerText = "Keyboard Controls: " + (keyboardControls ? "Enabled" : "Disabled")
@@ -3476,7 +3476,7 @@ localforage.getItem(TEAM_SAVES, (err, val) => {
             "usingIgnore": true,
         }
         teamSaves = val
-    } else teamSaves = JSON.parse(val)
+    } else teamSaves = val
     starred = teamSaves.starred
     ignored = teamSaves.ignored
     usingStar = teamSaves.usingStar
@@ -3488,24 +3488,24 @@ localforage.getItem(TEAM_SAVES, (err, val) => {
 
 // Loading saved mappings or data
 localforage.getItem(SCOUTING_DATA, (err, val) => {
-    scouting_data = val == null ? undefined : JSON.parse(val)
+    scouting_data = val == null ? undefined : val
     document.querySelector("#top-data-download").disabled = scouting_data === undefined
     if (--initLoading === 0) finishInit()
 })
 localforage.getItem(PIT, (err, val) => {
-    pit_data = val == null ? undefined : JSON.parse(val)
+    pit_data = val == null ? undefined : val
     document.querySelector("#top-pit-download").disabled = pit_data === undefined
     if (--initLoading === 0) finishInit()
 })
 localforage.getItem(MAPPING, (err, val) => {
-    mapping = val == null ? undefined : JSON.parse(val)
+    mapping = val == null ? undefined : val
     document.querySelector("#top-mapping-download").disabled = mapping === undefined
     if (--initLoading === 0) finishInit()
 })
 
 // Loading saved columns
 localforage.getItem(COLUMNS, (err, val) => {
-    if (val !== null) columns = JSON.parse(val)
+    if (val !== null) columns = val
     if (--initLoading === 0) finishInit()
 })
 
@@ -3532,9 +3532,9 @@ if (!usingOffline) {
 // Apis
 localforage.getItem(ENABLED_APIS, (err, apis) => {
     if (apis === null) {
-        localforage.setItem(ENABLED_APIS, JSON.stringify({tbaevent: true, tbamatch: true, tbamedia: true, desmos: true, statbotics: true}))
+        localforage.setItem(ENABLED_APIS, {tbaevent: true, tbamatch: true, tbamedia: true, desmos: true, statbotics: true})
         apis = {tbaevent: true, tbamatch: true, tbamedia: true, desmos: true, statbotics: true}
-    } else apis = JSON.parse(apis)
+    }
 
     if (usingOffline) {
         apis = api_data.apis
@@ -3594,7 +3594,7 @@ localforage.getItem(NOTES, (err, val) => {
             }
         }
         saveNotes()
-    } else notes = JSON.parse(val)
+    } else notes = val
     if (--initLoading === 0) finishInit()
 })
 
