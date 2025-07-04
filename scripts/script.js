@@ -1,10 +1,9 @@
 //#region Local Storage Keys
 const YEAR = "scouting_4915_year"
-const TBA_KEY  = "scouting_4915_apikey"
-const EVENT  = "scouting_4915_event"
-const SCOUTING_DATA  = "scouting_4915_scouting_data"
-const PIT  = "scouting_4915_pit_scouting_data"
-const MAPPING  = "scouting_4915_mapping"
+const TBA_KEY = "scouting_4915_apikey"
+const EVENT = "scouting_4915_event"
+const DATA = "scouting_4915_data"
+const MAPPING = "scouting_4915_mapping"
 const THEME = "scouting_4915_theme"
 const ENABLED_APIS = "scouting_4915_apis"
 const SETTINGS = "scouting_4915_settings_general"
@@ -12,7 +11,7 @@ const COLUMNS = "scouting_4915_settings_columns"
 const TEAM_SAVES = "scouting_4915_settings_starignore"
 const NOTES = "scouting_4915_settings_notes"
 const SAVED_API_DATA = "scouting_4915_api_saved"
-const LOCAL_STORAGE_KEYS = [YEAR, TBA_KEY, EVENT, SCOUTING_DATA, PIT, MAPPING, THEME, ENABLED_APIS, SETTINGS, COLUMNS, TEAM_SAVES, NOTES]
+const LOCAL_STORAGE_KEYS = [YEAR, TBA_KEY, EVENT, DATA, MAPPING, THEME, ENABLED_APIS, SETTINGS, COLUMNS, TEAM_SAVES, NOTES]
 //#endregion
 
 //#region Variables
@@ -25,8 +24,7 @@ let doingInitialSetup = false
 
 let eventKey
 let event_data
-let scouting_data
-let pit_data = {}
+let uploadedData = {}
 let team_data = {}
 let api_data = {}
 let mapping
@@ -268,45 +266,6 @@ function checkTeamWonMatch(match, team) {
 //#endregion
 
 //#region Data and Mappings
-// Import data button
-document.querySelector("#top-data").onclick = function() {
-    loadFile(".csv,.json", (result, filetype) => {
-        if (filetype === "csv") scouting_data = csvToJson(result) // Converts CSV to JSON
-        else if (filetype === "json") scouting_data = JSON.parse(result) // Parses json
-        else {
-            let type = prompt("What is the filetype? (csv/json)").toLowerCase().trim()
-            if (type === "csv") scouting_data = csvToJson(result) // Converts CSV to JSON
-            else if (type === "json") scouting_data = JSON.parse(result) // Parses json
-            else return // If none of the above, then can't process data
-        }
-        setColumnOptions()
-        if (mapping !== undefined) processData()
-        localforage.setItem(SCOUTING_DATA, scouting_data)
-        document.querySelector("#top-data-download").disabled = false
-        delete maintainedTeamPageSettings["graph"]
-        saveGeneralSettings()
-        if (doingInitialSetup) window.location.reload()
-    })
-}
-document.querySelector("#top-pit").onclick = function() {
-    loadFile(".csv,.json", (result, filetype) => {
-        if (filetype === "csv") pit_data = csvToJson(result) // Converts CSV to JSON
-        else if (filetype === "json") pit_data = JSON.parse(result) // Parses json
-        else {
-            let type = prompt("What is the filetype? (csv/json)").toLowerCase().trim()
-            if (type === "csv") pit_data = csvToJson(result) // Converts CSV to JSON
-            else if (type === "json") pit_data = JSON.parse(result) // Parses json
-            else return // If none of the above, then can't process data
-        }
-        setColumnOptions()
-        if (mapping !== undefined) processData()
-        localforage.setItem(PIT, pit_data)
-        document.querySelector("#top-pit-download").disabled = false
-        delete maintainedTeamPageSettings["graph"]
-        saveGeneralSettings()
-        if (doingInitialSetup) window.location.reload()
-    })
-}
 // Import mapping button
 document.querySelector("#top-mapping").onclick = function() {
     loadFile(".json", (result) => {
@@ -385,344 +344,14 @@ function setColumnOptions() {
 
     setHeader()
 }
-// Processes scouting_data and pit_data based on information from mapping
 function processData() {
     let data = {}
 
-    const teamFormat = mapping["team"]["format"]
-
-    let thisYearConstants = {}
-    if (yearConstants[year] !== undefined) thisYearConstants = yearConstants[year]
-    let constants = Object.assign(thisYearConstants, yearConstants.default)
-    for (let konstant of Object.keys(mapping["constants"])) {
-        constants[konstant] = evaluate({}, constants, "" + mapping["constants"][konstant])
+    for (let schema of Object.keys(mapping)) {
+        console.log(schema)
     }
-
-    let ratioVars = []
-    let variables = []
-    let standard = []
-    let ratios = []
-    for (let x of Object.keys(mapping["data"])) {
-        if (mapping["data"][x]["variable"] && mapping["data"][x]["format"] === "ratio")
-            ratioVars.push(x)
-        else if (mapping["data"][x]["variable"])
-            variables.push(x)
-        else if (mapping["data"][x]["format"] === "ratio")
-            ratios.push(x)
-        else
-            standard.push(x)
-    }
-
-    function getTeam(match) {
-        let team = match[mapping["team"]["key"]]
-        if (teamFormat === "frc#") team = team.splice(0, 3)
-        if (teamFormat === "name") {
-            for (let teamKey of Object.keys(team_data)) {
-                if (team_data[teamKey].Name.trim().toLowerCase() === name.trim().toLowerCase()) team = teamKey
-            }
-        }
-        return team
-    }
-    function getPitTeam(pit) {
-        let team = pit[mapping["pit_scouting"]["team"]["key"]]
-        let teamFormat = mapping["pit_scouting"]["team"]["format"]
-        if (teamFormat === "frc#") team = team.splice(0, 3)
-        if (teamFormat === "name") {
-            for (let teamKey of Object.keys(team_data)) {
-                if (team_data[teamKey].Name.trim().toLowerCase() === name.trim().toLowerCase()) team = teamKey
-            }
-        }
-        return team
-    }
-
-    // True if should be skipped, false if not
-    function checkSkip(val, vars, match, expressions) {
-        if (expressions === undefined) return false
-        if (typeof expressions == "string") {
-            return evaluate(Object.assign({"value": val, "match": match[mapping["match"]["number_key"]]}, vars, match), constants, expressions)
-        }
-        for (let exp of expressions) {
-            if(evaluate(Object.assign({"value": val, "match": match[mapping["match"]["number_key"]]}, vars, match), constants, exp))
-                return true
-        }
-        return false
-    }
-
-    if (scouting_data !== undefined) {
-        // Setup Loop
-        for (let match of scouting_data) {
-            let team = getTeam(match)
-
-            if (!usingTBA) team_data[team] = {Team_Number: team}
-            if (typeof team_data[team] !== "undefined") { // Only does calculations if team exists (in case someone put 4951 instead of 4915, no reason to include typos or teams that aren't in the event)
-                if (typeof data[team] === "undefined") {
-                    data[team] = {"graphs": {}, "matches": [], "variables": {}, "processed_matches": []}
-                    for (let column of Object.keys(mapping["data"])) {
-                        if (mapping["data"][column]["format"] === "ratio") {
-                            data[team][column] = {
-                                "num": [],
-                                "den": [],
-                            }
-                        }
-                        else data[team][column] = []
-                        if (mapping["data"][column].graph) data[team]["graphs"][column] = {}
-                    }
-                    for (let variable of variables)
-                        if (mapping["data"][variable]["format"] === "ratio") {
-                            data[team]["variables"][variable] = {
-                                "num": [],
-                                "den": [],
-                            }
-                        }
-                        else data[team]["variables"][variable] = []
-                }
-
-                data[team]["matches"].push(match)
-            }
-        }
-
-        // Ratio variable loop
-        for (let match of scouting_data) {
-            let team = getTeam(match)
-            let matchNum = match[mapping["match"]["number_key"]]
-            if (typeof team_data[team] === "undefined") continue
-            if (match[mapping["match"]["number_key"]] > 999) continue // Extraneous Match Number
-            if (data[team]["processed_matches"].includes(matchNum)) continue // Duplicate submission check
-            data[team]["processed_matches"].push(matchNum)
-
-            for (let column of ratioVars) {
-                let num = evaluate(Object.assign(Object.assign({"match": matchNum}, match), data[team]["variables"], match), constants, mapping["data"][column].value)
-                let den = evaluate(Object.assign(Object.assign({"match": matchNum}, match), data[team]["variables"], match), constants, mapping["data"][column].denominator)
-                if (!isNaN(num) && !isNaN(den) && !checkSkip(num / den, data[team]["variables"], match, mapping["data"][column]["skip"])) {
-                    data[team][column]["num"].push(num)
-                    data[team][column]["den"].push(den)
-
-                    data[team]["variables"][column]["num"].push(num)
-                    data[team]["variables"][column]["den"].push(den)
-
-                    if (mapping["data"][column].graph) data[team]["graphs"][column][matchNum] = (num / den)
-                }
-            }
-        }
-
-        for (let x of Object.keys(data)) data[x]["processed_matches"] = []
-
-        // Variable Loop
-        for (let match of scouting_data) {
-            let team = getTeam(match)
-            let matchNum = match[mapping["match"]["number_key"]]
-            if (typeof team_data[team] === "undefined") continue
-            if (match[mapping["match"]["number_key"]] > 999) continue // Extraneous Match Number
-            if (data[team]["processed_matches"].includes(matchNum)) continue // Duplicate submission check
-            data[team]["processed_matches"].push(matchNum)
-
-            for (let column of variables) {
-                let x = evaluate(Object.assign({"match": matchNum}, match), constants, mapping["data"][column].value)
-                if (!isNaN(x) && !checkSkip(x, data[team]["variables"], match, mapping["data"][column]["skip"])) {
-                    data[team][column].push(x)
-                    data[team]["variables"][column].push(x)
-
-                    if (mapping["data"][column].graph) data[team]["graphs"][column][matchNum] = x
-                }
-            }
-        }
-
-        for (let x of Object.keys(data)) data[x]["processed_matches"] = []
-
-        // Variable to actual value
-        for (let team of Object.keys(data))
-            for (let column of variables) {
-                switch (mapping["data"][column]["format"]) {
-                    case "mean": {
-                        let num = 0
-                        for (let x of data[team][column])
-                            num += x
-                        num /= data[team][column].length
-                        data[team]["variables"][column] = num
-                        break;
-                    }
-                    case "geomean": {
-                        let num = 1
-                        for (let x of data[team][column])
-                            num *= x
-                        data[team]["variables"][column] = Math.pow(num, 1/data[team][column].length)
-                        break;
-                    }
-                    case "median": {
-                        let nums = []
-                        for (let x of data[team][column])
-                            nums.push(x)
-                        nums.sort((a, b) => a - b)
-                        if (nums.length % 2) // If true then even, else odd.
-                            data[team]["variables"][column] = (nums[Math.floor((nums.length-1)/2)] + nums[Math.ceil((nums.length-1)/2)])/2
-                        else
-                            data[team]["variables"][column] = nums[Math.floor((nums.length-1)/2)]
-                        break;
-                    }
-                    case "sum": {
-                        let num = 0
-                        for (let x of data[team][column])
-                            num += x
-                        data[team]["variables"][column] = num
-                        break;
-                    }
-                    case "ratio": {
-                        let num = 0
-                        let den = 0
-                        for (let x of data[team][column]["num"]) num += x
-                        for (let x of data[team][column]["den"]) den += x
-                        data[team]["variables"][column] = (num / den)
-                        break;
-                    }
-                }
-            }
-
-        // Standard Loop
-        for (let match of scouting_data) {
-            let team = getTeam(match)
-            let matchNum = match[mapping["match"]["number_key"]]
-            if (typeof team_data[team] === "undefined") continue
-            if (match[mapping["match"]["number_key"]] > 999) continue // Extraneous Match Number
-            if (data[team]["processed_matches"].includes(matchNum)) continue // Duplicate submission check
-            data[team]["processed_matches"].push(matchNum)
-
-            for (let column of standard) {
-                let x = evaluate(Object.assign({"match": matchNum}, data[team]["variables"], match), constants, mapping["data"][column].value)
-                if (!isNaN(x) && !checkSkip(x, data[team]["variables"], match, mapping["data"][column]["skip"])) {
-                    data[team][column].push(x)
-
-                    if (mapping["data"][column].graph) data[team]["graphs"][column][matchNum] = x
-                }
-            }
-        }
-
-        for (let x of Object.keys(data)) data[x]["processed_matches"] = []
-
-        // ratio loop
-        for (let match of scouting_data) {
-            let team = getTeam(match)
-            let matchNum = match[mapping["match"]["number_key"]]
-            if (typeof team_data[team] === "undefined") continue
-            if (match[mapping["match"]["number_key"]] > 999) continue // Extraneous Match Number
-            if (data[team]["processed_matches"].includes(matchNum)) continue // Duplicate submission check
-            data[team]["processed_matches"].push(matchNum)
-
-            for (let column of ratios) {
-                let num = evaluate(Object.assign({"match": matchNum}, data[team]["variables"], match), constants, mapping["data"][column].value)
-                let den = evaluate(Object.assign({"match": matchNum}, data[team]["variables"], match), constants, mapping["data"][column].denominator)
-                if (!isNaN(num) && !isNaN(den) && !checkSkip(num / den, data[team]["variables"], match, mapping["data"][column]["skip"])) {
-                    data[team][column]["num"].push(num)
-                    data[team][column]["den"].push(den)
-
-                    if (mapping["data"][column].graph) data[team]["graphs"][column][matchNum] = (num / den)
-                }
-            }
-        }
-    }
-
-    // Pit data
-    if (pit_data !== undefined)
-        for (let pit of pit_data) {
-            let team = getPitTeam(pit)
-            if (data[team] === undefined) continue
-            data[team]["pit_data"] = pit
-
-            // Columns
-            for (let column of Object.keys(mapping["pit_scouting"]["data"])) {
-                if (typeof mapping["pit_scouting"]["data"][column]["display"] !== "undefined")
-                    data[team][column] = evaluate(Object.assign({}, data[team]["variables"], pit), constants, mapping["pit_scouting"]["data"][column].value)
-                else {
-                    data[team][column] = pit[mapping["pit_scouting"]["data"][column].value]
-                }
-            }
-        }
-
-    // Adds data to team_data
-    for (let t of Object.keys(data)) {
-        team_data[t]["graphs"] = data[t]["graphs"]
-        team_data[t]["matches"] = data[t]["matches"]
-        for (let column of Object.keys(mapping["data"])) {
-            switch (mapping["data"][column]["format"]) {
-                case "mean": {
-                    let num = 0
-                    for (let x of data[t][column])
-                        num += x
-                    num /= data[t][column].length
-                    team_data[t][column] = num
-                    break;
-                }
-                case "geomean": {
-                    let num = 1
-                    for (let x of data[t][column])
-                        num *= x
-                    team_data[t][column] = Math.pow(num, 1/data[t][column].length)
-                    break;
-                }
-                case "median": {
-                    let nums = []
-                    for (let x of data[t][column])
-                        nums.push(x)
-                    nums.sort((a, b) => a - b)
-                    if (nums.length % 2) // If true then even, else odd.
-                        team_data[t][column] = (nums[Math.floor((nums.length-1)/2)] + nums[Math.ceil((nums.length-1)/2)])/2
-                    else
-                        team_data[t][column] = nums[Math.floor((nums.length-1)/2)]
-                    break;
-                }
-                case "sum": {
-                    let num = 0
-                    for (let x of data[t][column])
-                        num += x
-                    team_data[t][column] = num
-                    break;
-                }
-                case "ratio": {
-                    let num = 0
-                    let den = 0
-                    for (let x of data[t][column]["num"]) num += x
-                    for (let x of data[t][column]["den"]) den += x
-                    team_data[t][column] = (num / den)
-                    break;
-                }
-                default:
-                    team_data[t][column] = "Missing Format"
-            }
-        }
-        for (let column of Object.keys(mapping["pit_scouting"]["data"])) {
-            team_data[t][column] = data[t][column]
-        }
-    }
-
-    // Handles all "display string" cases
-    for (let t of Object.keys(data)) {
-        for (let column of Object.keys(mapping["data"])) {
-            if (typeof mapping["data"][column]["display"] === "object") {
-                let value = team_data[t][column]
-                team_data[t][column] = NaN
-                let vars = Object.assign({}, data[t]["variables"], {"value": value})
-                for (let x of Object.keys(mapping["data"][column]["display"])) {
-                    if (evaluate(vars, constants, mapping["data"][column]["display"][x]))
-                        team_data[t][column] = x
-                }
-            }
-        }
-        for (let column of Object.keys(mapping["pit_scouting"]["data"])) {
-            if (typeof mapping["pit_scouting"]["data"][column]["display"] === "object") {
-                let value = team_data[t][column]
-                team_data[t][column] = NaN
-                let vars = Object.assign({}, data[t]["variables"], {"value": value}, data[t]["pit_data"])
-                for (let x of Object.keys(mapping["data"][column]["display"])) {
-                    if (evaluate(vars, constants, mapping["data"][column]["display"][x]))
-                        team_data[t][column] = x
-                }
-            }
-        }
-    }
-
-    setHeader()
 }
 
-// Adds button functionality to clear mappings and scouting data
 function csvToJson(csv) {
     let rawFields = csv.split("\n")[0]
 
@@ -776,8 +405,6 @@ function csvToJson(csv) {
 }
 
 // Download buttons
-document.querySelector("#top-data-download").onclick = () => download("scouting_data.json", JSON.stringify(scouting_data))
-document.querySelector("#top-pit-download").onclick = () => download("pit_data.json", JSON.stringify(pit_data))
 document.querySelector("#top-mapping-download").onclick = () => download("mapping.json", JSON.stringify(mapping))
 
 document.querySelector("#top-rounding").onclick = function() {
@@ -794,36 +421,8 @@ function setRoundingEl() {
     document.querySelector("#top-rounding").innerText = "Rounding: " + (roundingDigits === 0 ? "Integer" : (roundingDigits === 16 ? "Float" : roundingDigits + " digits"))
 }
 
-function getPitScoutingImages(team) {
-    let pitImages = []
-    if (mapping !== undefined && mapping["pit_scouting"] !== undefined && mapping["pit_scouting"]["image"] !== undefined && pit_data !== undefined) {
-        for (let x of pit_data) {
-            let teamNum = x[mapping["pit_scouting"]["team"]["key"]]
-            if (mapping["pit_scouting"]["format"] === "frc#") teamNum = teamNum.splice(0, 3)
-            if (mapping["pit_scouting"]["format"] === "name") {
-                for (let teamKey of Object.keys(team_data)) {
-                    if (team_data[teamKey].Name.trim().toLowerCase() === teamNum.trim().toLowerCase()) teamNum = teamKey
-                }
-            }
-            if (teamNum != team) continue
-
-            if (typeof mapping["pit_scouting"]["image"] === "object") {
-                for (let key of mapping["pit_scouting"]["image"]) {
-                    if (x[key] !== undefined && x[key] !== null && x[key] !== "")
-                        pitImages.push(x[key])
-                }
-            }
-            else if (x[mapping["pit_scouting"]["image"]])
-                if (x[mapping["pit_scouting"]["image"]] !== undefined && x[mapping["pit_scouting"]["image"]] !== null && x[mapping["pit_scouting"]["image"]] !== "")
-                    pitImages.push(x[mapping["pit_scouting"]["image"]])
-        }
-    }
-    return pitImages
-}
-
 document.querySelector("#top-clear-files").addEventListener("click", () => {
-    localforage.removeItem(SCOUTING_DATA)
-    localforage.removeItem(PIT)
+    localforage.removeItem(DATA)
     localforage.removeItem(MAPPING)
     window.location.reload()
 })
@@ -1518,7 +1117,8 @@ function openTeam(team, comparisons, hiddenCompares) {
     commentsEl.innerText = comments
     commentsHolder.appendChild(commentsEl)
 
-    if (mapping !== undefined && mapping["pit_scouting"] !== undefined && pit_data !== undefined) {
+    // Old pit scouting code
+    if (false) {
         let pitDataTitle = document.createElement("div")
         pitDataTitle.className = "pit-data-title"
         pitDataTitle.innerText = "Pit Data"
@@ -2407,32 +2007,6 @@ function set_ignore(team, to, regen=true) {
     if (regen) regenTable()
     saveTeams()
 }
-function autoIgnore() {
-    let thisYearConstants = {}
-    if (yearConstants[year] !== undefined) thisYearConstants = yearConstants[year]
-    let constants = Object.assign(thisYearConstants, yearConstants.default)
-    for (let konstant of Object.keys(mapping["constants"])) {
-        constants[konstant] = evaluate({}, constants, "" + mapping["constants"][konstant])
-    }
-
-    ignored = []
-    for (let team of Object.keys(team_data)) {
-        let vars = {}
-        if (mapping["data"] !== undefined && scouting_data !== undefined)
-            for (let col of Object.keys(mapping["data"])) vars[col] = team_data[team][col]
-        if (mapping["pit_scouting"] !== undefined && pit_data !== undefined)
-            for (let col of Object.keys(mapping["pit_scouting"]["data"])) vars[col] = team_data[team][col]
-        for (let condition of mapping["ignore"]) {
-            if (evaluate(vars, constants, condition)) {
-                ignored.push(team)
-                break
-            }
-        }
-    }
-    saveTeams()
-    regenTable()
-    setStarbook()
-}
 
 document.querySelector("#top-show-hide-ignored").addEventListener("click", () => {
     showIgnoredTeams = !showIgnoredTeams
@@ -2489,7 +2063,7 @@ async function loadOther(url, onload) {
 function checkLoading() {
     if (loading === 0) {
         document.querySelector("#loading").className = "hidden"
-        if ((scouting_data !== undefined || pit_data !== undefined) && mapping !== undefined) processData()
+        if (mapping !== undefined) processData()
     } else {
         document.querySelector("#loading").className = ""
         document.querySelector("#loading").innerHTML = "Loading..."
@@ -2783,7 +2357,7 @@ function exportSettings() {
         },
         columns: columns,
         mapping: mapping,
-        scouting_data: scouting_data,
+        data: uploadedData,
         year: year,
         apis: {
             tbaevent: usingTBA,
@@ -2792,7 +2366,6 @@ function exportSettings() {
             desmos: usingDesmos,
             statbotics: usingStatbotics
         },
-        pit: pit_data,
         tbakey: tbaKey,
         event: eventKey,
         theme: theme,
@@ -2821,10 +2394,7 @@ function importSettings(settings) {
     saveTeams()
     mapping = settings.mapping
     localforage.setItem(MAPPING, mapping)
-    scouting_data = settings.scouting_data
-    localforage.setItem(SCOUTING_DATA, scouting_data)
-    pit_data = settings.pit
-    localforage.setItem(PIT, pit_data)
+    localforage.setItem(DATA, settings.data)
     localforage.setItem(YEAR, settings.year)
     localforage.setItem(EVENT, settings.event)
     localforage.setItem(TBA_KEY, settings.tbakey)
@@ -3397,7 +2967,7 @@ function viewRobots() {
 
 //#region Init
 
-let initLoading = 13
+let initLoading = 12
 
 // Year
 localforage.getItem(THEME, (err, val) => {
@@ -3487,14 +3057,8 @@ localforage.getItem(TEAM_SAVES, (err, val) => {
 })
 
 // Loading saved mappings or data
-localforage.getItem(SCOUTING_DATA, (err, val) => {
-    scouting_data = val == null ? undefined : val
-    document.querySelector("#top-data-download").disabled = scouting_data === undefined
-    if (--initLoading === 0) finishInit()
-})
-localforage.getItem(PIT, (err, val) => {
-    pit_data = val == null ? undefined : val
-    document.querySelector("#top-pit-download").disabled = pit_data === undefined
+localforage.getItem(DATA, (err, val) => {
+    uploadedData = val == null ? undefined : val
     if (--initLoading === 0) finishInit()
 })
 localforage.getItem(MAPPING, (err, val) => {
@@ -3637,7 +3201,7 @@ function finishInit() {
     })
     welcomeChecklistItem("The Blue Alliance API Key", !usingTBA || tbaKey)
     welcomeChecklistItem("Select an Event", !usingTBA || eventKey)
-    welcomeChecklistItem("Upload your scouting data", scouting_data)
+    welcomeChecklistItem("Upload your scouting data", uploadedData === {})
     welcomeChecklistItem("Upload a mapping for your data", mapping)
     if (!doingInitialSetup)
         document.querySelector(".welcome").remove()

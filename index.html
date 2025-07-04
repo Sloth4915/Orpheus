@@ -16,8 +16,8 @@
     <link rel="stylesheet" href="styles/view_robots.css"/>
     <link rel="stylesheet" href="styles/overrides.css"/>
     <script src="deps/localForage/dist/localforage.js"></script>
+    <script src="deps/mathjs/math.js"></script>
     <script src="scripts/yearConstants.js"></script>
-    <script src="scripts/evaluate.js"></script>
     <script src="scripts/script.js" defer></script>
     <link rel="icon" type="image/x-icon" href="images/favicon.ico">
 </head>
@@ -26,12 +26,6 @@
         <div class="horizontal-scroll" id="top-controls">
             <button id="top-control-file" class="dropdown-button">File</button>
             <dialog class="top-control-dropdown" for="top-control-file">
-                <button id="top-data">Import Data</button>
-                <button id="top-data-download" disabled>Download saved data</button>
-                <div class="dropdown-pause"></div>
-                <button id="top-pit">Import Pit Scouting Data</button>
-                <button id="top-pit-download" disabled>Download pit scouting data</button>
-                <div class="dropdown-pause"></div>
                 <button id="top-mapping">Import mapping</button>
                 <button id="top-mapping-download" disabled>Download saved mapping</button>
                 <div class="dropdown-pause"></div>
