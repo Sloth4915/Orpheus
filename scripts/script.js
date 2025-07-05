@@ -350,6 +350,49 @@ function processData() {
     for (let schema of Object.keys(mapping)) {
         console.log(schema)
     }
+    regenTable()
+}
+function dataButtons() {
+    let data = document.querySelector("#top-data-buttons")
+
+    if (uploadedData == undefined) uploadedData = {}
+
+    function uploadData(schema) {
+        loadFile(".csv,.json", (result, filetype) => {
+            let data
+            filetype = filetype == "csv" || filetype == "json" ? filetype : prompt("What is the filetype? (csv/json)").toLowerCase().trim()
+            if (filetype === "csv") data = csvToJson(result) // Converts CSV to JSON
+            else if (filetype === "json") data = JSON.parse(result) // Parses json
+            else return
+            if (mapping !== undefined) processData()
+            uploadedData[schema] = data
+            localforage.setItem(DATA, uploadedData)
+            document.querySelector("#top-download-" + schema).disabled = false
+            delete maintainedTeamPageSettings["graph"]
+            saveGeneralSettings()
+            if (doingInitialSetup) window.location.reload()
+        })
+    }
+
+    for (let schema of Object.keys(mapping)) {
+        if (!uploadedData[schema]) uploadedData[schema] = {}
+
+        let uploadButton = document.createElement("button")
+        uploadButton.innerText = "Upload " + (mapping[schema]["alias"] ? mapping[schema]["alias"] : schema)
+        uploadButton.addEventListener("click", () => uploadData(schema))
+        data.appendChild(uploadButton)
+
+        let downloadButton = document.createElement("button")
+        downloadButton.innerText = "Download saved " + (mapping[schema]["alias"] ? mapping[schema]["alias"] : schema)
+        downloadButton.id = "top-download-" + schema
+        downloadButton.disabled = Object.keys(uploadedData[schema]) == 0
+        downloadButton.addEventListener("click", () => download((mapping[schema]["alias"] ? mapping[schema]["alias"] : schema) + ".json", JSON.stringify(uploadedData[schema])))
+        data.appendChild(downloadButton)
+
+        let dropdownPause = document.createElement("div")
+        dropdownPause.className = "#dropdown-pause"
+        data.appendChild(dropdownPause)
+    }
 }
 
 function csvToJson(csv) {
@@ -2974,7 +3017,7 @@ localforage.getItem(THEME, (err, val) => {
     if (val === null) theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"
     else theme = val
     changeThemeTo(theme)
-    if (--initLoading === 0) finishInit()
+    if (!--initLoading) finishInit()
 })
 
 localforage.getItem(YEAR, (err, val) => {
@@ -2984,7 +3027,7 @@ localforage.getItem(YEAR, (err, val) => {
         localforage.setItem(YEAR, new Date().getFullYear().toString())
     }
     document.querySelector("#top-year").innerText = year
-    if (--initLoading === 0) finishInit()
+    if (!--initLoading) finishInit()
 })
 
 // General Settings Setup
@@ -3033,7 +3076,7 @@ localforage.getItem(SETTINGS, (err, settings) => {
         else document.querySelector("#top-graph-display").innerText = "Graphs: Only Points"
     } else document.querySelector("#top-graph-display").innerText = "Graphs: Only lines of best fit"
 
-    if (--initLoading === 0) finishInit()
+    if (!--initLoading) finishInit()
 })
 
 // Stars and Ignore setup
@@ -3053,24 +3096,25 @@ localforage.getItem(TEAM_SAVES, (err, val) => {
     usingIgnore = teamSaves.usingIgnore
     saveTeams()
 
-    if (--initLoading === 0) finishInit()
+    if (!--initLoading) finishInit()
 })
 
 // Loading saved mappings or data
 localforage.getItem(DATA, (err, val) => {
     uploadedData = val == null ? undefined : val
-    if (--initLoading === 0) finishInit()
+    if (!--initLoading) finishInit()
 })
 localforage.getItem(MAPPING, (err, val) => {
     mapping = val == null ? undefined : val
     document.querySelector("#top-mapping-download").disabled = mapping === undefined
-    if (--initLoading === 0) finishInit()
+    dataButtons()
+    if (!--initLoading) finishInit()
 })
 
 // Loading saved columns
 localforage.getItem(COLUMNS, (err, val) => {
     if (val !== null) columns = val
-    if (--initLoading === 0) finishInit()
+    if (!--initLoading) finishInit()
 })
 
 setProjectorModeSheet()
@@ -3087,7 +3131,7 @@ localforage.getItem(SAVED_API_DATA, (err, val) => {
         api_data = {}
         saveAPIData()
     }
-    if (--initLoading === 0) finishInit()
+    if (!--initLoading) finishInit()
 })
 if (!usingOffline) {
     saveAPIData()
@@ -3144,7 +3188,7 @@ localforage.getItem(ENABLED_APIS, (err, apis) => {
     usingStatbotics = apis.statbotics
     document.querySelector("#top-toggle-use-statbotics").innerText = "Statbotics: " + (usingStatbotics ? "Enabled" : "Disabled")
 
-    if (--initLoading === 0) finishInit()
+    if (!--initLoading) finishInit()
 })
 
 // Notes
@@ -3159,17 +3203,17 @@ localforage.getItem(NOTES, (err, val) => {
         }
         saveNotes()
     } else notes = val
-    if (--initLoading === 0) finishInit()
+    if (!--initLoading) finishInit()
 })
 
 localforage.getItem(TBA_KEY, (err, val) => {
     if (val !== null) tbaKey = val
-    if (--initLoading === 0) finishInit()
+    if (!--initLoading) finishInit()
 })
 
 localforage.getItem(EVENT, (err, val) => {
     if (val != null) eventKey = val
-    if (--initLoading === 0) finishInit()
+    if (!--initLoading) finishInit()
 })
 
 // Version and Title
@@ -3192,7 +3236,6 @@ function finishInit() {
         text.innerText = name
         el.appendChild(text)
         document.querySelector(".welcome").appendChild(el)
-
         if (!checked) doingInitialSetup = true
     }
     document.querySelector("#setup-checklist-title").innerText = toolName + " Setup Checklist"
@@ -3201,8 +3244,12 @@ function finishInit() {
     })
     welcomeChecklistItem("The Blue Alliance API Key", !usingTBA || tbaKey)
     welcomeChecklistItem("Select an Event", !usingTBA || eventKey)
-    welcomeChecklistItem("Upload your scouting data", uploadedData === {})
     welcomeChecklistItem("Upload a mapping for your data", mapping)
+
+    let hasData = false
+    for (let val of Object.values(uploadedData))
+        if (val !== {}) hasData = true
+    welcomeChecklistItem("Upload your scouting data", hasData)
     if (!doingInitialSetup)
         document.querySelector(".welcome").remove()
 
