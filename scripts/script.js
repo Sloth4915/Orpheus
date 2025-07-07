@@ -27,6 +27,7 @@ let event_data
 let uploadedData = {}
 let team_data = {}
 let api_data = {}
+let tbaMatches = {}
 let mapping
 
 let theme
@@ -249,6 +250,13 @@ function loadEvent() {
             loading--
             checkLoading()
         })
+        if (usingTBAMatches) {
+            load("event/" + year + eventKey + "/matches", function (data) {
+                for (let m of data) {
+                    if (m["comp_level"] === "qm") tbaMatches[m["match_number"]] = m
+                }
+            })
+        }
     }
     else {
         loading--
@@ -273,7 +281,6 @@ document.querySelector("#top-mapping").onclick = function() {
         localforage.setItem(MAPPING, mapping)
         setColumnOptions()
         //columns = JSON.parse(JSON.stringify(availableColumns))
-        autoIgnore()
         processData()
         delete maintainedTeamPageSettings["graph"]
         saveColumns()
@@ -345,13 +352,77 @@ function setColumnOptions() {
     setHeader()
 }
 function processData() {
-    let data = {}
+    let dataOut = {}
 
+    // Get a list of teams
+    let teams = new Set()
     for (let schema of Object.keys(mapping)) {
-        console.log(schema)
+        for (let datum of uploadedData[schema]) {
+            let team = datum[mapping[schema]["team_key"]]
+            if (!isNaN(parseInt(team))) {
+                teams.add(parseInt(team))
+            }
+            else if (typeof team == "string") {
+                team = team.toLowerCase()
+
+                //frc4915, frc2910, etc
+                if (team.startsWith("frc") && !isNaN(parseInt(team.slice(3))))
+                    teams.add(parseInt(team.slice(3)))
+
+                // Red 1, Blue 2, etc.
+                else if ((team.replaceAll(/\s/g, "").startsWith("red") || team.replaceAll(/\s/g, "").startsWith("blue")) && mapping[schema]["input_format"] === "match")
+                    teams.add(parseInt(tbaMatches[datum[mapping[schema]["match_key"]]]["alliances"]["red"]["team_keys"][team.slice(team.indexOf(/\s/g)) - 1].slice(3)))
+
+                // Spartronics, Jack in the Bot, etc
+                else {
+                    for (let eventTeam of event_data)
+                        if (eventTeam["nickname"] === team)
+                            teams.add(eventTeam["team_number"])
+                }
+            }
+        }
     }
-    regenTable()
+
+    function handleData(schema, mapping) {
+        let out = {}
+        for (let x of Object.keys(mapping)) {
+            if (mapping[x]["type"]) { // If has type, then we can evaluate
+                out[x] = "evaluated"
+            } else {
+                out[x] = handleData(schema, mapping[x])
+            }
+        }
+        return out
+    }
+
+    // dataOut
+    for (let schema of Object.keys(mapping)) {
+        let inFormat = mapping[schema]["input_format"] ? mapping[schema]["input_format"] : "match"
+
+        let constants = {}
+        if (mapping[schema]["constants"])
+            for (let x of Object.keys(mapping[schema]["constants"])) {
+                constants[x] = math.evaluate("" + mapping[schema]["constants"][x])
+            }
+
+        dataOut[schema] = {
+            alias: mapping[schema]["alias"] ? mapping[schema]["alias"] : schema,
+            constants,
+            data: handleData(schema, mapping[schema]["data"])
+        }
+    }
+
+    teams = [...teams].sort((a,b) => a - b)
+    console.log(teams)
+    console.log(dataOut)
+    setHeader()
 }
+
+function evaluate(expression, schema) {
+    let processed = expression
+    return math.evaluate(processed)
+}
+
 function dataButtons() {
     let data = document.querySelector("#top-data-buttons")
 
