@@ -424,7 +424,7 @@ function processData() {
 
                         if (mapping[schema]["input_format"] === "match") {
                             for (let match of uploadedData[schema]) {
-                                let team = getTeam(match[mapping[schema]["team_key"]])
+                                let team = getTeam(schema, match[mapping[schema]["team_key"]])
                                 let matchNum = match[mapping[schema]["match_key"]]
 
                                 let otherBots = {
@@ -438,8 +438,8 @@ function processData() {
                                 let alliance = tbaMatches[matchNum]["alliances"]["red"]["team_keys"].includes("frc"+team) ? "red" : "blue"
                                 let position = tbaMatches[matchNum]["alliances"][alliance]["team_keys"].indexOf("frc"+team) + 1
 
-                                otherBots["other 1"] = tbaMatches[matchNum]["alliances"][alliance]["team_keys"][((position + 1) % 3) + 1]
-                                otherBots["other 2"] = tbaMatches[matchNum]["alliances"][alliance]["team_keys"][((position) % 3) + 1]
+                                otherBots["other 1"] = parseInt(tbaMatches[matchNum]["alliances"][alliance]["team_keys"][((position + 1) % 3)].slice(3))
+                                otherBots["other 2"] = parseInt(tbaMatches[matchNum]["alliances"][alliance]["team_keys"][((position) % 3)].slice(3))
 
                                 data[team][matchNum] = evaluate(
                                     datumMapping[x]["formula"],
@@ -450,7 +450,8 @@ function processData() {
                                         "data": match,
                                         "tba": tbaMatches[matchNum],
                                         "alliance": alliance,
-                                        "position": position
+                                        "position": position,
+                                        "functions": mapping[schema]["functions"]
                                     }, context, otherBots)
                                 )
                                 // todo Summarize
@@ -482,7 +483,7 @@ function processData() {
         dataOut[schema] = {
             alias: mapping[schema]["alias"] ? mapping[schema]["alias"] : schema,
             constants,
-            data: handleData(schema, mapping[schema]["data"])
+            data: handleData(schema, mapping[schema]["data"], {"constants": constants})
         }
     }
 
@@ -493,11 +494,54 @@ function processData() {
 }
 
 function evaluate(expression, schema, context) {
-    let processed = expression
 
-    let result = math.evaluate(processed)
+    function replaceConstants(exp, params = {}) {
+        console.log(exp)
+        exp = exp.replaceAll("#team#", context.team)
+                 .replaceAll("#alliance#", context.alliance)
+                 .replaceAll("#match#", context.match)
+                 .replaceAll("#position#", context.position)
 
-    console.log(result)
+        while (exp.includes("[")) {
+            let tag = exp.substring(exp.indexOf("["),exp.indexOf("]") + 1)
+            let search = exp.substring(exp.indexOf("[") + 1,exp.indexOf("]")).split(".")
+            let val = 0
+
+            if (search.length === 1) {
+                if (params[search[0]]) val = params[search[0]]
+                else if (context.constants[search[0]]) val = context.constants[search[0]]
+                else val = context.data[search[0]]
+            } else if (search[0].toLowerCase() === "tba") {
+                val = context.tba["score_breakdown"]
+                let specifier = search.slice(1)
+                if (!(specifier[0] === 'red' || specifier[0] === 'blue')) specifier.unshift(context.alliance)
+                for (let i of specifier)
+                    val = val[i]
+            }
+
+            if (val === undefined || val === "") val = 0
+            if (typeof val === "string") val = `"${val}"`
+            exp = exp.replace(tag, val)
+        }
+
+        console.log(exp)
+        return exp
+    }
+
+    let functions = {}
+    if (context["functions"])
+        for (let f of Object.keys(context["functions"]))
+            functions[f] = function(...params) {
+                let parameters = {}
+                for (let x in (context["functions"][f]["params"])) {
+                    parameters[(context["functions"][f]["params"])[x]] = params[x]
+                }
+                return math.evaluate(replaceConstants(context["functions"][f]["returns"], parameters))
+            }
+
+    let result = math.evaluate(replaceConstants(expression), functions)
+
+    console.log(expression, result)
     return result
 }
 
