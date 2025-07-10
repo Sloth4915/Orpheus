@@ -289,6 +289,13 @@ document.querySelector("#top-mapping").onclick = function() {
         setHeader()
     })
 }
+
+math.import({
+    equal: function(a,b) {
+        return a == b
+    }
+}, {override: true})
+
 // Adds all the columns from the mapping to the columns list
 function setColumnOptions() {
     availableColumns = []
@@ -351,32 +358,39 @@ function setColumnOptions() {
 
     setHeader()
 }
+function findMatchData(schema, team, match) {
+    for (let x of uploadedData[schema])
+        if (match == x[mapping[schema]["match_key"]] && team == getTeam(schema, x[mapping[schema]["team_key"]])) return x
+    return {}
+}
+function getTeam(schema, team) {
+    if (!isNaN(parseInt(team))) {
+        return (parseInt(team))
+    }
+    else if (typeof team == "string") {
+        team = team.toLowerCase()
+
+        //frc4915, frc2910, etc
+        if (team.startsWith("frc") && !isNaN(parseInt(team.slice(3))))
+            return (parseInt(team.slice(3)))
+
+        // Red 1, Blue 2, etc.
+        else if ((team.replaceAll(/\s/g, "").startsWith("red") || team.replaceAll(/\s/g, "").startsWith("blue")) && mapping[schema]["input_format"] === "match")
+            return (parseInt(tbaMatches[datum[mapping[schema]["match_key"]]]["alliances"]["red"]["team_keys"][team.slice(team.indexOf(/\s/g)) - 1].slice(3)))
+
+        // Spartronics, Jack in the Bot, etc
+        else {
+            for (let eventTeam of event_data)
+                if (eventTeam["nickname"] === team)
+                    return (eventTeam["team_number"])
+        }
+    }
+    console.error("Couldn't find team " + team + " in schema " + schema)
+    return -1
+}
 function processData() {
     let dataOut = {}
 
-    function getTeam(schema, team) {
-        if (!isNaN(parseInt(team))) {
-            return (parseInt(team))
-        }
-        else if (typeof team == "string") {
-            team = team.toLowerCase()
-
-            //frc4915, frc2910, etc
-            if (team.startsWith("frc") && !isNaN(parseInt(team.slice(3))))
-                return (parseInt(team.slice(3)))
-
-            // Red 1, Blue 2, etc.
-            else if ((team.replaceAll(/\s/g, "").startsWith("red") || team.replaceAll(/\s/g, "").startsWith("blue")) && mapping[schema]["input_format"] === "match")
-                return (parseInt(tbaMatches[datum[mapping[schema]["match_key"]]]["alliances"]["red"]["team_keys"][team.slice(team.indexOf(/\s/g)) - 1].slice(3)))
-
-            // Spartronics, Jack in the Bot, etc
-            else {
-                for (let eventTeam of event_data)
-                    if (eventTeam["nickname"] === team)
-                        return (eventTeam["team_number"])
-            }
-        }
-    }
 
     // Get a list of teams
     let teams = new Set()
@@ -388,81 +402,79 @@ function processData() {
 
     function handleData(schema, datumMapping, context) {
         let out = {}
+        console.log(schema, datumMapping, context)
         for (let x of Object.keys(datumMapping)) {
             if (datumMapping[x]["type"]) { // If has type, then we can evaluate
-                switch (datumMapping[x]["type"]) {
-                    case "ratio":
-                        break
-                    case "text":
-                        break
-                    case "comment":
-                        let comments = {}
-                        for (let team of teams) comments[team] = {}
+                if (datumMapping[x]["type"] === "comment") {
+                    let comments = {}
+                    for (let team of teams) comments[team] = {}
 
-                        if (mapping[schema]["input_format"] === "match") {
-                            for (let match of uploadedData[schema]) {
-                                let team = getTeam(match[mapping[schema]["team_key"]])
-                                let matchNum = match[mapping[schema]["match_key"]]
-                                comments[team][matchNum] = {
-                                    "comment": match[datumMapping[x]["key"]]
-                                }
-                                if (datumMapping[x]["scouter_key"])
-                                    comments[team][matchNum]["scouter"] = match[datumMapping[x]["scouter_key"]]
+                    if (mapping[schema]["input_format"] === "match") {
+                        for (let match of uploadedData[schema]) {
+                            let team = getTeam(schema, match[mapping[schema]["team_key"]])
+                            let matchNum = match[mapping[schema]["match_key"]]
+                            comments[team][matchNum] = {
+                                "comment": match[datumMapping[x]["key"]]
+                            }
+                            if (datumMapping[x]["scouter_key"])
+                                comments[team][matchNum]["scouter"] = match[datumMapping[x]["scouter_key"]]
+                        }
+                    }
+                    // todo team comment processing
+
+                    out[x] = comments
+                } else if (datumMapping[x]["type"] === "ratio" || datumMapping[x]["type"] === "number" || datumMapping[x]["type"] === "accuracy") {
+                    let data = {}
+                    for (let team of teams) data[team] = {}
+
+                    if (mapping[schema]["input_format"] === "match") {
+                        for (let match of uploadedData[schema]) {
+                            let team = getTeam(schema, match[mapping[schema]["team_key"]])
+                            let matchNum = match[mapping[schema]["match_key"]]
+
+                            let otherBots = {
+                                "red 1": parseInt(tbaMatches[matchNum]["alliances"]["red"]["team_keys"][0].slice(3)),
+                                "red 2": parseInt(tbaMatches[matchNum]["alliances"]["red"]["team_keys"][1].slice(3)),
+                                "red 3": parseInt(tbaMatches[matchNum]["alliances"]["red"]["team_keys"][2].slice(3)),
+                                "blue 1": parseInt(tbaMatches[matchNum]["alliances"]["blue"]["team_keys"][0].slice(3)),
+                                "blue 2": parseInt(tbaMatches[matchNum]["alliances"]["blue"]["team_keys"][1].slice(3)),
+                                "blue 3": parseInt(tbaMatches[matchNum]["alliances"]["blue"]["team_keys"][2].slice(3))
+                            }
+                            let alliance = tbaMatches[matchNum]["alliances"]["red"]["team_keys"].includes("frc"+team) ? "red" : "blue"
+                            let position = tbaMatches[matchNum]["alliances"][alliance]["team_keys"].indexOf("frc"+team) + 1
+
+                            otherBots["other 1"] = parseInt(tbaMatches[matchNum]["alliances"][alliance]["team_keys"][((position + 1) % 3)].slice(3))
+                            otherBots["other 2"] = parseInt(tbaMatches[matchNum]["alliances"][alliance]["team_keys"][((position) % 3)].slice(3))
+
+                            let evalContext = Object.assign({
+                                "match": matchNum,
+                                "team": team,
+                                "data": match,
+                                "tba": tbaMatches[matchNum],
+                                "alliance": alliance,
+                                "position": position,
+                                "functions": mapping[schema]["functions"]
+                            }, context, otherBots)
+
+                            if (datumMapping[x]["type"] === "number") data[team][matchNum] = evaluate(datumMapping[x]["formula"], schema, evalContext)
+                            if (datumMapping[x]["type"] === "ratio") data[team][matchNum] = {
+                                "numerator": evaluate(datumMapping[x]["numerator"], schema, evalContext),
+                                "denominator": evaluate(datumMapping[x]["denominator"], schema, evalContext)
+                            }
+                            if (datumMapping[x]["type"] === "accuracy") data[team][matchNum] = {
+                                "data": evaluate(datumMapping[x]["formula"], schema, evalContext),
+                                "expected": evaluate(datumMapping[x]["expected"], schema, evalContext)
                             }
                         }
-                        // todo team comment processing
+                    }
 
-                        out[x] = comments
-                        break
-                    case "media":
-                        break
-                    case "accuracy":
-                        break
-                    case "number":
-                        let data = {}
-                        for (let team of teams) data[team] = {}
+                    out[x] = data
+                } else if (datumMapping[x]["type"] === "text") {
 
-                        if (mapping[schema]["input_format"] === "match") {
-                            for (let match of uploadedData[schema]) {
-                                let team = getTeam(schema, match[mapping[schema]["team_key"]])
-                                let matchNum = match[mapping[schema]["match_key"]]
+                } else if (datumMapping[x]["type"] === "media") {
 
-                                let otherBots = {
-                                    "red 1": parseInt(tbaMatches[matchNum]["alliances"]["red"]["team_keys"][0].slice(3)),
-                                    "red 2": parseInt(tbaMatches[matchNum]["alliances"]["red"]["team_keys"][1].slice(3)),
-                                    "red 3": parseInt(tbaMatches[matchNum]["alliances"]["red"]["team_keys"][2].slice(3)),
-                                    "blue 1": parseInt(tbaMatches[matchNum]["alliances"]["blue"]["team_keys"][0].slice(3)),
-                                    "blue 2": parseInt(tbaMatches[matchNum]["alliances"]["blue"]["team_keys"][1].slice(3)),
-                                    "blue 3": parseInt(tbaMatches[matchNum]["alliances"]["blue"]["team_keys"][2].slice(3))
-                                }
-                                let alliance = tbaMatches[matchNum]["alliances"]["red"]["team_keys"].includes("frc"+team) ? "red" : "blue"
-                                let position = tbaMatches[matchNum]["alliances"][alliance]["team_keys"].indexOf("frc"+team) + 1
-
-                                otherBots["other 1"] = parseInt(tbaMatches[matchNum]["alliances"][alliance]["team_keys"][((position + 1) % 3)].slice(3))
-                                otherBots["other 2"] = parseInt(tbaMatches[matchNum]["alliances"][alliance]["team_keys"][((position) % 3)].slice(3))
-
-                                data[team][matchNum] = evaluate(
-                                    datumMapping[x]["formula"],
-                                    schema,
-                                    Object.assign({
-                                        "match": matchNum,
-                                        "team": team,
-                                        "data": match,
-                                        "tba": tbaMatches[matchNum],
-                                        "alliance": alliance,
-                                        "position": position,
-                                        "functions": mapping[schema]["functions"]
-                                    }, context, otherBots)
-                                )
-                                // todo Summarize
-                            }
-                        }
-
-                        out[x] = data
-                        break
-                    default:
-                        console.error("Unexpected datum type " + datumMapping[x]["type"] + " for " + x)
                 }
+                else console.error("Unexpected datum type " + datumMapping[x]["type"] + " for " + x)
             } else {
                 out[x] = handleData(schema, datumMapping[x], context)
             }
@@ -496,7 +508,6 @@ function processData() {
 function evaluate(expression, schema, context) {
 
     function replaceConstants(exp, params = {}) {
-        console.log(exp)
         exp = exp.replaceAll("#team#", context.team)
                  .replaceAll("#alliance#", context.alliance)
                  .replaceAll("#match#", context.match)
@@ -517,6 +528,14 @@ function evaluate(expression, schema, context) {
                 if (!(specifier[0] === 'red' || specifier[0] === 'blue')) specifier.unshift(context.alliance)
                 for (let i of specifier)
                     val = val[i]
+            } else {
+                if (["red 1", "red 2", "red 3", "blue 1", "blue 2", "blue 3", "other 1", "other 2"].includes(search[0].toLowerCase()))
+                    val = findMatchData(schema, context[search[0].toLowerCase()], context.match)
+                else val = context.data
+
+                let specifier = search.slice(1)
+                for (let i of specifier)
+                    val = val[i]
             }
 
             if (val === undefined || val === "") val = 0
@@ -524,7 +543,7 @@ function evaluate(expression, schema, context) {
             exp = exp.replace(tag, val)
         }
 
-        console.log(exp)
+        console.log(exp, context)
         return exp
     }
 
@@ -557,13 +576,14 @@ function dataButtons() {
             if (filetype === "csv") data = csvToJson(result) // Converts CSV to JSON
             else if (filetype === "json") data = JSON.parse(result) // Parses json
             else return
-            if (mapping !== undefined) processData()
+            console.log(data)
             uploadedData[schema] = data
             localforage.setItem(DATA, uploadedData)
             document.querySelector("#top-download-" + schema).disabled = false
             delete maintainedTeamPageSettings["graph"]
             saveGeneralSettings()
             if (doingInitialSetup) window.location.reload()
+            if (mapping !== undefined) processData()
         })
     }
 
