@@ -466,13 +466,29 @@ function processData() {
                                 "expected": evaluate(datumMapping[x]["expected"], schema, evalContext)
                             }
                         }
-                    }
+                    } // todo process for team
 
                     out[x] = data
                 } else if (datumMapping[x]["type"] === "text") {
 
                 } else if (datumMapping[x]["type"] === "media") {
-
+                    let media = {}
+                    for (let team of teams) media[team] = []
+                    for (let i of uploadedData[schema]) {
+                        let team = getTeam(schema, i[mapping[schema]["team_key"]])
+                        console.log(typeof datumMapping[x]["key"], datumMapping[x]["key"])
+                        if (typeof datumMapping[x]["key"] === "string") {
+                            if (i[datumMapping[x]["key"]].trim() !== "")
+                                media[team].push(i[datumMapping[x]["key"]])
+                        }
+                        else {
+                            for (let key of datumMapping[x]["key"])
+                                if (i[key].trim() !== "")
+                                    media[team].push(i[key])
+                        }
+                        console.log(team, media[team])
+                    }
+                    out[x] = media
                 }
                 else console.error("Unexpected datum type " + datumMapping[x]["type"] + " for " + x)
             } else {
