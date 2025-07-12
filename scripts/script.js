@@ -405,6 +405,7 @@ function processData() {
         console.log(schema, datumMapping, context)
         for (let x of Object.keys(datumMapping)) {
             if (datumMapping[x]["type"]) { // If has type, then we can evaluate
+
                 if (datumMapping[x]["type"] === "comment") {
                     let comments = {}
                     for (let team of teams) comments[team] = {}
@@ -423,7 +424,8 @@ function processData() {
                     // todo team comment processing
 
                     out[x] = comments
-                } else if (datumMapping[x]["type"] === "ratio" || datumMapping[x]["type"] === "number" || datumMapping[x]["type"] === "accuracy") {
+                }
+                else if (datumMapping[x]["type"] === "ratio" || datumMapping[x]["type"] === "number" || datumMapping[x]["type"] === "accuracy" || datumMapping[x]["type"] === "text") {
                     let data = {}
                     for (let team of teams) data[team] = {}
 
@@ -456,27 +458,55 @@ function processData() {
                                 "functions": mapping[schema]["functions"]
                             }, context, otherBots)
 
-                            if (datumMapping[x]["type"] === "number") data[team][matchNum] = evaluate(datumMapping[x]["formula"], schema, evalContext)
-                            if (datumMapping[x]["type"] === "ratio") data[team][matchNum] = {
-                                "numerator": evaluate(datumMapping[x]["numerator"], schema, evalContext),
-                                "denominator": evaluate(datumMapping[x]["denominator"], schema, evalContext)
+                            if (datumMapping[x]["type"] === "number" || datumMapping[x]["type"] === "text") data[team][matchNum] = evaluate(datumMapping[x]["formula"], schema, evalContext)
+                            if (datumMapping[x]["type"] === "ratio") {
+                                let num = evaluate(datumMapping[x]["numerator"], schema, evalContext)
+                                let den = evaluate(datumMapping[x]["denominator"], schema, evalContext)
+                                data[team][matchNum] = {
+                                    "numerator": num,
+                                    "denominator": den,
+                                    "ratio": num/den
+                                }
                             }
-                            if (datumMapping[x]["type"] === "accuracy") data[team][matchNum] = {
-                                "data": evaluate(datumMapping[x]["formula"], schema, evalContext),
-                                "expected": evaluate(datumMapping[x]["expected"], schema, evalContext)
+                            if (datumMapping[x]["type"] === "accuracy") {
+                                let fromData = evaluate(datumMapping[x]["formula"], schema, evalContext)
+                                let expected = evaluate(datumMapping[x]["expected"], schema, evalContext)
+
+                                data[team][matchNum] = {
+                                    "data": fromData,
+                                    "expected": expected,
+                                    "difference": fromData - expected,
+                                }
+                            }
+                        }
+
+                        // Summarize
+                        // average/mean/geomean/median/mode/sum/min/max/ratio
+                        if (datumMapping[x]["table"]) {
+                            let summarize = datumMapping[x]["summarize"] ? datumMapping[x]["summarize"] : (datumMapping[x]["type"] == "ratio" ? "ratio" : "mean")
+                            summarize = summarize.toLowerCase()
+                            for (let team of teams) {
+                                if (summarize === "average" || summarize === "mean") {
+                                    let val = 0
+                                    for (let match of Object.keys(data[team])) {
+                                        if (datumMapping[x]["type"] === "number") val += data[team][match]
+                                        if (datumMapping[x]["type"] === "ratio") val += data[team][match]["ratio"]
+                                        if (datumMapping[x]["type"] === "accuracy") val += Math.abs(data[team][match]["difference"])
+                                    }
+                                    val /= Object.keys(data[team]).length
+                                    data[team]["summarized"] = val
+                                }
                             }
                         }
                     } // todo process for team
 
                     out[x] = data
-                } else if (datumMapping[x]["type"] === "text") {
-
-                } else if (datumMapping[x]["type"] === "media") {
+                }
+                else if (datumMapping[x]["type"] === "media") {
                     let media = {}
                     for (let team of teams) media[team] = []
                     for (let i of uploadedData[schema]) {
                         let team = getTeam(schema, i[mapping[schema]["team_key"]])
-                        console.log(typeof datumMapping[x]["key"], datumMapping[x]["key"])
                         if (typeof datumMapping[x]["key"] === "string") {
                             if (i[datumMapping[x]["key"]].trim() !== "")
                                 media[team].push(i[datumMapping[x]["key"]])
@@ -486,7 +516,6 @@ function processData() {
                                 if (i[key].trim() !== "")
                                     media[team].push(i[key])
                         }
-                        console.log(team, media[team])
                     }
                     out[x] = media
                 }
@@ -559,7 +588,6 @@ function evaluate(expression, schema, context) {
             exp = exp.replace(tag, val)
         }
 
-        console.log(exp, context)
         return exp
     }
 
@@ -576,7 +604,6 @@ function evaluate(expression, schema, context) {
 
     let result = math.evaluate(replaceConstants(expression), functions)
 
-    console.log(expression, result)
     return result
 }
 
