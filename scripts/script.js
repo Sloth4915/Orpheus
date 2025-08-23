@@ -391,7 +391,6 @@ function getTeam(schema, team) {
 function processData() {
     let dataOut = {}
 
-
     // Get a list of teams
     let teams = new Set()
     for (let schema of Object.keys(mapping)) {
@@ -482,9 +481,10 @@ function processData() {
 
                         // Summarize
                         // average/mean/geomean/median/mode/sum/min/max/ratio
-                        if (datumMapping[x]["table"]) {
-                            let summarize = datumMapping[x]["summarize"] ? datumMapping[x]["summarize"] : (datumMapping[x]["type"] == "ratio" ? "ratio" : "mean")
-                            summarize = summarize.toLowerCase()
+                        if (datumMapping[x]["table"]) { // Only summarize if table is enabled
+                            let summarize = datumMapping[x]["summarize"] ? datumMapping[x]["summarize"].toLowerCase() : (datumMapping[x]["type"] == "ratio" ? "ratio" : "mean")
+                            // If no summarization is included, set it to mean by default, unless it is a ratio type, in which case leave it as ratio.
+
                             for (let team of teams) {
                                 if (summarize === "average" || summarize === "mean") {
                                     let val = 0
@@ -495,10 +495,48 @@ function processData() {
                                     }
                                     val /= Object.keys(data[team]).length
                                     data[team]["summarized"] = val
+                                } else if (summarize === "min") {
+                                    data[team]["summarized"] = Math.min(...Object.values(data[team]))
+                                } else if (summarize === "max") {
+                                    data[team]["summarized"] = Math.max(...Object.values(data[team]))
+                                }
+                                // Todo geomean, median, mode, sum, ratio
+                            }
+                        }
+                    } else { // Input type is team
+                        for (let teamData of uploadedData[schema]) {
+                            let team = getTeam(schema, teamData[mapping[schema]["team_key"]])
+
+                            let evalContext = Object.assign({
+                                "team": team,
+                                "data": teamData,
+                                "functions": mapping[schema]["functions"]
+                            }, context)
+
+                            if (datumMapping[x]["type"] === "number" || datumMapping[x]["type"] === "text") data[team] = evaluate(datumMapping[x]["formula"], schema, evalContext)
+                            if (datumMapping[x]["type"] === "ratio") {
+                                let num = evaluate(datumMapping[x]["numerator"], schema, evalContext)
+                                let den = evaluate(datumMapping[x]["denominator"], schema, evalContext)
+                                data[team] = {
+                                    "numerator": num,
+                                    "denominator": den,
+                                    "ratio": num/den
+                                }
+                            }
+                            if (datumMapping[x]["type"] === "accuracy") {
+                                let fromData = evaluate(datumMapping[x]["formula"], schema, evalContext)
+                                let expected = evaluate(datumMapping[x]["expected"], schema, evalContext)
+
+                                data[team] = {
+                                    "data": fromData,
+                                    "expected": expected,
+                                    "difference": fromData - expected,
                                 }
                             }
                         }
-                    } // todo process for team
+
+                        // TODO: this can all be simplified because input type team and input type match use largely the same logic, just with a different evalContext and a different output
+                    }
 
                     out[x] = data
                 }
@@ -553,10 +591,10 @@ function processData() {
 function evaluate(expression, schema, context) {
 
     function replaceConstants(exp, params = {}) {
-        exp = exp.replaceAll("#team#", context.team)
-                 .replaceAll("#alliance#", context.alliance)
-                 .replaceAll("#match#", context.match)
-                 .replaceAll("#position#", context.position)
+        exp = (""+exp).replaceAll("#team#", context.team)
+                      .replaceAll("#alliance#", context.alliance)
+                      .replaceAll("#match#", context.match)
+                      .replaceAll("#position#", context.position)
 
         while (exp.includes("[")) {
             let tag = exp.substring(exp.indexOf("["),exp.indexOf("]") + 1)
