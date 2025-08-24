@@ -4,6 +4,10 @@ class Widget {
         this.w = 0
         this.h = 0
         this.el = document.createElement("div")
+        this.el.className = "widget"
+
+        this.minWidth = 100
+        this.minHeight = 100
     }
     set scope(to) {
         this._scope = to
@@ -14,7 +18,7 @@ class Widget {
     }
 
     set width(to) {
-        this.w = to
+        this.w = Math.max(to, this.minWidth)
         this.refresh()
     }
     get width() {
@@ -22,16 +26,21 @@ class Widget {
     }
 
     set height(to) {
-        this.h = to
+        this.h = Math.max(to, this.minHeight)
         this.refresh()
     }
     get height() {
         return this.h
     }
 
+    canResizeBy(axis, amount) {
+        if (axis === "x") return this.width + amount > this.minWidth
+        if (axis === "y") return this.height + amount > this.minHeight
+    }
+
     setSize(width, height) {
-        this.w = width
-        this.h = height
+        this.w = Math.max(width, this.minWidth)
+        this.h = Math.max(height, this.minHeight)
         this.refresh()
     }
 
@@ -71,25 +80,34 @@ class WidgetGroup extends Widget {
                 x.size *= (1-size)
         } else if (size === "unset") size = 1 - totalSize
 
-        if (this.children.length) { // If already at least 1 child
+        if (this.children.length) { // If already at least 1 child, add a resizer
             let resizer = document.createElement("div")
             resizer.className = "resizer"
 
             let index = this.children.length - 1
 
-            let startPos
+            let moving = false
             resizer.addEventListener("mousedown", (e) => {
-                startPos = this.axis === "x" ? e.pageX : e.pageY
+                moving = true
+                e.preventDefault()
             })
             document.body.addEventListener("mousemove", (e) => {
-                if (startPos) {
-                    this.children[index].size += this.axis === "x" ? (e.movementX / this.width) : (e.movementY / this.height)
-                    this.children[index + 1].size -= this.axis === "x" ? (e.movementX / this.width) : (e.movementY / this.height)
+                let widget1 = this.children[index]
+                let widget2 = this.children[index + 1]
+                if (moving) {
+                    if (widget1.size * (this.axis === "x" ? this.width : this.height) + (this.axis === "x" ? e.movementX : e.movementY) > (this.axis === "x" ? widget1.widget.minWidth : widget1.widget.minHeight) &&
+                        widget2.size * (this.axis === "x" ? this.width : this.height) - (this.axis === "x" ? e.movementX : e.movementY) > (this.axis === "x" ? widget2.widget.minWidth : widget2.widget.minHeight))
+                    {
+                        widget1.size += this.axis === "x" ? (e.movementX / this.width) : (e.movementY / this.height)
+                        widget2.size -= this.axis === "x" ? (e.movementX / this.width) : (e.movementY / this.height)
+                    }
                     this.refresh()
                 }
             })
             document.body.addEventListener("mouseup", (e) => {
-                if (startPos) startPos = undefined
+                if (moving) {
+                    moving = false
+                }
             })
 
             this.el.appendChild(resizer)
@@ -123,9 +141,10 @@ class Red extends Widget {
     constructor() {
         super()
         this.el.style.backgroundColor = "darkred"
+        this.minWidth = 300
     }
 }
-class Blue extends Widget {
+class Green extends Widget {
     constructor() {
         super()
         this.el.style.backgroundColor = "green"
@@ -141,8 +160,12 @@ class Purple extends Widget {
 let main = new WidgetGroup()
 document.querySelector(".content").appendChild(main.el)
 
+window.addEventListener("resize", () => {
+    main.width = window.innerWidth
+    main.height = window.innerHeight - 100
+})
 main.width = window.innerWidth
-main.height = window.innerHeight
+main.height = window.innerHeight - 100
 
 main.addChild(new Red(), 0.5)
 
@@ -150,5 +173,5 @@ let sub = new WidgetGroup()
 sub.axis = "y"
 main.addChild(sub)
 
-sub.addChild(new Blue(), 0.5)
+sub.addChild(new Green(), 0.5)
 sub.addChild(new Purple())

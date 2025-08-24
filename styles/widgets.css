@@ -23,3 +23,7 @@
     background-color: black;
     cursor: row-resize;
 }
+
+.widget {
+    overflow: hidden;
+}
