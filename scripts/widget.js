@@ -47,14 +47,17 @@ class WidgetGroup extends Widget {
     constructor() {
         super()
         this.children = []
+        this.resizers = []
         this.el.className = "widget-holder"
         this.axis = "x"
     }
     refresh() {
         super.refresh()
+
+        let resizerSize = this.resizers.length * 6
         for (let child of this.children) {
-            if (this.axis === "x") child.widget.setSize(child.size * this.width, this.height)
-            if (this.axis === "y") child.widget.setSize(this.width, child.size * this.height)
+            if (this.axis === "x") child.widget.setSize(child.size * (this.width - resizerSize), this.height)
+            if (this.axis === "y") child.widget.setSize(this.width, child.size * (this.height - resizerSize))
         }
     }
     addChild(child, size = "unset") {
@@ -68,7 +71,30 @@ class WidgetGroup extends Widget {
                 x.size *= (1-size)
         } else if (size === "unset") size = 1 - totalSize
 
-        console.log(size)
+        if (this.children.length) { // If already at least 1 child
+            let resizer = document.createElement("div")
+            resizer.className = "resizer"
+
+            let index = this.children.length - 1
+
+            let startPos
+            resizer.addEventListener("mousedown", (e) => {
+                startPos = this.axis === "x" ? e.pageX : e.pageY
+            })
+            document.body.addEventListener("mousemove", (e) => {
+                if (startPos) {
+                    this.children[index].size += this.axis === "x" ? (e.movementX / this.width) : (e.movementY / this.height)
+                    this.children[index + 1].size -= this.axis === "x" ? (e.movementX / this.width) : (e.movementY / this.height)
+                    this.refresh()
+                }
+            })
+            document.body.addEventListener("mouseup", (e) => {
+                if (startPos) startPos = undefined
+            })
+
+            this.el.appendChild(resizer)
+            this.resizers.push(resizer)
+        }
 
         this.children.push({
             "widget": child,
@@ -96,13 +122,13 @@ class WidgetGroup extends Widget {
 class Red extends Widget {
     constructor() {
         super()
-        this.el.style.backgroundColor = "red"
+        this.el.style.backgroundColor = "darkred"
     }
 }
 class Blue extends Widget {
     constructor() {
         super()
-        this.el.style.backgroundColor = "blue"
+        this.el.style.backgroundColor = "green"
     }
 }
 class Purple extends Widget {

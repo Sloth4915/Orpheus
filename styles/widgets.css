@@ -9,3 +9,17 @@
 .widget-holder.y {
     flex-direction: column;
 }
+
+.x .resizer {
+    width: 6px;
+    height: 100%;
+    background-color: black;
+    cursor: col-resize;
+}
+
+.y .resizer {
+    height: 6px;
+    width: 100%;
+    background-color: black;
+    cursor: row-resize;
+}
