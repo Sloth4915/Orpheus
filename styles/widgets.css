@@ -1,0 +1,11 @@
+.content {
+    display: flex;
+}
+
+.widget-holder {
+    display: flex;
+}
+
+.widget-holder.y {
+    flex-direction: column;
+}

@@ -14,11 +14,12 @@
     <link rel="stylesheet" href="styles/credits.css"/>
     <link rel="stylesheet" href="styles/notes.css"/>
     <link rel="stylesheet" href="styles/view_robots.css"/>
+    <link rel="stylesheet" href="styles/widgets.css"/>
     <link rel="stylesheet" href="styles/overrides.css"/>
     <script src="deps/localForage/dist/localforage.js"></script>
     <script src="deps/mathjs/math.js"></script>
-    <script src="scripts/yearConstants.js"></script>
-    <script src="scripts/script.js" defer></script>
+    <script src="scripts/widget.js" defer></script>
+    <!--<script src="scripts/script.js" defer></script>-->
     <link rel="icon" type="image/x-icon" href="images/favicon.ico">
 </head>
 <body>
@@ -95,34 +96,15 @@
 
             <button id="top-credits">Credits</button>
         </div>
-        <div class="search-controls">
-            <input id="search-4915" autocomplete="off" class="nomargin" placeholder="Search for team">
-            <div id="search-4915-result"></div>
-            <button id="search-open" hidden>Open team page (Enter)</button>
-            <button id="search-star" hidden></button>
-            <button id="search-ignore" hidden></button>
-        </div>
 
         <h1 class="tool-name"></h1>
 
         <div id="loading"></div>
-
-        <div class="centered">
-            <div class="welcome" hidden>
-                <h1 id="setup-checklist-title">Setup Checklist</h1>
-                <a href="" id="welcome-help">Tutorial (Coming eventually)</a> <!-- TODO: make this link go to a useful help page instead of nowhere -->
-                <button id="welcome-hide">Hide</button>
-            </div>
-        </div>
-
-        <div class="row table-head main-table b">
-            <div class="icon" title="Icon Placeholder"></div>
-        </div>
     </div>
 
-    <div class="table main-table"></div>
+    <div class="content">
 
-    <div class="team-page hidden"></div>
+    </div>
 
     <div class="credits hidden">
         <div class="credits-section">
@@ -134,7 +116,7 @@
                     <br/>
                     <a href="https://spartronics4915.com/">Team Website</a>
                     <br/>
-                    <a href="https://spartronics4915.com/donate/">Donate here</a>
+                    <a href="https://spartronics4915.com/donate/">Donate here</a> <!-- TODO: update with new link because website is being redone -->
                 </div>
             </div>
         </div>
@@ -168,7 +150,6 @@
 
         <button class="big" id="close-credits">Return</button>
     </div>
-    <div class="robot-view hidden"></div>
 
     <footer>
         <span class="version"></span>
@@ -178,7 +159,6 @@
         <a href="https://www.desmos.com/">Created with the Desmos API, used with permission from Desmos Studio PBC.</a>
         <div style="width: 1rem"></div>
         <a href="https://www.statbotics.io/">Thanks to Statbotics</a>
-
     </footer>
 
     <div class="edit-columns hidden">

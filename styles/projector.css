@@ -1,45 +1,45 @@
-:root {
+:root.projector {
     font-size: 1.5rem;
 }
 
-body {
+:root.projector body {
     margin: 0 1rem 1rem 1rem;
 }
 
 
-.data.tiny {
+:root.projector .data.tiny {
     width: 121.5px;
     min-width: 81px;
 }
-.data {
+:root.projector .data {
     width: 180px;
     min-width: 120px;
 }
-.data.large {
+:root.projector .data.large {
     width: 315px;
     min-width: 210px;
 }
-.data.massive {
+:root.projector .data.massive {
     width: 450px;
     min-width: 300px;
 }
 
-.star, .ignore {
+:root.projector .star, .ignore {
     font-size: 1.75rem;
 }
 
-.comments-title {
+:root.projector .comments-title {
     font-size: 1.2rem;
 }
 
-.team-comments {
+:root.projector .team-comments {
     font-size: 1rem;
 }
 
-.match-alliance {
+:root.projector .match-alliance {
     font-size: .8rem;
 }
 
-.match-number {
+:root.projector .match-number {
     font-size: 1rem;
 }
