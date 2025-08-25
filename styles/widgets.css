@@ -10,14 +10,14 @@
     flex-direction: column;
 }
 
-.x .resizer {
+.x > .resizer {
     width: 6px;
     height: 100%;
     background-color: black;
     cursor: col-resize;
 }
 
-.y .resizer {
+.y > .resizer {
     height: 6px;
     width: 100%;
     background-color: black;

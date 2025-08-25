@@ -61,12 +61,27 @@ class WidgetGroup extends Widget {
         this.axis = "x"
     }
     refresh() {
+        this.refreshMinSizes()
+
         super.refresh()
 
         let resizerSize = this.resizers.length * 6
         for (let child of this.children) {
             if (this.axis === "x") child.widget.setSize(child.size * (this.width - resizerSize), this.height)
             if (this.axis === "y") child.widget.setSize(this.width, child.size * (this.height - resizerSize))
+            if (!child.widget.canResizeBy(this.axis, 0)) { // Group has shrunk this widget to less than its intended size.
+                let childSize = child.size
+                let minSize = (this.axis === "x" ? child.widget.minWidth : child.widget.minHeight) / this.width
+
+                for (let child2 of this.children) {
+                    if (child2 === child) {
+                        continue
+                    }
+                    child2.size -= (minSize - childSize) / (this.children.length - 1)
+                }
+                child.size = minSize
+                //this.refresh()
+            }
         }
     }
     addChild(child, size = "unset") {
@@ -119,7 +134,22 @@ class WidgetGroup extends Widget {
             "size": size,
         })
         this.el.appendChild(child.el)
+
         this.refresh()
+    }
+    refreshMinSizes() {
+        this.minWidth = this.axis === "x" ? this.resizers.length * 6 : 0
+        this.minHeight = this.axis === "y" ? this.resizers.length * 6 : 0
+        for (let child of this.children) {
+            if (this.axis === "x") {
+                this.minWidth += child.widget.minWidth
+                this.minHeight = Math.max(this.minHeight, child.widget.minHeight)
+            }
+            if (this.axis === "y") {
+                this.minHeight += child.widget.minHeight
+                this.minWidth = Math.max(this.minWidth, child.widget.minWidth)
+            }
+        }
     }
 
     get axis() {
@@ -156,6 +186,17 @@ class Purple extends Widget {
         this.el.style.backgroundColor = "purple"
     }
 }
+class Color extends Widget {
+    constructor(c) {
+        super()
+        this.color = c
+        this.el.style.backgroundColor = c
+        this.minHeight = 200
+    }
+    refresh() {
+        super.refresh();
+    }
+}
 
 let main = new WidgetGroup()
 document.querySelector(".content").appendChild(main.el)
@@ -167,7 +208,7 @@ window.addEventListener("resize", () => {
 main.width = window.innerWidth
 main.height = window.innerHeight - 100
 
-main.addChild(new Red(), 0.5)
+main.addChild(new Red(), 0.25)
 
 let sub = new WidgetGroup()
 sub.axis = "y"
@@ -175,3 +216,12 @@ main.addChild(sub)
 
 sub.addChild(new Green(), 0.5)
 sub.addChild(new Purple())
+
+let sub2 = new WidgetGroup()
+sub2.axis = "x"
+sub.addChild(sub2)
+
+sub2.addChild(new Color("darkblue"), 0.4)
+sub2.addChild(new Color("salmon"), 0.1)
+sub2.addChild(new Color("mediumpurple"), 0.1)
+sub2.addChild(new Color("olivedrab"), 0.4)
