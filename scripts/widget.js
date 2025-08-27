@@ -34,8 +34,8 @@ class Widget {
     }
 
     canBeShrunkMore(axis) {
-        if (axis === "x") return Math.ceil(this.width) + 0.1 > this.minWidth
-        if (axis === "y") return Math.ceil(this.height) + 0.1 > this.minHeight
+        if (axis === "x") return (this.width) > this.minWidth
+        if (axis === "y") return (this.height) > this.minHeight
     }
 
     setSize(width, height) {
@@ -60,12 +60,21 @@ class WidgetGroup extends Widget {
         this.el.className = "widget-holder"
         this.axis = "x"
     }
-    refresh() {
+    refresh(rescale = true) { // Rescale is the shrinking required stuff
         this.refreshMinSizes()
 
         super.refresh()
 
         let resizerSize = this.resizers.length * 6
+
+        /*let totalSize = 0
+        for (let x of this.children)
+            totalSize += x.size
+
+        if (totalSize >= 1) {
+            for (let x of this.children)
+                x.size /= totalSize
+        }*/
 
         let tooSmall = []
         let shrinkRequired = 0
@@ -73,11 +82,11 @@ class WidgetGroup extends Widget {
         for (let child of this.children) {
             if (this.axis === "x") child.widget.setSize(child.size * (this.width - resizerSize), this.height)
             if (this.axis === "y") child.widget.setSize(this.width, child.size * (this.height - resizerSize))
-            if (!child.widget.canBeShrunkMore(this.axis)) { // Group has shrunk this widget to less than its intended size.
+            if (rescale && !child.widget.canBeShrunkMore(this.axis)) { // Group has shrunk this widget to less than its intended size.
                 tooSmall.push(child)
 
                 let childSize = child.size
-                let minSize = (this.axis === "x" ? child.widget.minWidth : child.widget.minHeight) / (this.axis ? this.width : this.height)
+                let minSize = (this.axis === "x" ? child.widget.minWidth : child.widget.minHeight) / ((this.axis ? this.width : this.height) - resizerSize)
 
                 shrinkRequired += minSize - childSize
 
@@ -91,18 +100,9 @@ class WidgetGroup extends Widget {
                     continue
                 }
                 child.size -= shrinkRequired / (this.children.length - tooSmall.length)
-                this.refresh()
+                //this.refresh()
             }
         }
-
-        /*let totalSize = 0
-        for (let x of this.children)
-            totalSize += x.size
-
-        if (totalSize >= 1) {
-            for (let x of this.children)
-                x.size /= totalSize
-        }*/
     }
     addChild(child, size = "unset") {
         let totalSize = 0
@@ -130,26 +130,31 @@ class WidgetGroup extends Widget {
                 let widget1 = this.children[index]
                 let widget2 = this.children[index + 1]
                 if (moving) {
-                    if (widget1.size * (this.axis === "x" ? this.width : this.height) + (this.axis === "x" ? e.movementX : e.movementY) > (this.axis === "x" ? widget1.widget.minWidth : widget1.widget.minHeight) &&
-                        widget2.size * (this.axis === "x" ? this.width: this.height) - (this.axis === "x" ? e.movementX : e.movementY) > (this.axis === "x" ? widget2.widget.minWidth : widget2.widget.minHeight))
-                    {
-                        widget1.size += this.axis === "x" ? (e.movementX / this.width) : (e.movementY / this.height)
-                        widget2.size -= this.axis === "x" ? (e.movementX / this.width) : (e.movementY / this.height)
+                    let change = this.axis === "x" ? (e.movementX / this.width) : (e.movementY / this.height)
+                    if (widget1.size * (this.axis === "x" ? this.width : this.height) >= (this.axis === "x" ? widget1.widget.minWidth : widget1.widget.minHeight) &&
+                        widget2.size * (this.axis === "x" ? this.width : this.height) >= (this.axis === "x" ? widget2.widget.minWidth : widget2.widget.minHeight)
+                    ) {
+                        widget1.size += change
+                        widget2.size -= change
                     }
-                    this.refresh()
+                    this.refresh(false)
                    // console.log(widget1.widget.color, widget2.widget.color)
                 }
             })
-            document.body.addEventListener("mouseup", (e) => {
+            document.body.addEventListener("mouseup", mouseUp)
+            document.body.addEventListener("mouseleave", mouseUp)
+
+            let self = this
+            function mouseUp() {
                 if (moving) {
                     moving = false
 
-                    let widget1 = this.children[index]
-                    let widget2 = this.children[index + 1]
-                    widget1.size = Math.max((this.axis === "x" ? widget1.widget.minWidth + 1 : widget1.widget.minHeight + 1) / (this.axis === "x" ? this.width : this.height), widget1.size)
-                    widget2.size = Math.max((this.axis === "x" ? widget2.widget.minWidth + 1 : widget2.widget.minHeight + 1) / (this.axis === "x" ? this.width : this.height), widget2.size)
+                    let widget1 = self.children[index]
+                    let widget2 = self.children[index + 1]
+                    widget1.size = Math.max((self.axis === "x" ? widget1.widget.minWidth + 1 : widget1.widget.minHeight + 1) / (self.axis === "x" ? self.width : self.height), widget1.size)
+                    widget2.size = Math.max((self.axis === "x" ? widget2.widget.minWidth + 1 : widget2.widget.minHeight + 1) / (self.axis === "x" ? self.width : self.height), widget2.size)
                 }
-            })
+            }
 
             this.el.appendChild(resizer)
             this.resizers.push(resizer)
@@ -247,7 +252,8 @@ let sub2 = new WidgetGroup()
 sub2.axis = "x"
 sub.addChild(sub2)
 
-sub2.addChild(new Color("darkblue"), 0.4)
+sub2.addChild(new Color("darkblue"), 0.2)
 sub2.addChild(new Color("salmon"), 0.3)
 sub2.addChild(new Color("mediumpurple"), 0.1)
+sub2.addChild(new Color("cadetblue"), 0.1)
 sub2.addChild(new Color("olivedrab"))
