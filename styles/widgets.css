@@ -11,19 +11,38 @@
 }
 
 .x > .resizer {
-    width: 6px;
+    width: 4px;
     height: 100%;
-    background-color: black;
+    background-color: var(--line);
     cursor: col-resize;
 }
 
 .y > .resizer {
-    height: 6px;
+    height: 4px;
     width: 100%;
-    background-color: black;
+    background-color: var(--line);
     cursor: row-resize;
 }
 
 .widget {
     overflow: hidden;
+}
+
+.widget-header {
+    background-color: var(--bg);
+    border-bottom: 1px solid var(--line);
+    display: flex;
+    font-size: .8rem;
+    align-items: center;
+    height: 18px;
+}
+
+.widget-drag {
+    cursor: grab;
+}
+.widget-drag:active {
+    cursor: grabbing;
+}
+.widget-drag.dragging {
+    position: absolute;
 }

@@ -8,10 +8,12 @@
             'opsz' 48;
     cursor: default;
     user-select: none;
+    font-size: inherit;
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
-.offline .material-symbols-outlined {
-    font-size: 1.5rem;
-}
+
 .filled {
     font-variation-settings:
             'FILL' 1,

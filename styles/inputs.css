@@ -10,6 +10,9 @@ button, input {
     border-radius: .25rem;
     transition: 200ms;
 }
+button {
+    cursor: pointer;
+}
 button.nomargin, input.nomargin {
     margin: 0;
 }
@@ -21,6 +24,7 @@ button:disabled, input:disabled {
     background-color: var(--line);
     border-radius: 4px;
     color: var(--disabled);
+    cursor: not-allowed;
 }
 input::placeholder {
     color: var(--placeholder)

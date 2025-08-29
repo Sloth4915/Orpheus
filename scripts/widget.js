@@ -1,6 +1,5 @@
-class Widget {
+class WidgetBase {
     constructor() {
-        this._scope = "" // This will eventually be stuff like starred teams, a list of teams, all teams, one specific team, etc.
         this.w = 0
         this.h = 0
         this.el = document.createElement("div")
@@ -8,6 +7,9 @@ class Widget {
 
         this.minWidth = 100
         this.minHeight = 100
+
+        this.type = "base"
+        this.parent = null
     }
     set scope(to) {
         this._scope = to
@@ -33,6 +35,14 @@ class Widget {
         return this.h
     }
 
+    get name() {
+        return this._name
+    }
+    set name(to) {
+        this._name = to
+        this.header.name.innerText = this._name
+    }
+
     canBeShrunkMore(axis) {
         if (axis === "x") return (this.width) > this.minWidth
         if (axis === "y") return (this.height) > this.minHeight
@@ -50,31 +60,23 @@ class Widget {
     }
 }
 
-class WidgetGroup extends Widget {
-    // Widget axis: x means that size impacts the width of the child widgets, and y impacts the height of the child widgets.
-
+class WidgetGroup extends WidgetBase {
     constructor() {
         super()
         this.children = []
         this.resizers = []
         this.el.className = "widget-holder"
-        this.axis = "x"
+        this.axis = "x" // Widget axis: x means that size impacts the width of the child widgets, and y impacts the height of the child widgets.
+
+        this._name = "WidgetGroup"
+        this.type = "group"
     }
-    refresh(rescale = true) { // Rescale is the shrinking required stuff
+    refresh(rescale = true) { // Rescale is the shrinking stuff
         this.refreshMinSizes()
 
         super.refresh()
 
-        let resizerSize = this.resizers.length * 6
-
-        /*let totalSize = 0
-        for (let x of this.children)
-            totalSize += x.size
-
-        if (totalSize >= 1) {
-            for (let x of this.children)
-                x.size /= totalSize
-        }*/
+        let resizerSize = this.resizers.length * 4
 
         let tooSmall = []
         let shrinkRequired = 0
@@ -104,7 +106,11 @@ class WidgetGroup extends Widget {
             }
         }
     }
-    addChild(child, size = "unset") {
+    addChild(child, size = "unset", insertIndex = this.children.length) {
+        if (!activeWidgets.includes(child)) activeWidgets.push(child)
+
+        child.parent = this
+
         let totalSize = 0
         for (let x of this.children)
             totalSize += x.size
@@ -115,11 +121,14 @@ class WidgetGroup extends Widget {
                 x.size *= (1-size)
         } else if (size === "unset") size = 1 - totalSize
 
+        if (insertIndex === this.children.length) this.el.appendChild(child.el)
+        else this.el.insertBefore(child.el, this.el.childNodes[insertIndex * 2 - 1])
+
         if (this.children.length) { // If already at least 1 child, add a resizer
             let resizer = document.createElement("div")
             resizer.className = "resizer"
 
-            let index = this.children.length - 1
+            let index = insertIndex - 1
 
             let moving = false
             resizer.addEventListener("mousedown", (e) => {
@@ -156,17 +165,46 @@ class WidgetGroup extends Widget {
                 }
             }
 
-            this.el.appendChild(resizer)
+            this.el.insertBefore(resizer, child.el)
+            //this.el.appendChild(resizer)
             this.resizers.push(resizer)
         }
 
-        this.children.push({
-            "widget": child,
-            "size": size,
-        })
-        this.el.appendChild(child.el)
+
+        this.children = [
+            ...this.children.slice(0, insertIndex),
+            {
+                "widget": child,
+                "size": size,
+            },
+            ...this.children.slice(insertIndex, this.children.length)
+        ]
 
         this.refresh()
+    }
+    removeChild(child) {
+        let newChildren = []
+        let size = 0
+        for (let currentChild of this.children) {
+            if (currentChild.widget !== child) newChildren.push(currentChild)
+            else size = currentChild.size
+        }
+        this.children = newChildren
+        let index = this.indexOf(child)
+        this.el.children[index].remove() // Remove element
+        this.el.children[index].remove() // Remove dragger
+
+        child.parent = null
+
+        for (let x of this.children)
+            x.size /= (1-size)
+        this.refresh()
+    }
+    indexOf(child) {
+        return [].indexOf.call(this.el.children, child.el)
+    }
+    becomeOrphan(child) {
+        this.removeChild(child)
     }
     refreshMinSizes() {
         this.minWidth = this.axis === "x" ? this.resizers.length * 6 : 0
@@ -196,38 +234,81 @@ class WidgetGroup extends Widget {
     }
 }
 
+class Widget extends WidgetBase {
+    constructor() {
+        super()
+
+        this.type = "widget"
+
+        this.settings = {}
+
+        //#region Widget header
+        this.header = {
+            holder: document.createElement("div"),
+            name: document.createElement("div"),
+            dragger: document.createElement("div"),
+        }
+        this.header.holder.className = "widget-header"
+
+        // Widget Dragging
+        this.header.dragger.className = "material-symbols-outlined widget-drag"
+        this.header.dragger.innerText = "drag_indicator"
+        this.header.holder.appendChild(this.header.dragger)
+
+        let isDragging = false
+
+        this.header.dragger.addEventListener("mousedown", () => {
+            isDragging = true
+            this.header.dragger.classList.add("dragging")
+        })
+        document.body.addEventListener("mousemove", (e) => {
+            if (!isDragging) return
+            this.header.dragger.style.left = e.clientX - (this.header.dragger.offsetWidth / 2) + "px"
+            this.header.dragger.style.top = e.clientY - (this.header.dragger.offsetHeight / 2) + "px"
+
+            /*for (let widget of activeWidgets) {
+                if (widget === this) continue
+                let bound = widget.el.getBoundingClientRect()
+                if (bound.right > e.clientX && bound.right - e.clientX < 30 && e.clientY > bound.top && e.clientY < bound.bottom) console.log("right", widget._name)
+                if (bound.left < e.clientX && bound.left - e.clientX > -30 && e.clientY > bound.top && e.clientY < bound.bottom) console.log("left", widget._name)
+                if (bound.bottom > e.clientY && bound.bottom - e.clientY < 30 && e.clientX > bound.left && e.clientX < bound.right) console.log("bottom", widget._name)
+                if (bound.top < e.clientY && bound.top - e.clientY > -30 && e.clientX > bound.left && e.clientX < bound.right) console.log("top", widget._name)
+            }*/
+            
+        })
+        document.body.addEventListener("mouseleave", () => {
+            isDragging = false
+            this.header.dragger.classList.remove("dragging")
+        })
+        document.body.addEventListener("mouseup", (e) => {
+            if (!isDragging) return
+            isDragging = false
+            this.header.dragger.classList.remove("dragging")
+            this.parent.removeChild(this)
+        })
+
+        this.header.holder.appendChild(this.header.name)
+        this.name = "Widget"
+
+        this.el.append(this.header.holder)
+        //#endregion
+    }
+}
+
 // Todo add popup widget holder for things like notebook
 
-class Red extends Widget {
-    constructor() {
-        super()
-        this.el.style.backgroundColor = "darkred"
-        this.minWidth = 300
-    }
-}
-class Green extends Widget {
-    constructor() {
-        super()
-        this.el.style.backgroundColor = "green"
-    }
-}
-class Purple extends Widget {
-    constructor() {
-        super()
-        this.el.style.backgroundColor = "purple"
-    }
-}
 class Color extends Widget {
     constructor(c) {
         super()
-        this.color = c
         this.el.style.backgroundColor = c
-        this.minHeight = 200
+        this.name = c
     }
     refresh() {
         super.refresh();
     }
 }
+
+let activeWidgets = []
 
 let main = new WidgetGroup()
 document.querySelector(".content").appendChild(main.el)
@@ -239,14 +320,15 @@ window.addEventListener("resize", () => {
 main.width = window.innerWidth
 main.height = window.innerHeight - 100
 
-main.addChild(new Red(), 0.25)
+let red = new Color("darkred")
+main.addChild(red, 0.25)
 
 let sub = new WidgetGroup()
 sub.axis = "y"
 main.addChild(sub)
 
-sub.addChild(new Green(), 0.5)
-sub.addChild(new Purple())
+sub.addChild(new Color("rebeccapurple"), 0.5)
+sub.addChild(new Color("var(--bg)"))
 
 let sub2 = new WidgetGroup()
 sub2.axis = "x"
@@ -254,6 +336,6 @@ sub.addChild(sub2)
 
 sub2.addChild(new Color("darkblue"), 0.2)
 sub2.addChild(new Color("salmon"), 0.3)
-sub2.addChild(new Color("mediumpurple"), 0.1)
 sub2.addChild(new Color("cadetblue"), 0.1)
 sub2.addChild(new Color("olivedrab"))
+sub2.addChild(new Color("mediumpurple"), 0.1, 2)
