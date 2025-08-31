@@ -10,8 +10,13 @@
     flex-direction: column;
 }
 
+.resizer {
+    z-index: 1000;
+}
+
 .x > .resizer {
     width: 4px;
+    min-width: 4px;
     height: 100%;
     background-color: var(--line);
     cursor: col-resize;
@@ -19,6 +24,7 @@
 
 .y > .resizer {
     height: 4px;
+    min-height: 4px;
     width: 100%;
     background-color: var(--line);
     cursor: row-resize;

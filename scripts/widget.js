@@ -238,7 +238,7 @@ class WidgetGroup extends WidgetBase {
         activeWidgets.splice(activeWidgets.indexOf(child), 1)
 
         for (let x of this.children)
-            x.size /= (1 - size)
+            x.size += size / this.children.length
 
         if (refresh) {
             main.refresh()
