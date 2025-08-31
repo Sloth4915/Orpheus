@@ -161,8 +161,6 @@ class WidgetGroup extends WidgetBase {
             let resizer = document.createElement("div")
             resizer.className = "resizer"
 
-            let index = insertIndex - 1
-
             let moving = false
             resizer.addEventListener("mousedown", (e) => {
                 moving = true
@@ -170,6 +168,7 @@ class WidgetGroup extends WidgetBase {
             })
             document.body.addEventListener("mousemove", (e) => {
                 if (moving) {
+                    let index = this.resizers.indexOf(resizer)
                     let widget1 = this.children[index]
                     let widget2 = this.children[index + 1]
                     let change = this.axis === "x" ? (e.movementX / this.width) : (e.movementY / this.height)
@@ -191,6 +190,7 @@ class WidgetGroup extends WidgetBase {
                 if (moving) {
                     moving = false
 
+                    let index = self.resizers.indexOf(resizer)
                     let widget1 = self.children[index]
                     let widget2 = self.children[index + 1]
                     widget1.size = Math.max((self.axis === "x" ? widget1.widget.minWidth + 1 : widget1.widget.minHeight + 1) / (self.axis === "x" ? self.width : self.height), widget1.size)
@@ -201,6 +201,7 @@ class WidgetGroup extends WidgetBase {
             this.el.insertBefore(resizer, child.el)
             //this.el.appendChild(resizer)
             this.resizers.push(resizer)
+            this.resizers.sort((a, b) => (this.axis === "x" ? a.offsetLeft - b.offsetLeft : a.offsetTop - b.offsetTop)) // Reorders resizers in array to be correct index
         }
 
 
@@ -407,6 +408,7 @@ sub.axis = "y"
 sub.name = "sub"
 main.addChild(sub)
 
+sub.addChild(new Color("rebeccapurple"), 0.5)
 sub.addChild(new Color("rebeccapurple"), 0.5)
 /*
 let sub3 = new WidgetGroup()
