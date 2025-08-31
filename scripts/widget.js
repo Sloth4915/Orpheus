@@ -40,7 +40,6 @@ class WidgetBase {
     }
     set name(to) {
         this._name = to
-        this.header.name.innerText = this._name
     }
 
     canBeShrunkMore(axis) {
@@ -81,6 +80,18 @@ class WidgetGroup extends WidgetBase {
         let tooSmall = []
         let shrinkRequired = 0
 
+        // If no non-group children, and all children are a different axis, swap to their axis, and merge them into this
+        if (this.children.length === 1 && this.children[0].widget.type === "group" && this.children[0].widget.axis !== this.axis) {
+            let child = this.children[0].widget
+            this.axis = child.axis
+            this.removeChild(child, false)
+            for (let grandchild of child.children) {
+                this.addChild(grandchild.widget, grandchild.size, undefined, false)
+            }
+            //this.refresh()
+            return
+        }
+
         for (let child of this.children) {
             if (this.axis === "x") child.widget.setSize(child.size * (this.width - resizerSize), this.height)
             if (this.axis === "y") child.widget.setSize(this.width, child.size * (this.height - resizerSize))
@@ -94,6 +105,27 @@ class WidgetGroup extends WidgetBase {
 
                 child.size = minSize
             }
+
+            // if child is group with only 1 widget, merge into this.
+            if (child.widget.type === "group" && child.widget.children.length === 1) {
+                let size = child.size
+                let grandchild = child.widget.children[0].widget
+                let index = this.indexOf(child.widget)
+                this.removeChild(child.widget, false)
+                this.addChild(grandchild, size, index, false)
+                this.refresh()
+                return
+            }
+
+            if (child.widget.type === "group" && child.widget.axis === this.axis) {
+                let index = this.indexOf(child.widget)
+                for (let grandchild of child.widget.children) {
+                    this.addChild(grandchild.widget, grandchild.size * child.size, index, false)
+                }
+                this.removeChild(child.widget)
+                this.refresh()
+                return
+            }
         }
 
         if (tooSmall.length > 0) {
@@ -106,9 +138,10 @@ class WidgetGroup extends WidgetBase {
             }
         }
     }
-    addChild(child, size = "unset", insertIndex = this.children.length) {
+    addChild(child, size = "unset", insertIndex = this.children.length, refresh = true) {
         if (!activeWidgets.includes(child)) activeWidgets.push(child)
 
+        if (child.parent !== null) child.parent.removeChild(child, refresh)
         child.parent = this
 
         let totalSize = 0
@@ -136,9 +169,9 @@ class WidgetGroup extends WidgetBase {
                 e.preventDefault()
             })
             document.body.addEventListener("mousemove", (e) => {
-                let widget1 = this.children[index]
-                let widget2 = this.children[index + 1]
                 if (moving) {
+                    let widget1 = this.children[index]
+                    let widget2 = this.children[index + 1]
                     let change = this.axis === "x" ? (e.movementX / this.width) : (e.movementY / this.height)
                     if (widget1.size * (this.axis === "x" ? this.width : this.height) >= (this.axis === "x" ? widget1.widget.minWidth : widget1.widget.minHeight) &&
                         widget2.size * (this.axis === "x" ? this.width : this.height) >= (this.axis === "x" ? widget2.widget.minWidth : widget2.widget.minHeight)
@@ -180,9 +213,9 @@ class WidgetGroup extends WidgetBase {
             ...this.children.slice(insertIndex, this.children.length)
         ]
 
-        this.refresh()
+        if (refresh) this.refresh()
     }
-    removeChild(child) {
+    removeChild(child, refresh = true) {
         let newChildren = []
         let size = 0
         for (let currentChild of this.children) {
@@ -190,18 +223,50 @@ class WidgetGroup extends WidgetBase {
             else size = currentChild.size
         }
         this.children = newChildren
-        let index = this.indexOf(child)
-        this.el.children[index].remove() // Remove element
-        this.el.children[index].remove() // Remove dragger
+        let index = this.indexOfElement(child)
+        if (index === -1) return
+        this.el.removeChild(this.el.children[index]) // Remove element
+        if (this.resizers.length) {
+            let resizer = this.el.children[Math.min(index, this.el.children.length - 1)] // Remove resizer
+            this.resizers.splice(this.resizers.indexOf(resizer), 1)
+            this.el.removeChild(resizer)
+        }
 
         child.parent = null
 
-        for (let x of this.children)
-            x.size /= (1-size)
-        this.refresh()
+        activeWidgets.splice(activeWidgets.indexOf(child), 1)
+
+        if (refresh) {
+            for (let x of this.children)
+                x.size /= (1 - size)
+        }
+
+        if (refresh) main.refresh()
+    }
+    indexOfElement(child) {
+        return [].indexOf.call(this.el.children, child.el)
     }
     indexOf(child) {
-        return [].indexOf.call(this.el.children, child.el)
+        for (let i in this.children)
+            if (this.children[i].widget === child) return parseInt(i)
+        return -1
+    }
+    getDepthOf(child) {
+        let depth = 0
+        let parent = child.parent
+        while (parent !== this) {
+            try {
+                parent = parent.parent
+            } catch (e) {
+                return -1 // Child is not a child of this group
+            }
+            depth++
+        }
+        return depth
+    }
+    includes(child) {
+        for (let i of this.children) if (i.widget === child) return true
+        return false
     }
     becomeOrphan(child) {
         this.removeChild(child)
@@ -247,8 +312,17 @@ class Widget extends WidgetBase {
             holder: document.createElement("div"),
             name: document.createElement("div"),
             dragger: document.createElement("div"),
+            remover: document.createElement("div")
         }
         this.header.holder.className = "widget-header"
+
+        // Widget Removal
+        this.header.remover.className = "material-symbols-outlined widget-remove"
+        this.header.remover.innerText = "close"
+        this.header.remover.addEventListener("mouseup", () => {
+            this.parent.removeChild(this)
+        })
+        this.header.holder.appendChild(this.header.remover)
 
         // Widget Dragging
         this.header.dragger.className = "material-symbols-outlined widget-drag"
@@ -284,7 +358,6 @@ class Widget extends WidgetBase {
             if (!isDragging) return
             isDragging = false
             this.header.dragger.classList.remove("dragging")
-            this.parent.removeChild(this)
         })
 
         this.header.holder.appendChild(this.header.name)
@@ -292,6 +365,11 @@ class Widget extends WidgetBase {
 
         this.el.append(this.header.holder)
         //#endregion
+    }
+
+    set name(to) {
+        super.name = to
+        this.header.name.innerText = this._name
     }
 }
 
@@ -311,6 +389,7 @@ class Color extends Widget {
 let activeWidgets = []
 
 let main = new WidgetGroup()
+main.name = "main"
 document.querySelector(".content").appendChild(main.el)
 
 window.addEventListener("resize", () => {
@@ -325,17 +404,25 @@ main.addChild(red, 0.25)
 
 let sub = new WidgetGroup()
 sub.axis = "y"
+sub.name = "sub"
 main.addChild(sub)
 
 sub.addChild(new Color("rebeccapurple"), 0.5)
-sub.addChild(new Color("var(--bg)"))
+/*
+let sub3 = new WidgetGroup()
+sub.addChild(sub3)
+sub3.addChild(new Color("var(--bg)"), 0.5)
+sub3.addChild(new Color("plum"), 0.5)*/
 
 let sub2 = new WidgetGroup()
 sub2.axis = "x"
 sub.addChild(sub2)
 
 sub2.addChild(new Color("darkblue"), 0.2)
-sub2.addChild(new Color("salmon"), 0.3)
+let salmon = new Color("salmon")
+sub2.addChild(salmon, 0.3)
 sub2.addChild(new Color("cadetblue"), 0.1)
 sub2.addChild(new Color("olivedrab"))
 sub2.addChild(new Color("mediumpurple"), 0.1, 2)
+
+main.addChild(new Color("gold"))

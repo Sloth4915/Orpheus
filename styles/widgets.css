@@ -46,3 +46,7 @@
 .widget-drag.dragging {
     position: absolute;
 }
+
+.widget-remove {
+    cursor: pointer;
+}
