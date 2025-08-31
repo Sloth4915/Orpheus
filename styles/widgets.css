@@ -28,6 +28,10 @@
     overflow: hidden;
 }
 
+.widget:has(.widget-drag.dragging) {
+    opacity: 0.5;
+}
+
 .widget-header {
     background-color: var(--bg);
     border-bottom: 1px solid var(--line);
@@ -45,6 +49,8 @@
 }
 .widget-drag.dragging {
     position: absolute;
+    font-size: 5rem;
+    opacity: 0;
 }
 
 .widget-remove {

@@ -139,7 +139,6 @@ class WidgetGroup extends WidgetBase {
         }
     }
     addChild(child, size = "unset", insertIndex = this.children.length, refresh = true) {
-        console.log(insertIndex, this.el.childNodes[insertIndex * 2 - 1])
         if (child.parent !== null) child.parent.removeChild(child, refresh)
         child.parent = this
 
@@ -152,8 +151,6 @@ class WidgetGroup extends WidgetBase {
             for (let x of this.children)
                 x.size *= (1-size)
         } else if (size === "unset") size = 1 - totalSize
-
-        console.log(insertIndex, this.el.childNodes[insertIndex * 2 - 1])
 
         if (insertIndex === this.children.length) this.el.appendChild(child.el)
         else if (insertIndex === 0) this.el.prepend(child.el)
@@ -240,10 +237,10 @@ class WidgetGroup extends WidgetBase {
 
         activeWidgets.splice(activeWidgets.indexOf(child), 1)
 
-        if (refresh) {
-            for (let x of this.children)
-                x.size /= (1 - size)
+        for (let x of this.children)
+            x.size /= (1 - size)
 
+        if (refresh) {
             main.refresh()
         }
     }
@@ -350,17 +347,6 @@ class Widget extends WidgetBase {
             if (!isDragging) return
             this.header.dragger.style.left = e.clientX - (this.header.dragger.offsetWidth / 2) + "px"
             this.header.dragger.style.top = e.clientY - (this.header.dragger.offsetHeight / 2) + "px"
-
-            for (let widget of activeWidgets) {
-                if (widget === this) continue
-                if (widget.type === "group") continue
-                let bound = widget.el.getBoundingClientRect()
-                if (bound.right > e.clientX && bound.right - e.clientX < 30 && e.clientY > bound.top && e.clientY < bound.bottom) console.log("right", widget._name)
-                if (bound.left < e.clientX && bound.left - e.clientX > -30 && e.clientY > bound.top && e.clientY < bound.bottom) console.log("left", widget._name)
-                if (bound.bottom > e.clientY && bound.bottom - e.clientY < 30 && e.clientX > bound.left && e.clientX < bound.right) console.log("bottom", widget._name)
-                if (bound.top < e.clientY && bound.top - e.clientY > -30 && e.clientX > bound.left && e.clientX < bound.right) console.log("top", widget._name)
-            }
-            
         })
         document.body.addEventListener("mouseleave", () => {
             isDragging = false
@@ -395,9 +381,6 @@ class Widget extends WidgetBase {
 
             function completeDrag(widget, axis, dragPos) {
                 let widgetParent = widget.parent
-                let widgetIndex = widgetParent.indexOf(widget)
-                console.log(widgetIndex)
-                let widgetSize = widgetParent.children[widgetIndex].size
                 let group = new WidgetGroup()
                 group.axis = axis
                 widgetParent.replaceChild(widget, group)
