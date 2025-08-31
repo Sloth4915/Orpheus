@@ -139,8 +139,7 @@ class WidgetGroup extends WidgetBase {
         }
     }
     addChild(child, size = "unset", insertIndex = this.children.length, refresh = true) {
-        if (!activeWidgets.includes(child)) activeWidgets.push(child)
-
+        console.log(insertIndex, this.el.childNodes[insertIndex * 2 - 1])
         if (child.parent !== null) child.parent.removeChild(child, refresh)
         child.parent = this
 
@@ -154,7 +153,10 @@ class WidgetGroup extends WidgetBase {
                 x.size *= (1-size)
         } else if (size === "unset") size = 1 - totalSize
 
+        console.log(insertIndex, this.el.childNodes[insertIndex * 2 - 1])
+
         if (insertIndex === this.children.length) this.el.appendChild(child.el)
+        else if (insertIndex === 0) this.el.prepend(child.el)
         else this.el.insertBefore(child.el, this.el.childNodes[insertIndex * 2 - 1])
 
         if (this.children.length) { // If already at least 1 child, add a resizer
@@ -198,12 +200,12 @@ class WidgetGroup extends WidgetBase {
                 }
             }
 
-            this.el.insertBefore(resizer, child.el)
+            if (insertIndex) this.el.insertBefore(resizer, child.el)
+            else child.el.insertAdjacentElement("afterend", resizer)
             //this.el.appendChild(resizer)
             this.resizers.push(resizer)
             this.resizers.sort((a, b) => (this.axis === "x" ? a.offsetLeft - b.offsetLeft : a.offsetTop - b.offsetTop)) // Reorders resizers in array to be correct index
         }
-
 
         this.children = [
             ...this.children.slice(0, insertIndex),
@@ -214,6 +216,7 @@ class WidgetGroup extends WidgetBase {
             ...this.children.slice(insertIndex, this.children.length)
         ]
 
+        if (!activeWidgets.includes(child)) activeWidgets.push(child)
         if (refresh) this.refresh()
     }
     removeChild(child, refresh = true) {
@@ -240,9 +243,16 @@ class WidgetGroup extends WidgetBase {
         if (refresh) {
             for (let x of this.children)
                 x.size /= (1 - size)
-        }
 
-        if (refresh) main.refresh()
+            main.refresh()
+        }
+    }
+    replaceChild(oldChild, newChild) {
+        this.el.children[this.indexOfElement(oldChild)].replaceWith(newChild.el)
+        this.children[this.indexOf(oldChild)].widget = newChild
+        newChild.parent = this
+        activeWidgets.splice(activeWidgets.indexOf(oldChild), 1)
+        activeWidgets.push(newChild)
     }
     indexOfElement(child) {
         return [].indexOf.call(this.el.children, child.el)
@@ -341,14 +351,15 @@ class Widget extends WidgetBase {
             this.header.dragger.style.left = e.clientX - (this.header.dragger.offsetWidth / 2) + "px"
             this.header.dragger.style.top = e.clientY - (this.header.dragger.offsetHeight / 2) + "px"
 
-            /*for (let widget of activeWidgets) {
+            for (let widget of activeWidgets) {
                 if (widget === this) continue
+                if (widget.type === "group") continue
                 let bound = widget.el.getBoundingClientRect()
                 if (bound.right > e.clientX && bound.right - e.clientX < 30 && e.clientY > bound.top && e.clientY < bound.bottom) console.log("right", widget._name)
                 if (bound.left < e.clientX && bound.left - e.clientX > -30 && e.clientY > bound.top && e.clientY < bound.bottom) console.log("left", widget._name)
                 if (bound.bottom > e.clientY && bound.bottom - e.clientY < 30 && e.clientX > bound.left && e.clientX < bound.right) console.log("bottom", widget._name)
                 if (bound.top < e.clientY && bound.top - e.clientY > -30 && e.clientX > bound.left && e.clientX < bound.right) console.log("top", widget._name)
-            }*/
+            }
             
         })
         document.body.addEventListener("mouseleave", () => {
@@ -359,6 +370,42 @@ class Widget extends WidgetBase {
             if (!isDragging) return
             isDragging = false
             this.header.dragger.classList.remove("dragging")
+
+            for (let widget of activeWidgets) {
+                if (widget === this) continue
+                if (widget.type === "group") continue
+                let bound = widget.el.getBoundingClientRect()
+                if (bound.right > e.clientX && bound.right - e.clientX < 30 && e.clientY > bound.top && e.clientY < bound.bottom) {
+                    completeDrag.call(this, widget, "x", "after")
+                    break
+                }
+                if (bound.left < e.clientX && bound.left - e.clientX > -30 && e.clientY > bound.top && e.clientY < bound.bottom) {
+                    completeDrag.call(this, widget, "x", "before")
+                    break
+                }
+                if (bound.bottom > e.clientY && bound.bottom - e.clientY < 30 && e.clientX > bound.left && e.clientX < bound.right) {
+                    completeDrag.call(this, widget, "y", "after")
+                    break
+                }
+                if (bound.top < e.clientY && bound.top - e.clientY > -30 && e.clientX > bound.left && e.clientX < bound.right)  {
+                    completeDrag.call(this, widget, "y", "before")
+                    break
+                }
+            }
+
+            function completeDrag(widget, axis, dragPos) {
+                let widgetParent = widget.parent
+                let widgetIndex = widgetParent.indexOf(widget)
+                console.log(widgetIndex)
+                let widgetSize = widgetParent.children[widgetIndex].size
+                let group = new WidgetGroup()
+                group.axis = axis
+                widgetParent.replaceChild(widget, group)
+                group.addChild(widget, 0.5, dragPos === "after" ? 0 : 1, false)
+                group.addChild(this, 0.5, dragPos === "after" ? 1 : 0, false)
+            }
+
+            main.refresh()
         })
 
         this.header.holder.appendChild(this.header.name)
@@ -409,7 +456,7 @@ sub.name = "sub"
 main.addChild(sub)
 
 sub.addChild(new Color("rebeccapurple"), 0.5)
-sub.addChild(new Color("rebeccapurple"), 0.5)
+sub.addChild(new Color("lightgreen"), 0.5)
 /*
 let sub3 = new WidgetGroup()
 sub.addChild(sub3)
@@ -425,6 +472,6 @@ let salmon = new Color("salmon")
 sub2.addChild(salmon, 0.3)
 sub2.addChild(new Color("cadetblue"), 0.1)
 sub2.addChild(new Color("olivedrab"))
-sub2.addChild(new Color("mediumpurple"), 0.1, 2)
+sub2.addChild(new Color("mediumpurple"), 0.1, 0)
 
 main.addChild(new Color("gold"))
