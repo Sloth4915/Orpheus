@@ -334,32 +334,56 @@ class WidgetTabGroup extends WidgetBase {
     constructor() {
         super()
         this.children = []
-        this.resizers = []
-        this.el.className = "widget-holder"
         this._activeChild = 0
 
         this._name = "WidgetTabs"
         this.type = "tabs"
+
+        this.header = {
+            holder: document.createElement("div"),
+            selectButtons: []
+        }
+        this.header.holder.className = "widget-header tabs"
+
+        this.el.append(this.header.holder)
+
+        this.content = document.createElement("div")
+        this.content.className = "widget-content"
+        this.el.appendChild(this.content)
     }
     refresh() {
         super.refresh()
 
         if (this.children.length)
-            this.children[this.activeChild].setSize(this.width, this.height)
+            this.children[this.activeChild].setSize(this.width, this.height - 19)
+
+        for (let i in this.header.selectButtons) {
+            this.header.selectButtons[i].innerText = this.children[i].name
+            if (this.activeChild == i) this.header.selectButtons[i].classList.add("selected")
+            else this.header.selectButtons[i].classList.remove("selected")
+        }
     }
     addChild(child, insertIndex = this.children.length) {
         if (child.parent !== null) child.parent.removeChild(child)
         child.parent = this
 
-        if (insertIndex === this.children.length) this.el.appendChild(child.el)
-        else if (insertIndex === 0) this.el.prepend(child.el)
-        else this.el.insertBefore(child.el, this.el.childNodes[insertIndex])
+        if (insertIndex === this.children.length) this.content.appendChild(child.el)
+        else if (insertIndex === 0) this.content.prepend(child.el)
+        else this.content.insertBefore(child.el, this.content.childNodes[insertIndex])
 
         this.children = [
             ...this.children.slice(0, insertIndex),
             child,
             ...this.children.slice(insertIndex, this.children.length)
         ]
+
+        let tabSelectButton = document.createElement("div")
+        tabSelectButton.className = "widget-tab"
+        this.header.holder.appendChild(tabSelectButton)
+        this.header.selectButtons.push(tabSelectButton)
+        tabSelectButton.addEventListener("click", () => {
+            this.activeChild = this.header.selectButtons.indexOf(tabSelectButton)
+        })
 
         for (let i of this.children) i.el.classList.add("inactive-tab")
         this.activeChild = insertIndex
@@ -369,9 +393,17 @@ class WidgetTabGroup extends WidgetBase {
             if (child.parent !== null) child.parent.removeChild(child)
             child.parent = this
 
-            this.el.appendChild(child.el)
+            this.content.appendChild(child.el)
 
             this.children.push(child)
+
+            let tabSelectButton = document.createElement("div")
+            tabSelectButton.className = "widget-tab"
+            this.header.holder.appendChild(tabSelectButton)
+            this.header.selectButtons.push(tabSelectButton)
+            tabSelectButton.addEventListener("click", () => {
+                this.activeChild = this.header.selectButtons.indexOf(tabSelectButton)
+            })
         }
         this.activeChild = this.children.length - 1
     }
@@ -383,7 +415,10 @@ class WidgetTabGroup extends WidgetBase {
             activeWidgets.splice(activeWidgets.indexOf(child), 1)
 
         this.children.splice(index, 1)
-        this.el.removeChild(this.el.children[index]) // Remove element
+        this.content.removeChild(this.content.children[index]) // Remove element
+
+        this.header.selectButtons.splice(-1, 1)
+        this.header.holder.childNodes[this.header.holder.childNodes.length - 1].remove()
 
         child.parent = null
         child.el.classList.remove("inactive-tab")
@@ -493,21 +528,26 @@ class Widget extends WidgetBase {
             for (let widget of activeWidgets) {
                 if (widget === this) continue
                 if (widget.type === "group") continue
+
                 let bound = widget.el.getBoundingClientRect()
-                if (bound.right > e.clientX && bound.right - e.clientX < 30 && e.clientY > bound.top && e.clientY < bound.bottom) {
+                if (bound.top < e.clientY && bound.top - e.clientY > -30 && e.clientX > bound.left && e.clientX < bound.right) { // Top
+                    console.log(widget.parent.type, bound.top - e.clientY)
+                    if (bound.top - e.clientY > -22 && widget.type === "tabs") {
+                        widget.addChild(this)
+                    } else if (widget.parent.type !== "tabs") completeDrag.call(this, widget, "y", "before")
+                    break
+                }
+                if (widget.parent.type === "tabs") continue
+                else if (bound.right > e.clientX && bound.right - e.clientX < 30 && e.clientY > bound.top && e.clientY < bound.bottom) {
                     completeDrag.call(this, widget, "x", "after")
                     break
                 }
-                if (bound.left < e.clientX && bound.left - e.clientX > -30 && e.clientY > bound.top && e.clientY < bound.bottom) {
+                else if (bound.left < e.clientX && bound.left - e.clientX > -30 && e.clientY > bound.top && e.clientY < bound.bottom) {
                     completeDrag.call(this, widget, "x", "before")
                     break
                 }
-                if (bound.bottom > e.clientY && bound.bottom - e.clientY < 30 && e.clientX > bound.left && e.clientX < bound.right) {
+                else if (bound.bottom > e.clientY && bound.bottom - e.clientY < 30 && e.clientX > bound.left && e.clientX < bound.right) {
                     completeDrag.call(this, widget, "y", "after")
-                    break
-                }
-                if (bound.top < e.clientY && bound.top - e.clientY > -30 && e.clientX > bound.left && e.clientX < bound.right)  {
-                    completeDrag.call(this, widget, "y", "before")
                     break
                 }
             }
@@ -529,11 +569,20 @@ class Widget extends WidgetBase {
 
         this.el.append(this.header.holder)
         //#endregion
+
+        this.content = document.createElement("div")
+        this.content.className = "widget-content"
+
+        this.el.appendChild(this.content)
     }
 
+    get name() {
+        return this._name
+    }
     set name(to) {
         super.name = to
         this.header.name.innerText = this._name
+        if (this.parent) this.parent.refresh()
     }
 }
 
@@ -542,8 +591,8 @@ class Widget extends WidgetBase {
 class Color extends Widget {
     constructor(c) {
         super()
-        this.el.style.backgroundColor = c
         this.name = c
+        this.content.style.backgroundColor = c
     }
     refresh() {
         super.refresh();
@@ -584,6 +633,7 @@ sub.addChild(sub2)
 
 sub2.addChildren(new Color("darkblue"), new Color("cadetblue"))
 sub2.addChild(new Color("olivedrab"))
-sub2.addChild(new Color("mediumpurple"), 0)
+let mpurp = new Color("mediumpurple")
+sub2.addChild(mpurp, 0)
 
 main.addChild(new Color("gold"))
