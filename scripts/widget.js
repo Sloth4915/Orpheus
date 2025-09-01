@@ -471,7 +471,7 @@ class WidgetTabGroup extends WidgetBase {
             this.minWidth = Math.max(this.minWidth, child.minWidth)
             this.minHeight = Math.max(this.minHeight, child.minHeight)
         }
-        this.parent.refresh()
+        if (this.parent) this.parent.refresh()
     }
 }
 
@@ -528,16 +528,25 @@ class Widget extends WidgetBase {
             for (let widget of activeWidgets) {
                 if (widget === this) continue
                 if (widget.type === "group") continue
+                if (widget.parent.type === "tabs") continue
 
                 let bound = widget.el.getBoundingClientRect()
                 if (bound.top < e.clientY && bound.top - e.clientY > -30 && e.clientX > bound.left && e.clientX < bound.right) { // Top
                     console.log(widget.parent.type, bound.top - e.clientY)
-                    if (bound.top - e.clientY > -22 && widget.type === "tabs") {
-                        widget.addChild(this)
+                    if (bound.top - e.clientY > -22) {
+                        if (widget.type === "tabs") {
+                            widget.addChild(this)
+                        } else {
+                            this.parent.removeChild(this)
+                            let widgetParent = widget.parent
+                            let group = new WidgetTabGroup()
+                            widgetParent.replaceChild(widget, group)
+                            group.addChildren(widget, this)
+                            console.log(group)
+                        }
                     } else if (widget.parent.type !== "tabs") completeDrag.call(this, widget, "y", "before")
                     break
                 }
-                if (widget.parent.type === "tabs") continue
                 else if (bound.right > e.clientX && bound.right - e.clientX < 30 && e.clientY > bound.top && e.clientY < bound.bottom) {
                     completeDrag.call(this, widget, "x", "after")
                     break
@@ -550,9 +559,12 @@ class Widget extends WidgetBase {
                     completeDrag.call(this, widget, "y", "after")
                     break
                 }
+
+                // fixme Dragging an adjacent widget above or below another causes issues
             }
 
             function completeDrag(widget, axis, dragPos) {
+                this.parent.removeChild(this)
                 let widgetParent = widget.parent
                 let group = new WidgetGroup()
                 group.axis = axis
@@ -607,10 +619,10 @@ document.querySelector(".content").appendChild(main.el)
 
 window.addEventListener("resize", () => {
     main.width = window.innerWidth
-    main.height = window.innerHeight - 100
+    main.height = window.innerHeight - 90
 })
 main.width = window.innerWidth
-main.height = window.innerHeight - 100
+main.height = window.innerHeight - 90
 
 let red = new Color("darkred")
 main.addChild(red, 0.25)
