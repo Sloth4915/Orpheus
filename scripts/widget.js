@@ -117,6 +117,16 @@ class WidgetGroup extends WidgetBase {
                 return
             }
 
+            if (child.widget.type === "tabs" && child.widget.children.length === 1) {
+                let size = child.size
+                let grandchild = child.widget.children[0]
+                let index = this.indexOf(child.widget)
+                this.removeChild(child.widget, false)
+                this.addChild(grandchild, size, index, false)
+                this.refresh()
+                return
+            }
+
             if (child.widget.type === "group" && child.widget.axis === this.axis) {
                 let index = this.indexOf(child.widget)
                 for (let grandchild of child.widget.children) {
@@ -136,6 +146,19 @@ class WidgetGroup extends WidgetBase {
                 child.size -= shrinkRequired / (this.children.length - tooSmall.length)
                 //this.refresh()
             }
+        }
+
+        let totalSize = 0
+        let biggestChild = {size: -1}
+        for (let x of this.children) {
+            totalSize += x.size
+            if (biggestChild.size < x.size) biggestChild = x
+        }
+
+        if (totalSize > 1) {
+            biggestChild.size -= (totalSize - 1)
+            if (this.axis === "x") biggestChild.widget.setSize(biggestChild.size * (this.width - resizerSize), this.height)
+            if (this.axis === "y") biggestChild.widget.setSize(this.width, biggestChild.size * (this.height - resizerSize))
         }
     }
     addChild(child, size = "unset", insertIndex = this.children.length, refresh = true) {
@@ -307,6 +330,116 @@ class WidgetGroup extends WidgetBase {
     }
 }
 
+class WidgetTabGroup extends WidgetBase {
+    constructor() {
+        super()
+        this.children = []
+        this.resizers = []
+        this.el.className = "widget-holder"
+        this._activeChild = 0
+
+        this._name = "WidgetTabs"
+        this.type = "tabs"
+    }
+    refresh() {
+        super.refresh()
+
+        if (this.children.length)
+            this.children[this.activeChild].setSize(this.width, this.height)
+    }
+    addChild(child, insertIndex = this.children.length) {
+        if (child.parent !== null) child.parent.removeChild(child)
+        child.parent = this
+
+        if (insertIndex === this.children.length) this.el.appendChild(child.el)
+        else if (insertIndex === 0) this.el.prepend(child.el)
+        else this.el.insertBefore(child.el, this.el.childNodes[insertIndex])
+
+        this.children = [
+            ...this.children.slice(0, insertIndex),
+            child,
+            ...this.children.slice(insertIndex, this.children.length)
+        ]
+
+        for (let i of this.children) i.el.classList.add("inactive-tab")
+        this.activeChild = insertIndex
+    }
+    addChildren(...children) {
+        for (let child of children) {
+            if (child.parent !== null) child.parent.removeChild(child)
+            child.parent = this
+
+            this.el.appendChild(child.el)
+
+            this.children.push(child)
+        }
+        this.activeChild = this.children.length - 1
+    }
+    removeChild(child) {
+        let index = this.children.indexOf(child)
+        if (index === -1) return
+
+        if (activeWidgets.includes(child))
+            activeWidgets.splice(activeWidgets.indexOf(child), 1)
+
+        this.children.splice(index, 1)
+        this.el.removeChild(this.el.children[index]) // Remove element
+
+        child.parent = null
+        child.el.classList.remove("inactive-tab")
+
+        this.activeChild = Math.max(this.children.length - 1, 0)
+    }
+    getDepthOf(child) {
+        let depth = 0
+        let parent = child.parent
+        while (parent !== this) {
+            try {
+                parent = parent.parent
+            } catch (e) {
+                return -1 // Child is not a child of this group
+            }
+            depth++
+        }
+        return depth
+    }
+    includes(child) {
+        for (let i of this.children) if (i.widget === child) return true
+        return false
+    }
+    becomeOrphan(child) {
+        this.removeChild(child)
+    }
+
+    get activeChild() {
+        return this._activeChild
+    }
+    set activeChild(to) {
+        if (activeWidgets.includes(this.children[this.activeChild]))
+            activeWidgets.splice(activeWidgets.indexOf(this.children[this.activeChild]), 1)
+
+        if (this.children[this._activeChild] !== undefined) this.children[this.activeChild].el.classList.add("inactive-tab")
+
+        if (this.children.length === 0) return // Being brutally murdered by parent :(
+
+        this._activeChild = to
+        activeWidgets.push(this.children[to])
+        this.children[to].el.classList.remove("inactive-tab")
+        this.refreshMinSizes()
+        this.refresh()
+    }
+
+    refreshMinSizes() {
+        this.minWidth = 150
+        this.minHeight = 150
+        for (let child of this.children) {
+            this.minWidth = Math.max(this.minWidth, child.minWidth)
+            this.minHeight = Math.max(this.minHeight, child.minHeight)
+        }
+        this.parent.refresh()
+    }
+}
+
 class Widget extends WidgetBase {
     constructor() {
         super()
@@ -328,7 +461,7 @@ class Widget extends WidgetBase {
         this.header.remover.className = "material-symbols-outlined widget-remove"
         this.header.remover.innerText = "close"
         this.header.remover.addEventListener("mouseup", () => {
-            this.parent.removeChild(this)
+            if (activeWidgets.length > 1) this.parent.removeChild(this)
         })
         this.header.holder.appendChild(this.header.remover)
 
@@ -446,15 +579,11 @@ sub.addChild(sub3)
 sub3.addChild(new Color("var(--bg)"), 0.5)
 sub3.addChild(new Color("plum"), 0.5)*/
 
-let sub2 = new WidgetGroup()
-sub2.axis = "x"
+let sub2 = new WidgetTabGroup()
 sub.addChild(sub2)
 
-sub2.addChild(new Color("darkblue"), 0.2)
-let salmon = new Color("salmon")
-sub2.addChild(salmon, 0.3)
-sub2.addChild(new Color("cadetblue"), 0.1)
+sub2.addChildren(new Color("darkblue"), new Color("cadetblue"))
 sub2.addChild(new Color("olivedrab"))
-sub2.addChild(new Color("mediumpurple"), 0.1, 0)
+sub2.addChild(new Color("mediumpurple"), 0)
 
 main.addChild(new Color("gold"))
