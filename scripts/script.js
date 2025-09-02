@@ -71,8 +71,6 @@ let crossOutUnicode = "X"
 
 let processedData
 
-let widgets = new WidgetGroup()
-
 //#endregion
 
 //#region Init Header Controls
@@ -268,14 +266,8 @@ document.querySelector("#top-mapping").onclick = function() {
     loadFile(".json", (result) => {
         mapping = JSON.parse(result)
         localforage.setItem(MAPPING, mapping)
-        setColumnOptions()
         //columns = JSON.parse(JSON.stringify(availableColumns))
         processData()
-        delete maintainedTeamPageSettings["graph"]
-        saveColumns()
-        saveGeneralSettings()
-        if (doingInitialSetup) window.location.reload()
-        setHeader()
     })
 }
 
@@ -284,6 +276,12 @@ math.import({
         return a == b
     }
 }, {override: true})
+
+let internalMapping = {
+    "number": {
+        "alias": "Team Number"
+    }
+}
 
 function findMatchData(schema, team, match) {
     for (let x of uploadedData[schema])
@@ -514,6 +512,17 @@ function processData() {
     console.log(dataOut)
 
     processedData = dataOut
+
+    let orpheus = {"data": {
+        "number": {}
+    }}
+    for (let team of teams) {
+        orpheus["data"]["number"][team] = team
+    }
+    processedData["orpheus"] = orpheus
+
+    table.addColumn(["orpheus`number", "match`Scoring`Coral Scored", "match`tba climb", "pit`Drivetrain"])
+    table.addTeam(teams)
 }
 
 function evaluate(expression, schema, context) {
@@ -754,44 +763,6 @@ document.querySelector("#top-keyboard").onclick = function() {
 }
 document.addEventListener("keydown", (e) => {
     if (!keyboardControls || brieflyDisableKeyboard) return
-    let key = e.key.toLowerCase()
-    if (key === "d" || key === "arrowright") {
-        let currentIndex = columns.indexOf(selectedSort)
-        if (currentIndex !== columns.length-1) {
-            if (e.shiftKey) {
-                columns[currentIndex] = columns[currentIndex+1]
-                columns[currentIndex+1] = selectedSort
-            } else changeSort(columns[currentIndex+1])
-        }
-        e.preventDefault()
-    }
-    if (key === "a" || key === "arrowleft") {
-        let currentIndex = columns.indexOf(selectedSort)
-        if (currentIndex !== 0) {
-            if (e.shiftKey) {
-                columns[currentIndex] = columns[currentIndex-1]
-                columns[currentIndex-1] = selectedSort
-            } else changeSort(columns[currentIndex-1])
-        }
-        e.preventDefault()
-    }
-    if (key === "w") sortDirection = 1
-    if (key === "s") sortDirection = -1
-    if (key === " ") {
-        sortDirection *= -1
-        e.preventDefault()
-    }
-    if (key === "control") controlPressed = true
-    if (key === "p") {
-        projectorMode = !projectorMode
-        setProjectorModeSheet()
-    }
-    if (key === "1") selectedSort.size = 0
-    if (key === "2") selectedSort.size = 1
-    if (key === "3") selectedSort.size = 2
-    if (key === "4") selectedSort.size = 3
-    setHeader()
-    saveColumns()
 })
 document.addEventListener("keyup", (e) => {
     if (!keyboardControls || brieflyDisableKeyboard) return
@@ -1827,7 +1798,7 @@ localforage.getItem(MAPPING, (err, val) => {
 
 // Loading saved columns
 localforage.getItem(WIDGETS, (err, val) => {
-    if (val !== null) widgets = val
+    // TODO add widget layout saving
     if (!--initLoading) finishInit()
 })
 
@@ -1934,37 +1905,10 @@ for (let el of document.querySelectorAll(".tool-name"))
 for (let el of document.querySelectorAll(".version"))
     el.innerText = toolName + " v"+version
 
+let table = new Table()
+main.addChild(table)
+
 function finishInit() {
-    // Welcome Checklist
-    doingInitialSetup = false
-    function welcomeChecklistItem(name, checked) {
-        let el = document.createElement("div")
-        el.className = "welcome-item"
-        let icon = document.createElement("span")
-        icon.className = "material-symbols-outlined"
-        icon.innerText = (checked ? "check_circle" : "radio_button_unchecked")
-        el.appendChild(icon)
-        let text = document.createElement("div")
-        text.innerText = name
-        el.appendChild(text)
-        document.querySelector(".welcome").appendChild(el)
-        if (!checked) doingInitialSetup = true
-    }
-    document.querySelector("#setup-checklist-title").innerText = toolName + " Setup Checklist"
-    document.querySelector("#welcome-hide").addEventListener("click", () => {
-        document.querySelector(".welcome").remove()
-    })
-    welcomeChecklistItem("The Blue Alliance API Key", !usingTBA || tbaKey)
-    welcomeChecklistItem("Select an Event", !usingTBA || eventKey)
-    welcomeChecklistItem("Upload a mapping for your data", mapping)
-
-    let hasData = false
-    for (let val of Object.values(uploadedData))
-        if (val !== {}) hasData = true
-    welcomeChecklistItem("Upload your scouting data", hasData)
-    if (!doingInitialSetup)
-        document.querySelector(".welcome").remove()
-
     // View robots
     if (usingTBAMedia || (mapping["pit_scouting"] !== undefined && mapping["pit_scouting"]["image"] !== undefined)) {
         document.querySelector("#top-pictures").disabled = false

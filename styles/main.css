@@ -58,6 +58,11 @@ dialog {
     z-index: 9999;
 }
 
+h1 {
+    padding: 0;
+    margin: 0;
+}
+
 footer {
     display: flex;
     width: 100%;

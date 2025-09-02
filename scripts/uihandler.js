@@ -484,46 +484,46 @@ class Widget extends WidgetBase {
         this.settings = {}
 
         //#region Widget header
-        this.header = {
+        this._header = {
             holder: document.createElement("div"),
             name: document.createElement("div"),
             dragger: document.createElement("div"),
             remover: document.createElement("div")
         }
-        this.header.holder.className = "widget-header"
+        this._header.holder.className = "widget-header"
 
         // Widget Removal
-        this.header.remover.className = "material-symbols-outlined widget-remove"
-        this.header.remover.innerText = "close"
-        this.header.remover.addEventListener("mouseup", () => {
+        this._header.remover.className = "material-symbols-outlined widget-remove"
+        this._header.remover.innerText = "close"
+        this._header.remover.addEventListener("mouseup", () => {
             if (activeWidgets.length > 1) this.parent.removeChild(this)
         })
-        this.header.holder.appendChild(this.header.remover)
+        this._header.holder.appendChild(this._header.remover)
 
         // Widget Dragging
-        this.header.dragger.className = "material-symbols-outlined widget-drag"
-        this.header.dragger.innerText = "drag_indicator"
-        this.header.holder.appendChild(this.header.dragger)
+        this._header.dragger.className = "material-symbols-outlined widget-drag"
+        this._header.dragger.innerText = "drag_indicator"
+        this._header.holder.appendChild(this._header.dragger)
 
         let isDragging = false
 
-        this.header.dragger.addEventListener("mousedown", () => {
+        this._header.dragger.addEventListener("mousedown", () => {
             isDragging = true
-            this.header.dragger.classList.add("dragging")
+            this._header.dragger.classList.add("dragging")
         })
         document.body.addEventListener("mousemove", (e) => {
             if (!isDragging) return
-            this.header.dragger.style.left = e.clientX - (this.header.dragger.offsetWidth / 2) + "px"
-            this.header.dragger.style.top = e.clientY - (this.header.dragger.offsetHeight / 2) + "px"
+            this._header.dragger.style.left = e.clientX - (this._header.dragger.offsetWidth / 2) + "px"
+            this._header.dragger.style.top = e.clientY - (this._header.dragger.offsetHeight / 2) + "px"
         })
         document.body.addEventListener("mouseleave", () => {
             isDragging = false
-            this.header.dragger.classList.remove("dragging")
+            this._header.dragger.classList.remove("dragging")
         })
         document.body.addEventListener("mouseup", (e) => {
             if (!isDragging) return
             isDragging = false
-            this.header.dragger.classList.remove("dragging")
+            this._header.dragger.classList.remove("dragging")
 
             for (let widget of activeWidgets) {
                 if (widget === this) continue
@@ -576,10 +576,10 @@ class Widget extends WidgetBase {
             main.refresh()
         })
 
-        this.header.holder.appendChild(this.header.name)
+        this._header.holder.appendChild(this._header.name)
         this.name = "Widget"
 
-        this.el.append(this.header.holder)
+        this.el.append(this._header.holder)
         //#endregion
 
         this.content = document.createElement("div")
@@ -593,7 +593,7 @@ class Widget extends WidgetBase {
     }
     set name(to) {
         super.name = to
-        this.header.name.innerText = this._name
+        this._header.name.innerText = this._name
         if (this.parent) this.parent.refresh()
     }
 }
@@ -624,6 +624,7 @@ window.addEventListener("resize", () => {
 main.width = window.innerWidth
 main.height = window.innerHeight - 90
 
+/**
 let red = new Color("darkred")
 main.addChild(red, 0.25)
 
@@ -634,11 +635,11 @@ main.addChild(sub)
 
 sub.addChild(new Color("rebeccapurple"), 0.5)
 sub.addChild(new Color("lightgreen"), 0.5)
-/*
+
 let sub3 = new WidgetGroup()
 sub.addChild(sub3)
 sub3.addChild(new Color("var(--bg)"), 0.5)
-sub3.addChild(new Color("plum"), 0.5)*/
+sub3.addChild(new Color("plum"), 0.5)
 
 let sub2 = new WidgetTabGroup()
 sub.addChild(sub2)
@@ -649,3 +650,4 @@ let mpurp = new Color("mediumpurple")
 sub2.addChild(mpurp, 0)
 
 main.addChild(new Color("gold"))
+*/
