@@ -524,6 +524,10 @@ function processData() {
     table.addColumn(["orpheus`number", "match`Scoring`Coral Scored", "match`tba climb"])
     table.addTeam(teams)
     table.addColumn("pit`Drivetrain")
+
+    table2.addColumn(["orpheus`number", "match`Scoring`Coral Scored", "match`tba climb"])
+    table2.addTeam(teams)
+    table2.addColumn("pit`Drivetrain")
 }
 
 function evaluate(expression, schema, context) {
@@ -1906,8 +1910,16 @@ for (let el of document.querySelectorAll(".tool-name"))
 for (let el of document.querySelectorAll(".version"))
     el.innerText = toolName + " v"+version
 
+let tabGroup = new WidgetTabGroup()
+
 let table = new Table()
-main.addChild(table)
+tabGroup.addChild(table)
+
+let table2 = new Table()
+table2.name = "Table 2"
+tabGroup.addChild(table2)
+
+main.addChild(tabGroup)
 
 function finishInit() {
     // View robots

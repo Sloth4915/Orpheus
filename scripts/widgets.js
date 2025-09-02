@@ -52,22 +52,25 @@ class Table extends Widget {
                 dataEl.className = "data"
                 dataEl.setAttribute("data-column", column)
                 dataEl.setAttribute("data-team", team)
+                dataEl.setAttribute("data-id", this.id)
 
                 let value = dataCol[team]
                 if (typeof value === "object") dataEl.innerText = value["summarized"]
                 else dataEl.innerText = value
-                document.querySelector(`.row[data-team="${team}"]`).appendChild(dataEl)
+                document.querySelector(`.row[data-team="${team}"][data-id="${this.id}"]`).appendChild(dataEl)
             }
 
             let headerEl = document.createElement("div")
             headerEl.className = "data"
             headerEl.setAttribute("data-column", column)
+            headerEl.setAttribute("data-id", this.id)
             headerEl.innerText = name
             this.header.appendChild(headerEl)
 
             let colResizer = document.createElement("div")
             colResizer.className = "data-resizer"
-            colResizer.setAttribute("data-column-pos", column)
+            colResizer.setAttribute("data-column-size", column)
+            colResizer.setAttribute("data-id", this.id)
             let resizing = false
             let index = this.columns.length - 1
             colResizer.addEventListener("mousedown", () => resizing = true)
@@ -80,8 +83,14 @@ class Table extends Widget {
             })
             document.body.addEventListener("mouseup", () => resizing = false)
             document.body.addEventListener("mouseleave", () => resizing = false)
-
             this.header.appendChild(colResizer)
+
+            let colDragger = document.createElement("div")
+            colDragger.className = "data-dragger material-symbols-outlined"
+            colDragger.setAttribute("data-column-drag", column)
+            colDragger.setAttribute("data-id", this.id)
+            colDragger.innerText = "drag_indicator"
+            headerEl.appendChild(colDragger)
         }
         this.refresh()
     }
@@ -95,12 +104,14 @@ class Table extends Widget {
             let teamEl = document.createElement("div")
             teamEl.className = "row"
             teamEl.setAttribute("data-team", team)
+            teamEl.setAttribute("data-id", this.id)
 
             for (let column of this.columns) {
                 let data = document.createElement("div")
                 data.className = "data"
                 data.setAttribute("data-column", column.columnId)
                 data.setAttribute("data-team", team)
+                data.setAttribute("data-id", this.id)
 
                 let value = column.data[team]
                 if (typeof value === "object") data.innerText = value["summarized"]
@@ -123,7 +134,7 @@ class Table extends Widget {
         super.refresh()
 
         for (let col of this.columns) {
-            let elements = document.querySelectorAll(`[data-column="${col.columnId}"]`)
+            let elements = document.querySelectorAll(`[data-column="${col.columnId}"][data-id="${this.id}"]`)
             for (let el of elements) el.style.width = col.size + 'px'
         }
     }

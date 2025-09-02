@@ -34,3 +34,17 @@
     margin-left: -3px;
     margin-right: -2px;
 }
+
+.data-dragger {
+    position: absolute;
+    top: 0;
+    color: var(--line);
+    cursor: grab;
+    writing-mode: vertical-rl;
+}
+.data-dragger:hover {
+    color: var(--font);
+}
+.data-dragger:active {
+    cursor: grabbing;
+}

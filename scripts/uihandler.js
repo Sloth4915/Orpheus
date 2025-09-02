@@ -10,6 +10,8 @@ class WidgetBase {
 
         this.type = "base"
         this.parent = null
+
+        this.id = WidgetBase.generateId()
     }
     set scope(to) {
         this._scope = to
@@ -56,6 +58,19 @@ class WidgetBase {
     refresh() {
         this.el.style.width = this.w + "px"
         this.el.style.height = this.h + "px"
+    }
+
+    static generateId() {
+        let id = Date.now()
+
+        let ascii = 65
+        while (widgetIds.includes(id + String.fromCharCode(ascii))) {
+            if (++ascii == 122) id = id + Math.round(Math.random() * 26) + 65
+        }
+        id = id + String.fromCharCode(ascii)
+
+        widgetIds.push(id)
+        return id
     }
 }
 
@@ -612,6 +627,7 @@ class Color extends Widget {
 }
 
 let activeWidgets = []
+let widgetIds = [] // Documents widget ids that have been used
 
 let main = new WidgetGroup()
 main.name = "main"
