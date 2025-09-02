@@ -521,8 +521,9 @@ function processData() {
     }
     processedData["orpheus"] = orpheus
 
-    table.addColumn(["orpheus`number", "match`Scoring`Coral Scored", "match`tba climb", "pit`Drivetrain"])
+    table.addColumn(["orpheus`number", "match`Scoring`Coral Scored", "match`tba climb"])
     table.addTeam(teams)
+    table.addColumn("pit`Drivetrain")
 }
 
 function evaluate(expression, schema, context) {

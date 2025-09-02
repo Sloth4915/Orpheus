@@ -5,15 +5,32 @@
     flex-direction: column;
 }
 .row {
-    height: 80px;
+    height: 70px;
     display: flex;
     flex-direction: row;
     border-bottom: 1px solid var(--line);
     flex-shrink: 0;
+    background: var(--bg);
+}
+.row.header {
+    position: sticky;
+    top:0;
 }
 .data {
     padding: 0.25rem;
     display: flex;
     justify-content: center;
     align-items: center;
+}
+.data-resizer {
+    width: 1px;
+    height: 100%;
+    background-color: var(--line);
+    cursor: col-resize;
+    border-left: 2px solid var(--bg);
+    border-right: 2px solid var(--bg);
+    position: relative;
+    box-sizing: content-box;
+    margin-left: -3px;
+    margin-right: -2px;
 }

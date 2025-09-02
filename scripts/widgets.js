@@ -12,8 +12,12 @@ class Table extends Widget {
         this.header = document.createElement("div")
         this.header.classList.add("row", "header")
         this.content.appendChild(this.header)
+
+        this.minWidth = 400
+        this.minHeight = 280
     }
     addColumn(...[columns]) {
+        if (typeof columns === "string") columns = [columns]
         for (let column of columns) {
             let data = column.split("`")[0]
             let location = column.split("`").slice(1)
@@ -24,6 +28,7 @@ class Table extends Widget {
                 for (let x of location) col = col[x]
             }
             else {
+                console.log(data)
                 col = mapping[data]["data"]
                 for (let x of location) col = col[x]
             }
@@ -37,16 +42,48 @@ class Table extends Widget {
                 columnId: column,
                 name: name,
                 mapping: col,
-                size: 0.2,
-                data: dataCol
+                size: 100, // Pixels
+                data: dataCol,
+                order: this.columns.length, // Left to right
             })
+
+            for (let team of this.teams) {
+                let dataEl = document.createElement("div")
+                dataEl.className = "data"
+                dataEl.setAttribute("data-column", column)
+                dataEl.setAttribute("data-team", team)
+
+                let value = dataCol[team]
+                if (typeof value === "object") dataEl.innerText = value["summarized"]
+                else dataEl.innerText = value
+                document.querySelector(`.row[data-team="${team}"]`).appendChild(dataEl)
+            }
 
             let headerEl = document.createElement("div")
             headerEl.className = "data"
             headerEl.setAttribute("data-column", column)
             headerEl.innerText = name
             this.header.appendChild(headerEl)
+
+            let colResizer = document.createElement("div")
+            colResizer.className = "data-resizer"
+            colResizer.setAttribute("data-column-pos", column)
+            let resizing = false
+            let index = this.columns.length - 1
+            colResizer.addEventListener("mousedown", () => resizing = true)
+            document.body.addEventListener("mousemove", (e) => {
+                if (!resizing) return
+                this.columns[index].size = Math.max(this.columns[index].size + e.movementX, 70)
+                e.preventDefault()
+                window.getSelection().empty()
+                this.refresh()
+            })
+            document.body.addEventListener("mouseup", () => resizing = false)
+            document.body.addEventListener("mouseleave", () => resizing = false)
+
+            this.header.appendChild(colResizer)
         }
+        this.refresh()
     }
     removeColumn(...[columns]) {
 
@@ -62,7 +99,8 @@ class Table extends Widget {
             for (let column of this.columns) {
                 let data = document.createElement("div")
                 data.className = "data"
-                data.setAttribute("data-column", column)
+                data.setAttribute("data-column", column.columnId)
+                data.setAttribute("data-team", team)
 
                 let value = column.data[team]
                 if (typeof value === "object") data.innerText = value["summarized"]
@@ -72,6 +110,8 @@ class Table extends Widget {
 
             this.content.appendChild(teamEl)
         }
+
+        this.refresh()
     }
     removeTeam(...[teams]) {
 
@@ -81,5 +121,10 @@ class Table extends Widget {
     }
     refresh() {
         super.refresh()
+
+        for (let col of this.columns) {
+            let elements = document.querySelectorAll(`[data-column="${col.columnId}"]`)
+            for (let el of elements) el.style.width = col.size + 'px'
+        }
     }
 }
