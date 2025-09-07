@@ -1236,7 +1236,6 @@ function saveGeneralSettings() {
         "teamPageSettings": maintainedTeamPageSettings,
         "graphSettings": graphSettings,
         "showTeamIcons": showTeamIcons,
-        "robotViewScope": robotViewScope
     })
 }
 function saveTeams() {
@@ -1284,7 +1283,6 @@ function exportSettings() {
             "teamPageSettings": maintainedTeamPageSettings,
             "graphSettings": graphSettings,
             "showTeamIcons": showTeamIcons,
-            "robotViewScope": robotViewScope
         },
         team: {
             "starred": starred,

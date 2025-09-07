@@ -35,6 +35,19 @@
     margin-right: -2px;
 }
 
+.data-drag-indicator {
+    width: 4px;
+    height: 100%;
+    background-color: var(--font);
+    border-left: 4px solid var(--bg);
+    border-right: 4px solid var(--bg);
+    position: relative;
+    box-sizing: content-box;
+    margin-left: -9px;
+    margin-right: -4px;
+    z-index: 10000;
+}
+
 .data-dragger {
     position: absolute;
     top: 0;

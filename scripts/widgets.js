@@ -13,6 +13,10 @@ class Table extends Widget {
         this.header.classList.add("row", "header")
         this.content.appendChild(this.header)
 
+        this.columnDragIndicator = document.createElement("div")
+        this.columnDragIndicator.className = "data-drag-indicator"
+        this.header.appendChild(this.columnDragIndicator)
+
         this.minWidth = 400
         this.minHeight = 280
     }
@@ -46,6 +50,7 @@ class Table extends Widget {
                 data: dataCol,
                 order: this.columns.length, // Left to right
             })
+            let thisColumn = this.columns[this.columns.length - 1]
 
             for (let team of this.teams) {
                 let dataEl = document.createElement("div")
@@ -90,12 +95,53 @@ class Table extends Widget {
             colDragger.setAttribute("data-column-drag", column)
             colDragger.setAttribute("data-id", this.id)
             colDragger.innerText = "drag_indicator"
+
+            let dragging = false
+            colDragger.addEventListener("mousedown", () => {
+                dragging = true
+                colDragger.classList.add("dragging")
+                for (let col of this.columns) col.order *= 2
+                this.refresh()
+            })
+            document.body.addEventListener("mousemove", (e) => {
+                if (!dragging) return
+
+                let column = this.getColumnById(e.target.getAttribute("data-column"))
+                let insertBefore = e.target.offsetLeft + e.target.offsetWidth / 2 > e.clientX
+                if (column === null) return
+
+                if (insertBefore) this.columnDragIndicator.style.order = ((column.order * 2) + 99) + ""
+                else this.columnDragIndicator.style.order = ((column.order * 2) + 101) + ""
+            })
+            document.body.addEventListener("mouseleave", () => dragging = false)
+            document.body.addEventListener("mouseup", (e) => {
+                if (!dragging) return
+                dragging = false
+                this.columnDragIndicator.style.order = "0"
+
+                let column = this.getColumnById(e.target.getAttribute("data-column"))
+                let insertBefore = e.target.offsetLeft + e.target.offsetWidth / 2 > e.clientX
+                if (column === null) return
+
+                if (insertBefore) {
+                    thisColumn.order = column.order - 1
+                } else {
+                    thisColumn.order = column.order + 1
+                }
+                this.refresh()
+            })
+
             headerEl.appendChild(colDragger)
         }
         this.refresh()
     }
     removeColumn(...[columns]) {
 
+    }
+    getColumnById(id) {
+        for (let col of this.columns)
+            if (col.columnId === id) return col
+        return null
     }
     addTeam(...[teams]) {
         for (let team of teams) {
@@ -135,7 +181,11 @@ class Table extends Widget {
 
         for (let col of this.columns) {
             let elements = document.querySelectorAll(`[data-column="${col.columnId}"][data-id="${this.id}"]`)
-            for (let el of elements) el.style.width = col.size + 'px'
+            for (let el of elements) {
+                el.style.width = col.size + 'px'
+                el.style.order = ((col.order * 2) + 100)
+                document.querySelector(`[data-column-size="${col.columnId}"][data-id="${this.id}"]`).style.order = ((col.order * 2) + 101)
+            }
         }
     }
 }
