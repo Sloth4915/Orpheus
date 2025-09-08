@@ -21,16 +21,21 @@
     display: flex;
     justify-content: center;
     align-items: center;
+    box-sizing: border-box;
 }
+.data.header.selected {
+    background-color: var(--highlight);
+}
+
 .data-resizer {
-    width: 1px;
+    width: 5px;
     height: 100%;
     background-color: var(--line);
     cursor: col-resize;
     border-left: 2px solid var(--bg);
     border-right: 2px solid var(--bg);
     position: relative;
-    box-sizing: content-box;
+    box-sizing: border-box;
     margin-left: -3px;
     margin-right: -2px;
 }

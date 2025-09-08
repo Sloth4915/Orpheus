@@ -5,7 +5,8 @@ class Table extends Widget {
 
         this.columns = []
         this.teams = []
-        this.activeColumn = "match`Scoring`Coral Scored" // fixme temp
+        this.activeColumn = ""
+        this.sort = 1
 
         this.content.classList.add("table")
 
@@ -46,7 +47,7 @@ class Table extends Widget {
                 columnId: column,
                 name: name,
                 mapping: col,
-                size: 100, // Pixels
+                size: 110, // Pixels
                 data: dataCol,
                 order: this.columns.length, // Left to right
             })
@@ -59,19 +60,23 @@ class Table extends Widget {
                 dataEl.setAttribute("data-team", team)
                 dataEl.setAttribute("data-id", this.id)
 
-                let value = dataCol[team]
-                if (typeof value === "object") dataEl.innerText = value["summarized"]
+                let value = typeof dataCol[team] === "object" ? dataCol[team]["summarized"] : dataCol[team]
+                if (typeof value === "number") dataEl.innerText = (Math.round(value * rounding) / rounding) + ""
                 else dataEl.innerText = value
                 document.querySelector(`.row[data-team="${team}"][data-id="${this.id}"]`).appendChild(dataEl)
             }
 
             let headerEl = document.createElement("div")
-            headerEl.className = "data"
+            headerEl.className = "data header"
             headerEl.setAttribute("data-column", column)
             headerEl.setAttribute("data-id", this.id)
             headerEl.innerText = name
+            headerEl.addEventListener("click", () => {
+                this.setActiveColumn(column)
+            })
             this.header.appendChild(headerEl)
 
+            //#region Resizing
             let colResizer = document.createElement("div")
             colResizer.className = "data-resizer"
             colResizer.setAttribute("data-column-size", column)
@@ -89,7 +94,9 @@ class Table extends Widget {
             document.body.addEventListener("mouseup", () => resizing = false)
             document.body.addEventListener("mouseleave", () => resizing = false)
             this.header.appendChild(colResizer)
+            //#endregion
 
+            //#region Dragging
             let colDragger = document.createElement("div")
             colDragger.className = "data-dragger material-symbols-outlined"
             colDragger.setAttribute("data-column-drag", column)
@@ -97,6 +104,10 @@ class Table extends Widget {
             colDragger.innerText = "drag_indicator"
 
             let dragging = false
+            let dragData = {
+                column: null,
+                insertBefore: null
+            }
             colDragger.addEventListener("mousedown", () => {
                 dragging = true
                 colDragger.classList.add("dragging")
@@ -112,6 +123,11 @@ class Table extends Widget {
 
                 if (insertBefore) this.columnDragIndicator.style.order = ((column.order * 2) + 99) + ""
                 else this.columnDragIndicator.style.order = ((column.order * 2) + 101) + ""
+
+                dragData = {
+                    column,
+                    insertBefore
+                }
             })
             document.body.addEventListener("mouseleave", () => dragging = false)
             document.body.addEventListener("mouseup", (e) => {
@@ -119,20 +135,20 @@ class Table extends Widget {
                 dragging = false
                 this.columnDragIndicator.style.order = "0"
 
-                let column = this.getColumnById(e.target.getAttribute("data-column"))
-                let insertBefore = e.target.offsetLeft + e.target.offsetWidth / 2 > e.clientX
-                if (column === null) return
-
-                if (insertBefore) {
-                    thisColumn.order = column.order - 1
+                if (dragData.insertBefore) {
+                    thisColumn.order = dragData.column.order - 1
                 } else {
-                    thisColumn.order = column.order + 1
+                    thisColumn.order = dragData.column.order + 1
                 }
                 this.refresh()
             })
+            //#endregion
 
             headerEl.appendChild(colDragger)
         }
+
+        if (this.activeColumn === "") this.setActiveColumn(this.columns[0].columnId)
+
         this.refresh()
     }
     removeColumn(...[columns]) {
@@ -159,8 +175,8 @@ class Table extends Widget {
                 data.setAttribute("data-team", team)
                 data.setAttribute("data-id", this.id)
 
-                let value = column.data[team]
-                if (typeof value === "object") data.innerText = value["summarized"]
+                let value = typeof column.data[team] === "object" ? column.data[team]["summarized"] : column.data[team]
+                if (typeof value === "number") data.innerText = (Math.round(value * rounding) / rounding) + ""
                 else data.innerText = value
                 teamEl.appendChild(data)
             }
@@ -175,6 +191,32 @@ class Table extends Widget {
     }
     setTeams(...[teams]) {
 
+    }
+    setActiveColumn(id) {
+        if (this.activeColumn === id) { // Change Sort
+            this.sort *= -1
+        } else { // Change Column
+            if (this.activeColumn !== "") document.querySelector(`.header[data-column="${this.activeColumn}"][data-id="${this.id}"]`).classList.remove("selected")
+            this.activeColumn = id
+            let headerEl = document.querySelector(`.header[data-column="${id}"][data-id="${this.id}"]`)
+            headerEl.classList.add("selected")
+            this.sort = 1
+        }
+
+        // Sorting
+        let teams = [...this.teams]
+        let data = this.getColumnById(this.activeColumn).data
+        teams.sort((a, b) => {
+            let valA = typeof data[a] === "object" ? data[a]["summarized"] : data[a]
+            let valB = typeof data[b] === "object" ? data[b]["summarized"] : data[b]
+
+            if (typeof valA === "string" || typeof valB === "string") return (""+valA).toLowerCase().trim() === (""+valB).toLowerCase().trim() ? 0 : (""+valA).toLowerCase().trim() > (""+valB).toLowerCase().trim() ? 1 : -1
+            return valA - valB
+        })
+        if (this.sort === -1) teams.reverse()
+        for (let team in teams) {
+            document.querySelector(`[data-team="${teams[team]}"][data-id="${this.id}"]`).style.order = team
+        }
     }
     refresh() {
         super.refresh()
