@@ -18,6 +18,12 @@ class Table extends Widget {
         this.columnDragIndicator.className = "data-drag-indicator"
         this.header.appendChild(this.columnDragIndicator)
 
+        if (usingTBAMedia) {
+            let logoPlaceholder = document.createElement("div")
+            logoPlaceholder.className = "table-logo placeholder"
+            this.header.appendChild(logoPlaceholder)
+        }
+
         this.minWidth = 400
         this.minHeight = 280
     }
@@ -180,6 +186,17 @@ class Table extends Widget {
                 else data.innerText = value
                 teamEl.appendChild(data)
             }
+
+            if (usingTBAMedia) {
+                let logo = document.createElement("div")
+                logo.setAttribute("data-team-logo", team)
+                if (team_data[team] !== undefined) logo.src = team_data[team]["Icon"]
+                logo.className = "table-logo"
+                teamEl.appendChild(logo)
+            }
+
+            let tools = document.createElement("div")
+            tools.className = "tools"
 
             this.content.appendChild(teamEl)
         }

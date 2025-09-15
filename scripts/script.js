@@ -212,7 +212,12 @@ function loadEvent() {
                         team_data[team["team_number"]].TBA.images = []
 
                         for (let x of data) {
-                            if (x.type === "avatar") team_data[team["team_number"]].Icon = "data:image/png;base64," + x.details["base64Image"]
+                            if (x.type === "avatar") {
+                                team_data[team["team_number"]].Icon = "data:image/png;base64," + x.details["base64Image"]
+                                for (let logo of document.querySelectorAll(`[data-team-logo="${team["team_number"]}"]`)) {
+                                    logo.src = "data:image/png;base64," + x.details["base64Image"]
+                                }
+                            }
                             else if (x.type === "imgur") team_data[team["team_number"]].TBA.images.push({type: "image", src: x["direct_url"]})
                             else if (x.type === "youtube") team_data[team["team_number"]].TBA.images.push({type: "youtube", src: x["foreign_key"]})
                             else console.log("Unsupported media type: " + x.type + ". (Team " + team["team_number"] + ")")

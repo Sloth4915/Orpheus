@@ -1,7 +1,5 @@
 .table {
     display: flex;
-    overflow-x: auto;
-    overflow-y: auto;
     flex-direction: column;
 }
 .row {
@@ -11,6 +9,7 @@
     border-bottom: 1px solid var(--line);
     flex-shrink: 0;
     background: var(--bg);
+    align-items: center;
 }
 .row.header {
     position: sticky;
@@ -22,6 +21,7 @@
     justify-content: center;
     align-items: center;
     box-sizing: border-box;
+    height: 100%;
 }
 .data.header.selected {
     background-color: var(--highlight);
@@ -65,4 +65,16 @@
 }
 .data-dragger:active {
     cursor: grabbing;
+}
+
+.table-logo {
+    width: calc(70px - 0.5rem);
+    height: calc(70px - 0.5rem);
+    margin-right: 0.25rem;
+    margin-left: 0.25rem;
+    border-radius: 0.25rem;
+    border: 1px solid var(--line);
+}
+.table-logo.placeholder {
+    background-color: var(--placeholder);
 }
