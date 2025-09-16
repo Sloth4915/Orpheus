@@ -510,6 +510,21 @@ class WidgetTabGroup extends WidgetBase {
     }
 }
 
+const RefreshMode = Object.freeze({
+    NONE: "none",
+    REFRESH: "soft",
+    SOFT: "soft",
+    NORMAL: "normal",
+    HARD: "hard",
+})
+
+const SettingType = Object.freeze({
+    STRING: "string",
+    INTEGER: "int",
+    FLOAT: "float",
+    CHECKBOX: "checkbox"
+})
+
 class Widget extends WidgetBase {
     constructor() {
         super()
@@ -523,7 +538,8 @@ class Widget extends WidgetBase {
             holder: document.createElement("div"),
             name: document.createElement("div"),
             dragger: document.createElement("div"),
-            remover: document.createElement("div")
+            remover: document.createElement("div"),
+            settings: document.createElement("div")
         }
         this._header.holder.className = "widget-header"
 
@@ -611,10 +627,20 @@ class Widget extends WidgetBase {
             main.refresh()
         })
 
+        this._header.settings.className = "material-symbols-outlined widget-settings-toggle"
+        this._header.settings.innerText = "settings"
+        this._header.holder.appendChild(this._header.settings)
+
         this._header.holder.appendChild(this._header.name)
         this.name = "Widget"
 
         this.el.append(this._header.holder)
+        //#endregion
+
+        //#region Widget Settings
+        this.settingsEl = document.createElement("div")
+        this.settingsEl.className = "widget-settings hidden"
+        document.body.appendChild(this.settingsEl)
         //#endregion
 
         this.content = document.createElement("div")
@@ -622,6 +648,33 @@ class Widget extends WidgetBase {
 
         this.el.appendChild(this.content)
     }
+
+    /**
+     * Adds a setting to the widget settings menu
+     * @param name Setting name
+     * @param type SettingType or array of {"val":"", "display":""} dropdown options
+     * @param refresh What kind of RefreshMode to use
+     * @param additionalCallbacks Any additional functions that should be called when the setting is changed
+     */
+    addSetting(name, type, refresh = RefreshMode.NORMAL, ...additionalCallbacks) {
+        this.settings[name] = {
+            value: "",
+            type,
+            refresh,
+            additionalCallbacks,
+        }
+        // TODO elements and all that junk
+    }
+
+    /**
+     * Gets the value of a setting
+     * @param setting The setting to get the value of
+     */
+    getSetting(setting) {
+        return this.settings[setting].value
+    }
+
+    // TODO add setting validation with a addSettingValidation(setting, validityFunction) function where validityFunction returns true if the change is valid, false if not.
 
     get name() {
         return this._name

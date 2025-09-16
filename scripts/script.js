@@ -69,7 +69,11 @@ let usingOffline = false
 let starUnicode = String.fromCodePoint(9733)
 let crossOutUnicode = "X"
 
-let processedData
+let processedData = {
+    "orpheus": {
+        "data": {"number": {}, "name": {}}
+    }
+}
 
 //#endregion
 
@@ -175,6 +179,7 @@ function loadEvent() {
                 team_data[team["team_number"]].Name = team["nickname"]
                 team_data[team["team_number"]].TBA = team
                 team_data[team["team_number"]].TBA["matches"] = {}
+                processedData["orpheus"]["data"]["name"][team["team_number"]] = team["nickname"]
                 main.hardRefresh()
                 if (usingTBAMatches) { // TODO (see other todo aaa) - replace this with only one api call to lower loading times.
                     loading++
@@ -521,12 +526,9 @@ function processData() {
     console.log(teams)
     console.log(dataOut)
 
-    processedData = dataOut
+    processedData = Object.assign({}, processedData, dataOut)
 
-    let orpheus = {"data": {
-        "number": {},
-        "name": {}
-    }}
+    let orpheus = processedData["orpheus"]
     for (let team of teams) {
         orpheus["data"]["number"][team] = team
     }
@@ -536,7 +538,7 @@ function processData() {
     table.addTeam(teams)
     table.addColumn("pit`Drivetrain")
 
-    table2.addColumn(["orpheus`number", "match`Scoring`Coral Scored", "match`tba climb"])
+    table2.addColumn(["orpheus`number", "orpheus`name", "match`Scoring`Coral Scored", "match`tba climb"])
     table2.addTeam(teams)
     table2.addColumn("pit`Drivetrain")
 }
