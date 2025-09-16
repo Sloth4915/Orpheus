@@ -55,9 +55,19 @@ class WidgetBase {
         this.refresh()
     }
 
+    /**
+     * A soft refresh - maybe width/height changed or some other action. Don't do significant processing in this step, as it may happen often.
+     */
     refresh() {
         this.el.style.width = this.w + "px"
         this.el.style.height = this.h + "px"
+    }
+
+    /**
+     * A hard refresh - something significant has changed and you should do stuff that will require processing here.
+     */
+    hardRefresh() {
+
     }
 
     static generateId() {
@@ -175,6 +185,11 @@ class WidgetGroup extends WidgetBase {
             if (this.axis === "x") biggestChild.widget.setSize(biggestChild.size * (this.width - resizerSize), this.height)
             if (this.axis === "y") biggestChild.widget.setSize(this.width, biggestChild.size * (this.height - resizerSize))
         }
+    }
+    hardRefresh() {
+        super.hardRefresh();
+        for (let child of this.children) child.widget.hardRefresh()
+        this.refresh()
     }
     addChild(child, size = "unset", insertIndex = this.children.length, refresh = true) {
         if (child.parent !== null) child.parent.removeChild(child, refresh)
@@ -377,6 +392,11 @@ class WidgetTabGroup extends WidgetBase {
             if (this.activeChild == i) this.header.selectButtons[i].classList.add("selected")
             else this.header.selectButtons[i].classList.remove("selected")
         }
+    }
+    hardRefresh() {
+        super.hardRefresh();
+        for (let child of this.children) child.hardRefresh()
+        this.refresh()
     }
     addChild(child, insertIndex = this.children.length) {
         if (child.parent !== null) child.parent.removeChild(child)

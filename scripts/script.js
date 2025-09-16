@@ -175,7 +175,8 @@ function loadEvent() {
                 team_data[team["team_number"]].Name = team["nickname"]
                 team_data[team["team_number"]].TBA = team
                 team_data[team["team_number"]].TBA["matches"] = {}
-                if (usingTBAMatches) {
+                main.hardRefresh()
+                if (usingTBAMatches) { // TODO (see other todo aaa) - replace this with only one api call to lower loading times.
                     loading++
                     load("team/frc" + team["team_number"] + "/event/" + year + eventKey + "/matches", function (data) {
                         loading--
@@ -214,9 +215,7 @@ function loadEvent() {
                         for (let x of data) {
                             if (x.type === "avatar") {
                                 team_data[team["team_number"]].Icon = "data:image/png;base64," + x.details["base64Image"]
-                                for (let logo of document.querySelectorAll(`[data-team-logo="${team["team_number"]}"]`)) {
-                                    logo.src = "data:image/png;base64," + x.details["base64Image"]
-                                }
+                                main.hardRefresh()
                             }
                             else if (x.type === "imgur") team_data[team["team_number"]].TBA.images.push({type: "image", src: x["direct_url"]})
                             else if (x.type === "youtube") team_data[team["team_number"]].TBA.images.push({type: "youtube", src: x["foreign_key"]})
@@ -242,10 +241,13 @@ function loadEvent() {
             loading--
             checkLoading()
         })
-        if (usingTBAMatches) {
+        if (usingTBAMatches) { // TODO (see other todo aaa)
             load("event/" + year + eventKey + "/matches", function (data) {
                 for (let m of data) {
-                    if (m["comp_level"] === "qm") tbaMatches[m["match_number"]] = m
+                    if (m["comp_level"] === "qm") {
+                        tbaMatches[m["match_number"]] = m
+                        // TODO
+                    }
                 }
             })
         }
@@ -285,6 +287,9 @@ math.import({
 let internalMapping = {
     "number": {
         "alias": "Team Number"
+    },
+    "name": {
+        "alias": "Team Name"
     }
 }
 
@@ -519,14 +524,15 @@ function processData() {
     processedData = dataOut
 
     let orpheus = {"data": {
-        "number": {}
+        "number": {},
+        "name": {}
     }}
     for (let team of teams) {
         orpheus["data"]["number"][team] = team
     }
     processedData["orpheus"] = orpheus
 
-    table.addColumn(["orpheus`number", "match`Scoring`Coral Scored", "match`tba climb"])
+    table.addColumn(["orpheus`number", "orpheus`name", "match`Scoring`Coral Scored", "match`tba climb"])
     table.addTeam(teams)
     table.addColumn("pit`Drivetrain")
 
@@ -699,7 +705,7 @@ document.querySelector("#top-rounding").onclick = function() {
     rounding = Math.pow(10, roundingDigits)
     saveGeneralSettings()
     setRoundingEl()
-    regenTable()
+    main.hardRefresh()
 }
 function setRoundingEl() {
     document.querySelector("#top-rounding").innerText = "Rounding: " + (roundingDigits === 0 ? "Integer" : (roundingDigits === 16 ? "Float" : roundingDigits + " digits"))
@@ -969,104 +975,10 @@ function columnEditPanel() {
 //#endregion
 
 //#region Sorting, Stars, Ignore
-let sortedTeams = []
-function sortTeams() {
-    if (columns.length === 0) return
-    if (selectedSort.display === "string") {
-        let arr = []
-        let values = {}
-        for (let i of Object.keys(team_data)) {
-            arr.push(i)
-            values[i] = (""+team_data[i][selectedSort.name]).toString().toLowerCase()
-        }
-        arr.sort(function(a, b) {
-            if (values[a] < values[b]) return -1
-            if (values[a] > values[b]) return 1
-            return 0
-        })
-        sortedTeams = arr
-    } else { // Number
-        let arr = []
-        for (let i of Object.keys(team_data)) {
-            arr.push(i)
-        }
-        arr.sort(function(a, b) {
-            if (isNaN(team_data[a][selectedSort.name]) && isNaN(team_data[b][selectedSort.name])) return 0
-            if (isNaN(team_data[a][selectedSort.name])) return -1
-            if (isNaN(team_data[b][selectedSort.name])) return 1
-            return team_data[a][selectedSort.name] - team_data[b][selectedSort.name]
-        })
-        sortedTeams = arr
-    }
-}
-
-function sort(team) {
-    let starOffset = ((starred.includes(team) && usingStar) ? -Math.pow(10,9) : 0)
-    let ignoreOffset = ((ignored.includes(team) && usingIgnore) ? Math.pow(10,9) : 0)
-    let index = sortedTeams.indexOf(team)
-    if (sortDirection !== -1) index = 10000 - index
-    return ignoreOffset + starOffset + (index)
-}
-function changeSort(to) {
-    if (selectedSort === to) sortDirection *= -1
-    else {
-        selectedSort = to
-        sortDirection = 1
-    }
-
-    for (let el of document.getElementsByClassName("highlighted")) el.classList.remove("highlighted")
-    for (let el of document.getElementsByClassName("top")) el.classList.remove("top")
-    for (let el of document.getElementsByClassName("bottom")) el.classList.remove("bottom")
-
-    document.querySelector("#select_" + to.name.replaceAll(/\W/g,"")).classList.add("highlighted")
-    if (sortDirection === 1) document.querySelector("#select_" + to.name.replaceAll(/\W/g,"")).classList.add("top")
-    if (sortDirection === -1) document.querySelector("#select_" + to.name.replaceAll(/\W/g,"")).classList.add("bottom")
-
-    regenTable()
-}
-function star(i) {
-    set_star(i, !starred.includes(i))
-}
-function star_toggle() {
-    usingStar = !usingStar
-    document.querySelector("#select_star").classList.toggle("filled")
-    regenTable()
-    saveTeams()
-}
-function set_star(team, to, regen=true) {
-    if (starred.includes(team)) starred.splice(starred.indexOf(team), 1)
-    if (to) {
-        starred.push(team)
-        set_ignore(team, false)
-    }
-    if (regen) regenTable()
-    saveTeams()
-    setStarbook()
-}
-function ignore(i) {
-    set_ignore(i, !ignored.includes(i))
-}
-function ignore_toggle() {
-    usingIgnore = !usingIgnore
-    document.querySelector("#select_ignore").classList.toggle("filled")
-    regenTable()
-    saveTeams()
-    setStarbook()
-}
-function set_ignore(team, to, regen=true) {
-    if (ignored.includes(team)) ignored.splice(ignored.indexOf(team), 1)
-    if (to) {
-        ignored.push(team)
-        set_star(team, false)
-    }
-    if (regen) regenTable()
-    saveTeams()
-}
-
 document.querySelector("#top-show-hide-ignored").addEventListener("click", () => {
     showIgnoredTeams = !showIgnoredTeams
     document.querySelector("top-show-hide-ignored").innerText = "Ignored Teams: " + (showIgnoredTeams ? "Shown" : "Hidden")
-    regenTable()
+    main.hardRefresh()
     saveGeneralSettings()
 })
 

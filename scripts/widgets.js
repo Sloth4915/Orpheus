@@ -22,6 +22,8 @@ class Table extends Widget {
             let logoPlaceholder = document.createElement("div")
             logoPlaceholder.className = "table-logo placeholder"
             this.header.appendChild(logoPlaceholder)
+            console.log(logoPlaceholder)
+            this.hasAddedMedia = true
         }
 
         this.minWidth = 400
@@ -188,9 +190,11 @@ class Table extends Widget {
             }
 
             if (usingTBAMedia) {
-                let logo = document.createElement("div")
+                let logo = document.createElement("img")
                 logo.setAttribute("data-team-logo", team)
-                if (team_data[team] !== undefined) logo.src = team_data[team]["Icon"]
+                logo.setAttribute("data-id", this.id)
+                if (typeof team_data[team] !== "undefined" && typeof team_data[team].Icon !== "undefined") logo.src = team_data[team].Icon
+                else logo.src = MISSING_LOGO
                 logo.className = "table-logo"
                 teamEl.appendChild(logo)
             }
@@ -246,5 +250,30 @@ class Table extends Widget {
                 document.querySelector(`[data-column-size="${col.columnId}"][data-id="${this.id}"]`).style.order = ((col.order * 2) + 101)
             }
         }
+    }
+
+    /**
+     * Will refresh table values
+     */
+    hardRefresh() {
+        super.hardRefresh();
+
+        // Add icon to header, if it doesn't exist yet.
+        if (this.hasAddedMedia === undefined && usingTBAMedia) {
+            let logoPlaceholder = document.createElement("div")
+            logoPlaceholder.className = "table-logo placeholder"
+            this.header.appendChild(logoPlaceholder)
+            this.hasAddedMedia = true
+        }
+
+        // Update logos
+        for (let team of this.teams) {
+            for (let logo of document.querySelectorAll(`[data-id="${this.id}"][data-team-logo="${team["team_number"]}"]`)) {
+                if (typeof team_data[team] !== "undefined" && typeof team_data[team].Icon !== "undefined") logo.src = team_data[team].Icon
+                else logo.src = MISSING_LOGO
+            }
+        }
+
+        // TODO add refresh for values
     }
 }
