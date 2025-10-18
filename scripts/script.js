@@ -68,7 +68,9 @@ let year
 let tieValue = 0.5
 
 let desmosColors
-const desmosScriptSrc = "https://www.desmos.com/api/v1.10/calculator.js?apiKey=dcb31709b452b1cf9dc26972add0fda6"
+// This API key is only allowed for use on Orpheus. If you'd like to add Desmos to your fork of Orpheus or for use in your own project, please visit www.desmos.com/my-api or reach out to the Desmos Studio team at partnerships@desmos.com
+// Desmos is great and I don't want them to be mad at me
+const desmosScriptSrc = "https://www.desmos.com/api/v1.10/calculator.js?apiKey=14470c380841448eae58c1b5f832477f"
 let graphSettings = {
     x: "relative", // relative or absolute
     points: true,
