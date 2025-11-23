@@ -1,3 +1,14 @@
+/**
+ * Clamps a value to a minimum and maximum
+ * @param value The value to be clamped
+ * @param min The minimum value
+ * @param max The maximum value
+ * @returns {number}
+ */
+Math.clamp = function(value, min, max) {
+    return Math.max(Math.min(value, max), min)
+}
+
 class WidgetBase {
     constructor() {
         this.w = 0
@@ -81,6 +92,10 @@ class WidgetBase {
 
         widgetIds.push(id)
         return id
+    }
+
+    toString() {
+        return this.name
     }
 }
 
@@ -192,6 +207,13 @@ class WidgetGroup extends WidgetBase {
         this.refresh()
     }
     addChild(child, size = "unset", insertIndex = this.children.length, refresh = true) {
+        if (child.type === "tabs" && child.children.length === 0) {
+            return
+        }
+        if (child.type === "tabs" && child.children.length === 1) {
+            child = child.children[0]
+        }
+
         if (child.parent !== null) child.parent.removeChild(child, refresh)
         child.parent = this
 
@@ -480,6 +502,11 @@ class WidgetTabGroup extends WidgetBase {
     becomeOrphan(child) {
         this.removeChild(child)
     }
+    indexOf(child) {
+        for (let i in this.children)
+            if (this.children[i] === child) return parseInt(i)
+        return -1
+    }
 
     get activeChild() {
         return this._activeChild
@@ -558,14 +585,88 @@ class Widget extends WidgetBase {
 
         let isDragging = false
 
+        /**
+         * @return "{widget, axis, dragPos, tabGroup}", "null"
+         */
+        function getDraggingWidget(x,y) {
+            for (let widget of activeWidgets) {
+                if (widget === this) continue
+                if (widget.type === "group") continue
+                if (widget.parent.type === "tabs") continue
+
+                let bound = widget.el.getBoundingClientRect()
+                if (bound.top < y && bound.top - y > -30 && x > bound.left && x < bound.right) { // Top
+                    console.log(widget.parent.type, bound.top - y)
+                    if (bound.top - y > -22) {
+                        if (widget.type === "tabs") {
+                            return {widget, "tabGroup": "add"}
+                        } else {
+                            return {widget, "tabGroup": "new"}
+                        }
+                    } else if (widget.parent.type !== "tabs") return {widget, "axis": "y", "dragPos": "before"}
+                    break
+                }
+                else if (bound.right > x && bound.right - x < 30 && y > bound.top && y < bound.bottom) {
+                    return {widget, "axis": "x", "dragPos": "after"}
+                }
+                else if (bound.left < x && bound.left - x > -30 && y > bound.top && y < bound.bottom) {
+                    return {widget, "axis": "x", "dragPos": "before"}
+                }
+                else if (bound.bottom > y && bound.bottom - y < 30 && x > bound.left && x < bound.right) {
+                    return {widget, "axis": "y", "dragPos": "after"}
+                }
+
+                // fixme Dragging an adjacent widget above or below another causes issues
+            }
+            return null
+        }
+
         this._header.dragger.addEventListener("mousedown", () => {
             isDragging = true
             this._header.dragger.classList.add("dragging")
         })
         document.body.addEventListener("mousemove", (e) => {
             if (!isDragging) return
-            this._header.dragger.style.left = e.clientX - (this._header.dragger.offsetWidth / 2) + "px"
-            this._header.dragger.style.top = e.clientY - (this._header.dragger.offsetHeight / 2) + "px"
+            this._header.dragger.style.left = Math.clamp(e.clientX - (this._header.dragger.offsetWidth / 2), 0,window.innerWidth - this._header.dragger.offsetWidth) + "px"
+            this._header.dragger.style.top = Math.clamp(e.clientY - (this._header.dragger.offsetHeight / 2), 0, window.innerHeight - this._header.dragger.offsetHeight - 8) + "px"
+
+            let currentDrag = getDraggingWidget(e.clientX, e.clientY)
+            console.log(currentDrag)
+            if (currentDrag !== null) {
+                widgetDragPreview.classList.remove("hidden")
+
+                let el = currentDrag.widget.el
+
+                if (currentDrag.tabGroup === undefined) {
+                    let width, height
+                    widgetDragPreview.style.width = (width = currentDrag.axis === "y" ? el.offsetWidth : 30) + "px"
+                    widgetDragPreview.style.height = (height = currentDrag.axis === "x" ? el.offsetHeight : 30) + "px"
+
+                    if (currentDrag.axis === "x" && currentDrag.dragPos === "before") {
+                        widgetDragPreview.style.left = el.offsetLeft + "px"
+                        widgetDragPreview.style.top = el.offsetTop + "px"
+                    }
+                    if (currentDrag.axis === "x" && currentDrag.dragPos === "after") {
+                        widgetDragPreview.style.left = el.offsetLeft + el.offsetWidth - width + "px"
+                        widgetDragPreview.style.top = el.offsetTop + "px"
+                    }
+                    if (currentDrag.axis === "y" && currentDrag.dragPos === "before") {
+                        widgetDragPreview.style.left = el.offsetLeft + "px"
+                        widgetDragPreview.style.top = el.offsetTop + "px"
+                    }
+                    if (currentDrag.axis === "y" && currentDrag.dragPos === "after") {
+                        widgetDragPreview.style.left = el.offsetLeft + "px"
+                        widgetDragPreview.style.top = el.offsetTop + el.offsetHeight - height + "px"
+                    }
+                } else {
+                    widgetDragPreview.style.width = el.offsetWidth + "px"
+                    widgetDragPreview.style.height = "23px"
+
+                    widgetDragPreview.style.left = (el.offsetLeft) + "px"
+                    widgetDragPreview.style.top = el.offsetTop+"px"
+                }
+
+            } else widgetDragPreview.classList.add("hidden")
         })
         document.body.addEventListener("mouseleave", () => {
             isDragging = false
@@ -574,8 +675,10 @@ class Widget extends WidgetBase {
         document.body.addEventListener("mouseup", (e) => {
             if (!isDragging) return
             isDragging = false
+            widgetDragPreview.classList.add("hidden")
             this._header.dragger.classList.remove("dragging")
 
+            // TODO: replace with getDraggingWidget
             for (let widget of activeWidgets) {
                 if (widget === this) continue
                 if (widget.type === "group") continue
@@ -615,13 +718,25 @@ class Widget extends WidgetBase {
             }
 
             function completeDrag(widget, axis, dragPos) {
-                this.parent.removeChild(this)
                 let widgetParent = widget.parent
                 let group = new WidgetGroup()
                 group.axis = axis
-                widgetParent.replaceChild(widget, group)
-                group.addChild(widget, 0.5, dragPos === "after" ? 0 : 1, false)
-                group.addChild(this, 0.5, dragPos === "after" ? 1 : 0, false)
+
+                if ((widget.type === "tabs" || widget.type === "groups") && this.parent === widget && this.parent.children.length === 2) {
+                    console.log(widget.indexOf(this))
+                    let sibling = this.parent.children[Math.abs(widget.indexOf(this) - 1)]
+                    sibling.parent = null
+                    sibling.el.classList.remove("inactive-tab")
+                    this.parent = null
+                    group.addChild(sibling, 0.5, dragPos === "after" ? 0 : 1, false)
+                    group.addChild(this, 0.5, dragPos === "after" ? 1 : 0, false)
+                    widgetParent.replaceChild(widget, group)
+                } else {
+                    this.parent.removeChild(this)
+                    widgetParent.replaceChild(widget, group)
+                    group.addChild(widget, 0.5, dragPos === "after" ? 0 : 1, false)
+                    group.addChild(this, 0.5, dragPos === "after" ? 1 : 0, false)
+                }
             }
 
             main.refresh()
@@ -699,6 +814,10 @@ class Color extends Widget {
     }
 }
 
+let widgetDragPreview = document.createElement("div")
+widgetDragPreview.className = "widget-drag-preview"
+document.body.appendChild(widgetDragPreview)
+
 let activeWidgets = []
 let widgetIds = [] // Documents widget ids that have been used
 
@@ -739,4 +858,4 @@ let mpurp = new Color("mediumpurple")
 sub2.addChild(mpurp, 0)
 
 main.addChild(new Color("gold"))
-*/
+ */
