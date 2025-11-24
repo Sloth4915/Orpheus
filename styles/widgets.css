@@ -51,6 +51,12 @@
     overflow-y: auto;
 }
 
+.widget-content-real {
+    min-width: 100%;
+    overflow-x: auto;
+    overflow-y: auto;
+}
+
 .widget-header {
     background-color: var(--bg);
     border-bottom: 1px solid var(--line);

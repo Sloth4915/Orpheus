@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="styles/main.css"/>
     <link rel="stylesheet" href="styles/inputs.css"/>
     <link rel="stylesheet" href="styles/table.css"/>
+    <link rel="stylesheet" href="styles/graph.css"/>
     <link rel="stylesheet" href="styles/context_menu.css"/>
     <link rel="stylesheet" href="styles/projector.css" title="projector" id="projector-styles"/>
     <link rel="stylesheet" href="styles/notes.css"/>
@@ -15,6 +16,13 @@
     <link rel="stylesheet" href="styles/overrides.css"/>
     <script src="deps/localForage/dist/localforage.js"></script>
     <script src="deps/mathjs/math.js"></script>
+    <!-- This API key is only allowed for use on Orpheus. If you'd like to add Desmos to your fork of Orpheus or for use in your own project, please visit www.desmos.com/my-api or reach out to the Desmos Studio team at partnerships@desmos.com -->
+    <script src="https://www.desmos.com/api/v1.11/calculator.js?apiKey=14470c380841448eae58c1b5f832477f" onload="
+        desmosReady = true;
+        if (typeof onDesmosLoad !== 'undefined') {for (f of onDesmosLoad) f();}"
+    onerror="
+        desmosReady = false;
+    "></script>
     <script src="scripts/uihandler.js" defer></script>
     <script src="scripts/widgets.js" defer></script>
     <script src="scripts/script.js" defer></script>

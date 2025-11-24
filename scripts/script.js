@@ -52,7 +52,7 @@ let year
 let tieValue = 0.5
 
 let desmosColors
-const desmosScriptSrc = "https://www.desmos.com/api/v1.10/calculator.js?apiKey=dcb31709b452b1cf9dc26972add0fda6"
+let onDesmosLoad = []
 
 let showNamesInTeamComments
 
@@ -344,7 +344,6 @@ function processData() {
         console.log(schema, datumMapping, context)
         for (let x of Object.keys(datumMapping)) {
             if (datumMapping[x]["type"]) { // If has type, then we can evaluate
-
                 if (datumMapping[x]["type"] === "comment") {
                     let comments = {}
                     for (let team of teams) comments[team] = {}
@@ -541,6 +540,9 @@ function processData() {
     table2.addColumn(["orpheus`number", "orpheus`name", "match`Scoring`Coral Scored", "match`tba climb"])
     table2.addTeam(teams)
     table2.addColumn("pit`Drivetrain")
+
+    graph = new Graph()
+    tabGroup.addChild(graph)
 }
 
 function evaluate(expression, schema, context) {
@@ -696,6 +698,33 @@ function csvToJson(csv) {
     return json
 }
 
+function getColumnFromID(id) {
+    let data = id.split("`")[0]
+    let location = id.split("`").slice(1)
+
+    let col
+    if (data === "orpheus") {
+        col = internalMapping
+        for (let x of location) col = col[x]
+    }
+    else {
+        col = mapping[data]["data"]
+        for (let x of location) col = col[x]
+    }
+
+    let dataCol = processedData[data]["data"]
+    for (let x of location) dataCol = dataCol[x]
+
+    let name = col["alias"] ? col["alias"] : id.split("`")[id.split("`").length - 1]
+
+    return {
+        name,
+        id,
+        "mapping": col,
+        data: dataCol
+    }
+}
+
 // Mapping Download
 document.querySelector("#top-mapping-download").onclick = () => download("mapping.json", JSON.stringify(mapping))
 
@@ -747,15 +776,37 @@ function setProjectorModeSheet() {
     else document.querySelector(":root").classList.remove("projector")
 
     setTimeout(setHeaderControlsPositions, 1000)
-    setGraphColors()
 }
 
-function setGraphColors() {
-    if (projectorMode)
-        desmosColors = ["#ff0000","#00ff00","#0000ff","#000000","#dd00ff","#00ffee"]
-    else
-        desmosColors = [Desmos.Colors.RED, Desmos.Colors.BLUE, Desmos.Colors.GREEN, Desmos.Colors.PURPLE, Desmos.Colors.ORANGE, Desmos.Colors.BLACK]
-}
+document.querySelector("#top-graph-x").addEventListener("click", () => {
+    graphSettings.x = graphSettings.x === "relative" ? "absolute" : "relative"
+
+    document.querySelector("#top-graph-x").innerText = "X Axis: " + (graphSettings.x === "relative" ? "Relative" : "Absolute")
+
+    saveGeneralSettings()
+    main.hardRefresh()
+})
+
+document.querySelector("#top-graph-display").addEventListener("click", () => {
+    if (graphSettings.points) {
+        if (graphSettings.bestfit) {
+            graphSettings.points = false
+        } else {
+            graphSettings.bestfit = true
+        }
+    } else {
+        graphSettings.points = true
+        graphSettings.bestfit = false
+    }
+
+    if (graphSettings.points) {
+        if (graphSettings.bestfit) document.querySelector("#top-graph-display").innerText = "Graphs: Points & Lines"
+        else document.querySelector("#top-graph-display").innerText = "Graphs: Only Points"
+    } else document.querySelector("#top-graph-display").innerText = "Graphs: Only lines of best fit"
+
+    saveGeneralSettings()
+    main.hardRefresh()
+})
 //#endregion
 
 //#region Column edit panel, Keyboard Controls
@@ -1777,18 +1828,6 @@ localforage.getItem(ENABLED_APIS, (err, apis) => {
 
     usingDesmos = apis.desmos
     document.querySelector("#top-toggle-use-desmos").innerText = "Desmos API: " + (usingDesmos ? "Enabled" : "Disabled")
-    if (usingDesmos) {
-        let desmosScript = document.createElement("script")
-        document.head.appendChild(desmosScript)
-        desmosScript.src = desmosScriptSrc
-        loading++
-        checkLoading()
-        desmosScript.addEventListener("load", () => {
-            loading--
-            if (initLoading === 0) checkLoading()
-        })
-    }
-    // TODO: if desmos is disabled then disable the graph settings options
 
     usingStatbotics = apis.statbotics
     document.querySelector("#top-toggle-use-statbotics").innerText = "Statbotics: " + (usingStatbotics ? "Enabled" : "Disabled")
@@ -1837,6 +1876,8 @@ table2.name = "Table 2"
 tabGroup.addChild(table2)
 
 main.addChild(tabGroup)
+
+let graph
 
 function finishInit() {
     // View robots

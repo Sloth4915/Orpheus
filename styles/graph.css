@@ -1,0 +1,32 @@
+.graph {
+    box-sizing: border-box;
+}
+
+.graph-teams {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    justify-content: space-evenly;
+    align-items: center;
+}
+
+.graph-team {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+}
+
+.graph-team-name {
+    font-size: 1.5rem;
+    font-weight: bolder;
+}
+
+.graph-logo {
+    width: calc(50px);
+    height: calc(50px);
+    border-radius: 0.5rem;
+    border: 1px solid var(--line);
+    object-fit: contain;
+}

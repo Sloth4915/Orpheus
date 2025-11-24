@@ -578,7 +578,7 @@ class Widget extends WidgetBase {
         })
         this._header.holder.appendChild(this._header.remover)
 
-        // Widget Dragging
+        //#region Widget Dragging
         this._header.dragger.className = "material-symbols-outlined widget-drag"
         this._header.dragger.innerText = "drag_indicator"
         this._header.holder.appendChild(this._header.dragger)
@@ -596,7 +596,6 @@ class Widget extends WidgetBase {
 
                 let bound = widget.el.getBoundingClientRect()
                 if (bound.top < y && bound.top - y > -30 && x > bound.left && x < bound.right) { // Top
-                    console.log(widget.parent.type, bound.top - y)
                     if (bound.top - y > -22) {
                         if (widget.type === "tabs") {
                             return {widget, "tabGroup": "add"}
@@ -631,7 +630,7 @@ class Widget extends WidgetBase {
             this._header.dragger.style.top = Math.clamp(e.clientY - (this._header.dragger.offsetHeight / 2), 0, window.innerHeight - this._header.dragger.offsetHeight - 8) + "px"
 
             let currentDrag = getDraggingWidget(e.clientX, e.clientY)
-            console.log(currentDrag)
+
             if (currentDrag !== null) {
                 widgetDragPreview.classList.remove("hidden")
 
@@ -742,6 +741,9 @@ class Widget extends WidgetBase {
             main.refresh()
         })
 
+        //#endregion
+
+        //#region Widget Settings
         this._header.settings.className = "material-symbols-outlined widget-settings-toggle"
         this._header.settings.innerText = "settings"
         this._header.holder.appendChild(this._header.settings)
@@ -752,14 +754,13 @@ class Widget extends WidgetBase {
         this.el.append(this._header.holder)
         //#endregion
 
-        //#region Widget Settings
         this.settingsEl = document.createElement("div")
         this.settingsEl.className = "widget-settings hidden"
         document.body.appendChild(this.settingsEl)
         //#endregion
 
         this.content = document.createElement("div")
-        this.content.className = "widget-content"
+        this.content.className = "widget-content-real"
 
         this.el.appendChild(this.content)
     }
@@ -799,6 +800,12 @@ class Widget extends WidgetBase {
         this._header.name.innerText = this._name
         if (this.parent) this.parent.refresh()
     }
+
+    refresh() {
+        super.refresh();
+        this.content.style.width = (this.w) + "px"
+        this.content.style.height = (this.h - this._header.holder.offsetHeight) + "px"
+    }
 }
 
 // Todo add popup widget holder for things like notebook
@@ -825,12 +832,13 @@ let main = new WidgetGroup()
 main.name = "main"
 document.querySelector(".content").appendChild(main.el)
 
+let headerAndFooterHeight = 120
 window.addEventListener("resize", () => {
     main.width = window.innerWidth
-    main.height = window.innerHeight - 90
+    main.height = window.innerHeight - headerAndFooterHeight
 })
 main.width = window.innerWidth
-main.height = window.innerHeight - 90
+main.height = window.innerHeight - headerAndFooterHeight
 
 /**
 let red = new Color("darkred")

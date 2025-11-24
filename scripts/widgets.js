@@ -31,32 +31,15 @@ class Table extends Widget {
     }
     addColumn(...[columns]) {
         if (typeof columns === "string") columns = [columns]
-        for (let column of columns) {
-            let data = column.split("`")[0]
-            let location = column.split("`").slice(1)
-
-            let col
-            if (data === "orpheus") {
-                col = internalMapping
-                for (let x of location) col = col[x]
-            }
-            else {
-                console.log(data)
-                col = mapping[data]["data"]
-                for (let x of location) col = col[x]
-            }
-
-            let dataCol = processedData[data]["data"]
-            for (let x of location) dataCol = dataCol[x]
-
-            let name = col["alias"] ? col["alias"] : column.split("`")[column.split("`").length - 1]
+        for (let id of columns) {
+            let column = getColumnFromID(id)
 
             this.columns.push({
-                columnId: column,
-                name: name,
-                mapping: col,
+                columnId: column.id,
+                name: column.name,
+                mapping: column.mapping,
                 size: 110, // Pixels
-                data: dataCol,
+                data: column.data,
                 order: this.columns.length, // Left to right
             })
             let thisColumn = this.columns[this.columns.length - 1]
@@ -64,11 +47,11 @@ class Table extends Widget {
             for (let team of this.teams) {
                 let dataEl = document.createElement("div")
                 dataEl.className = "data"
-                dataEl.setAttribute("data-column", column)
+                dataEl.setAttribute("data-column", column.id)
                 dataEl.setAttribute("data-team", team)
                 dataEl.setAttribute("data-id", this.id)
 
-                let value = typeof dataCol[team] === "object" ? dataCol[team]["summarized"] : dataCol[team]
+                let value = typeof column.data[team] === "object" ? column.data[team]["summarized"] : column.data[team]
                 if (typeof value === "number") dataEl.innerText = (Math.round(value * rounding) / rounding) + ""
                 else dataEl.innerText = value
                 document.querySelector(`.row[data-team="${team}"][data-id="${this.id}"]`).appendChild(dataEl)
@@ -76,18 +59,18 @@ class Table extends Widget {
 
             let headerEl = document.createElement("div")
             headerEl.className = "data header"
-            headerEl.setAttribute("data-column", column)
+            headerEl.setAttribute("data-column", column.id)
             headerEl.setAttribute("data-id", this.id)
-            headerEl.innerText = name
+            headerEl.innerText = column.name
             headerEl.addEventListener("click", () => {
-                this.setActiveColumn(column)
+                this.setActiveColumn(column.id)
             })
             this.header.appendChild(headerEl)
 
             //#region Resizing
             let colResizer = document.createElement("div")
             colResizer.className = "data-resizer"
-            colResizer.setAttribute("data-column-size", column)
+            colResizer.setAttribute("data-column-size", column.id)
             colResizer.setAttribute("data-id", this.id)
             let resizing = false
             let index = this.columns.length - 1
@@ -107,7 +90,7 @@ class Table extends Widget {
             //#region Dragging
             let colDragger = document.createElement("div")
             colDragger.className = "data-dragger material-symbols-outlined"
-            colDragger.setAttribute("data-column-drag", column)
+            colDragger.setAttribute("data-column-drag", column.id)
             colDragger.setAttribute("data-id", this.id)
             colDragger.innerText = "drag_indicator"
 
@@ -133,7 +116,7 @@ class Table extends Widget {
                 else this.columnDragIndicator.style.order = ((column.order * 2) + 101) + ""
 
                 dragData = {
-                    column,
+                    "column": column.id,
                     insertBefore
                 }
             })
@@ -277,3 +260,196 @@ class Table extends Widget {
         // TODO add refresh for values
     }
 }
+
+class Graph extends Widget {
+    constructor() {
+        super();
+
+        this.column = getColumnFromID("match`Scoring`Coral Scored")
+        this.teams = [4915, 2412, 360, 1318, 2046, 1899, 3219, 9023]
+        this.selectedTeam = null
+
+        document.addEventListener("mouseup", () => {
+            if (this.selectedTeam == null) return
+            this.selectedTeam = null
+            this.createExpressions(true)
+        })
+
+        this.name = "Graph - " + this.column.name
+
+        this.calcEl = document.createElement("div")
+        this.calcEl.className = "graph"
+        this.content.appendChild(this.calcEl)
+
+        this.teamsEl = document.createElement("div")
+        this.teamsEl.className = "graph-teams"
+        this.content.appendChild(this.teamsEl)
+
+        if (desmosReady) {
+            this.createCalculator()
+        } else {
+            onDesmosLoad.push(this.createCalculator)
+        }
+
+        this.createTeamList()
+
+        this.minWidth = 200
+        this.minHeight = 200
+    }
+
+    refresh() {
+        super.refresh();
+        this.calcEl.style.width = this.content.offsetWidth - 2 + "px"
+        this.calcEl.style.height = this.content.offsetHeight - this.teamsEl.offsetHeight + "px"
+    }
+
+    createCalculator() {
+        this.calculator = Desmos.GraphingCalculator(this.calcEl, {
+            graphpaper: true,
+            expressions: false,
+            settingsMenu: false,
+            zoomButtons: true,
+            keypad: false,
+            keypadActivated: false,
+            lockViewport: false,
+            fontSize: 16,
+            //projectorMode: true
+        })
+        this.createExpressions()
+    }
+
+    createExpressions(maintainBounds = false) {
+        this.calculator.getExpressions().forEach((expression) => {this.calculator.removeExpression(expression)})
+        this.calculator.updateSettings({xAxisLabel: graphSettings.x === "absolute" ? "Event Match #" : "Team Match #", yAxisLabel: this.column.name})
+
+        let minX = Infinity
+        let maxX = -Infinity
+        let minY = Infinity
+        let maxY = -Infinity
+        for (let i in this.teams) {
+            let team = this.teams[i]
+            let matches = []
+            let values = []
+
+            for (let m in this.column.data[team]) {
+                if (!isNaN(parseFloat(m))) {
+                    if (graphSettings.x === "relative") {
+                        if (usingTBAMatches) {
+                            if (!Object.keys(team_data[team].TBA.matches).includes(m)) continue
+                            else {
+                                let relativeNumber = Object.keys(team_data[team].TBA.matches).indexOf(m) + 1
+                                matches.push(relativeNumber)
+                                minX = Math.min(minX, relativeNumber)
+                                maxX = Math.max(maxX, relativeNumber)
+                            }
+                        } else {
+                            matches.push(m)
+                            minX = Math.min(minX, m)
+                            maxX = Math.max(maxX, m)
+                        }
+                    } else {
+                        matches.push(m)
+                        minX = Math.min(minX, m)
+                        maxX = Math.max(maxX, m)
+                    }
+                    minY = Math.min(minY, this.column.data[team][m])
+                    maxY = Math.max(maxY, this.column.data[team][m])
+                    values.push(this.column.data[team][m])
+                }
+            }
+
+            this.calculator.setExpression({ latex: 'x_' + i + ' = \\left['+matches+'\\right]' });
+            this.calculator.setExpression({ latex: 'y_' + i + ' = \\left['+values+'\\right]' });
+            if (graphSettings.points)
+                this.calculator.setExpression({
+                    latex: '(x_{' + i + '},y_{' + i + '})',
+                    color: this.getTeamColor(i),
+                    pointStyle: this.getTeamShape(i),
+                    pointSize: 16,
+                    pointOpacity: (this.selectedTeam === null ? 0.8 : (this.selectedTeam === team ? 1 : 0.25)),
+                    label: team + " (${x_" + i + "}, ${y_" + i + "})"
+                });
+            if (graphSettings.bestfit)
+                this.calculator.setExpression({
+                    latex: 'y_{' + i + '}\\sim a_{' + i + '}x_{' + i + '}+b_{' + i + '}',
+                    color: this.getTeamColor(i),
+                    lineWidth: 4,
+                    lineOpacity: (this.selectedTeam === null ? 0.8 : (this.selectedTeam === team ? 1 : 0.25))
+                })
+        }
+
+        if (!maintainBounds) {
+            this.calculator.setMathBounds({
+                left: minX - (maxX - minX) * 0.05,
+                right: maxX + (maxX - minX) * 0.05,
+                bottom: minY - (maxY - minY) * 0.05,
+                top: maxY + (maxY - minY) * 0.05
+            })
+            this.calculator.setDefaultState(this.calculator.getState())
+        }
+    }
+
+    createTeamList() {
+        this.teamsEl.innerHTML = ""
+        for (let i in this.teams) {
+            let t = this.teams[i]
+            let teamEl = document.createElement("div")
+            teamEl.className = "graph-team"
+
+            if (usingTBAMedia) {
+                let logo = document.createElement("img")
+                logo.setAttribute("data-team-logo", t)
+                logo.setAttribute("data-id", this.id)
+                if (typeof team_data[t] !== "undefined" && typeof team_data[t].Icon !== "undefined") logo.src = team_data[t].Icon
+                else logo.src = MISSING_LOGO
+                logo.className = "graph-logo"
+                teamEl.appendChild(logo)
+            }
+
+            let teamName = document.createElement("div")
+            teamName.className = "graph-team-name"
+            teamName.style.color = this.getTeamColor(i)
+            teamName.innerText = this.getShapeSymbol(this.getTeamShape(i)) + " " + (usingTBA ? t + " " + team_data[t]["Name"] : t)
+            teamEl.appendChild(teamName)
+
+            teamEl.addEventListener("mousedown", (e) => {
+                e.preventDefault()
+                this.selectedTeam = t
+                this.createExpressions(true)
+            })
+
+            this.teamsEl.appendChild(teamEl)
+        }
+    }
+
+    getTeamColor(i) {
+        let ctx = new OffscreenCanvas(1,1).getContext("2d")
+        ctx.fillStyle = "oklch(56% 46% "+((360 / this.teams.length) * (i))+")"
+        ctx.fillRect(0,0,1,1)
+        return "rgba(" + ctx.getImageData(0,0,1,1).data.join(", ") + ")"
+    }
+
+    getTeamShape(i) {
+        let shapes = ["POINT", "CROSS", "SQUARE", "PLUS", "TRIANGLE", "DIAMOND", "STAR"]
+        return shapes[i % shapes.length]
+    }
+
+    getShapeSymbol(i) {
+        switch (i) {
+            case "POINT": return '⬤'
+            case "CROSS": return '✖'
+            case "SQUARE": return '■'
+            case "PLUS": return '🞦'
+            case "TRIANGLE": return '▲'
+            case "DIAMOND": return '◆'
+            case "STAR": return '★'
+        }
+    }
+
+    hardRefresh() {
+        super.hardRefresh();
+        this.createExpressions()
+        this.createTeamList()
+    }
+}
+
