@@ -265,8 +265,10 @@ class Graph extends Widget {
     constructor() {
         super();
 
+        this.content.classList.add("no-scroll")
+
         this.column = getColumnFromID("match`Scoring`Coral Scored")
-        this.teams = [4915, 2412, 360, 1318, 2046, 1899, 3219, 9023]
+        this.teams = [4915, 2412, 360, 1318, 2046, 1899, 2910, 9023]
         this.selectedTeam = null
 
         document.addEventListener("mouseup", () => {
@@ -299,6 +301,8 @@ class Graph extends Widget {
 
     refresh() {
         super.refresh();
+        if (this.content.offsetHeight < 500) this.content.classList.add("small")
+        else this.content.classList.remove("small")
         this.calcEl.style.width = this.content.offsetWidth - 2 + "px"
         this.calcEl.style.height = this.content.offsetHeight - this.teamsEl.offsetHeight + "px"
     }

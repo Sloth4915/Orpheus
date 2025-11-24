@@ -121,3 +121,8 @@
     z-index: 100000000000;
     box-sizing: border-box;
 }
+
+.no-scroll {
+    overflow-x: hidden;
+    overflow-y: hidden;
+}
