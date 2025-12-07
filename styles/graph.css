@@ -19,13 +19,13 @@
 }
 
 .graph-team-name {
-    font-size: 1.5rem;
+    font-size: 1.3rem;
     font-weight: bolder;
 }
 
 .graph-logo {
-    width: 50px;
-    height: 50px;
+    width: 40px;
+    height: 40px;
     border-radius: 0.5rem;
     border: 1px solid var(--line);
     object-fit: contain;

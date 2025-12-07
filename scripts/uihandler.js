@@ -78,7 +78,7 @@ class WidgetBase {
      * A hard refresh - something significant has changed and you should do stuff that will require processing here.
      */
     hardRefresh() {
-
+        this.refresh()
     }
 
     static generateId() {
@@ -821,6 +821,14 @@ class Color extends Widget {
     }
 }
 
+/**
+ * @param rem
+ * @returns {number} Pixel rem size
+ */
+function getRem(rem) {
+    return rem * parseFloat(getComputedStyle(document.documentElement).fontSize);
+}
+
 let widgetDragPreview = document.createElement("div")
 widgetDragPreview.className = "widget-drag-preview"
 document.body.appendChild(widgetDragPreview)
@@ -832,7 +840,7 @@ let main = new WidgetGroup()
 main.name = "main"
 document.querySelector(".content").appendChild(main.el)
 
-let headerAndFooterHeight = 120
+let headerAndFooterHeight = 90
 window.addEventListener("resize", () => {
     main.width = window.innerWidth
     main.height = window.innerHeight - headerAndFooterHeight

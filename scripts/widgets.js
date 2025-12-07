@@ -30,7 +30,7 @@ class Table extends Widget {
         this.minHeight = 280
     }
     addColumn(...[columns]) {
-        if (typeof columns === "string") columns = [columns]
+        if (typeof columns !== "object") columns = [columns]
         for (let id of columns) {
             let column = getColumnFromID(id)
 
@@ -41,6 +41,9 @@ class Table extends Widget {
                 size: 110, // Pixels
                 data: column.data,
                 order: this.columns.length, // Left to right
+                toString() {
+                    return "Column with id " + this.columnId
+                }
             })
             let thisColumn = this.columns[this.columns.length - 1]
 
@@ -73,8 +76,11 @@ class Table extends Widget {
             colResizer.setAttribute("data-column-size", column.id)
             colResizer.setAttribute("data-id", this.id)
             let resizing = false
-            let index = this.columns.length - 1
-            colResizer.addEventListener("mousedown", () => resizing = true)
+            let index
+            colResizer.addEventListener("mousedown", () => {
+                resizing = true
+                index = this.indexOfColumn(column.id)
+            })
             document.body.addEventListener("mousemove", (e) => {
                 if (!resizing) return
                 this.columns[index].size = Math.max(this.columns[index].size + e.movementX, 70)
@@ -88,6 +94,7 @@ class Table extends Widget {
             //#endregion
 
             //#region Dragging
+            //FIXME Cannot drag column to be the first one when widget does not occupy whole width and is on the left side of screen
             let colDragger = document.createElement("div")
             colDragger.className = "data-dragger material-symbols-outlined"
             colDragger.setAttribute("data-column-drag", column.id)
@@ -97,12 +104,19 @@ class Table extends Widget {
             let dragging = false
             let dragData = {
                 column: null,
-                insertBefore: null
+                insertBefore: null,
             }
-            colDragger.addEventListener("mousedown", () => {
+            let dragRemovalEl
+            colDragger.addEventListener("mousedown", (e) => {
                 dragging = true
                 colDragger.classList.add("dragging")
                 for (let col of this.columns) col.order *= 2
+                dragRemovalEl = document.createElement("div")
+                dragRemovalEl.className = "table-column-drag-remove material-symbols-outlined"
+                dragRemovalEl.innerText = "delete"
+                dragRemovalEl.style.left = (e.clientX - getRem(2)) + "px"
+                dragRemovalEl.style.top = (e.clientY + getRem(3)) + "px"
+                this.content.appendChild(dragRemovalEl)
                 this.refresh()
             })
             document.body.addEventListener("mousemove", (e) => {
@@ -116,21 +130,39 @@ class Table extends Widget {
                 else this.columnDragIndicator.style.order = ((column.order * 2) + 101) + ""
 
                 dragData = {
-                    "column": column.id,
+                    "column": column,
                     insertBefore
                 }
             })
-            document.body.addEventListener("mouseleave", () => dragging = false)
+            document.body.addEventListener("mouseleave", () => {
+                dragging = false
+                this.columnDragIndicator.style.order = "0"
+                if (dragRemovalEl !== undefined) {
+                    dragRemovalEl.remove()
+                    dragRemovalEl = undefined
+                }
+            })
             document.body.addEventListener("mouseup", (e) => {
                 if (!dragging) return
                 dragging = false
                 this.columnDragIndicator.style.order = "0"
 
-                if (dragData.insertBefore) {
-                    thisColumn.order = dragData.column.order - 1
+                let removalBounds = dragRemovalEl.getBoundingClientRect()
+                if (removalBounds.left < e.clientX && e.clientX < removalBounds.right && removalBounds.top < e.clientY && e.clientY < removalBounds.bottom) {
+                    this.removeColumn(thisColumn.columnId)
                 } else {
-                    thisColumn.order = dragData.column.order + 1
+                    if (dragData.insertBefore) {
+                        thisColumn.order = dragData.column.order - 1
+                    } else {
+                        thisColumn.order = dragData.column.order + 1
+                    }
                 }
+
+                if (dragRemovalEl !== undefined) {
+                    dragRemovalEl.remove()
+                    dragRemovalEl = undefined
+                }
+
                 this.refresh()
             })
             //#endregion
@@ -143,7 +175,28 @@ class Table extends Widget {
         this.refresh()
     }
     removeColumn(...[columns]) {
+        if (typeof columns !== "object") columns = [columns]
+        for (let col of columns) {
+            let column = col
+            if (typeof col === "string") column = this.getColumnById(col)
 
+            this.columns.splice(this.indexOfColumn(column), 1)
+
+            document.querySelector(`[data-column-size="${column.columnId}"][data-id="${this.id}"]`).remove()
+            document.querySelector(`[data-column="${column.columnId}"][data-id="${this.id}"]`).remove()
+
+            this.hardRefresh()
+
+            if (this.activeColumn === column.columnId) {
+                this.activeColumn = "" // Stops the setActiveFunction function from trying to change the element
+                this.setActiveColumn(this.columns[0].columnId)
+            }
+        }
+    }
+    setColumns(...[columns]) {
+        if (typeof columns !== "object") columns = [columns]
+        this.removeColumn(this.columns)
+        this.addColumn(columns)
     }
     getColumnById(id) {
         for (let col of this.columns)
@@ -151,8 +204,20 @@ class Table extends Widget {
         return null
     }
     addTeam(...[teams]) {
+        if (typeof teams !== "object") teams = [teams]
         for (let team of teams) {
             this.teams.push(team)
+            this.addTeamEl(team)
+        }
+
+        this.sortRows()
+        this.refresh()
+    }
+    addTeamEl(...[teams]) {
+        if (typeof teams !== "object") teams = [teams]
+        for (let team of teams) {
+            let existingEl = document.querySelector('.row[data-id="' + this.id + '"][data-team="'+ team + '"]')
+            if (existingEl != null) existingEl.remove()
 
             let teamEl = document.createElement("div")
             teamEl.className = "row"
@@ -187,14 +252,18 @@ class Table extends Widget {
 
             this.content.appendChild(teamEl)
         }
-
-        this.refresh()
     }
     removeTeam(...[teams]) {
-
+        if (typeof teams !== "object") teams = [teams]
+        for (let team of teams) {
+            document.querySelector(`.row[data-team="${team}"][data-id="${this.id}"]`).remove()
+            this.teams.splice(this.teams.indexOf(team), 1)
+        }
     }
     setTeams(...[teams]) {
-
+        if (typeof teams !== "object") teams = [teams]
+        this.removeTeam(this.teams.slice()) // Sliced to clone array because there was some funky stuff happening
+        this.addTeam(teams)
     }
     setActiveColumn(id) {
         if (this.activeColumn === id) { // Change Sort
@@ -207,7 +276,21 @@ class Table extends Widget {
             this.sort = 1
         }
 
-        // Sorting
+        this.sortRows()
+    }
+    refresh() {
+        super.refresh()
+
+        for (let col of this.columns) {
+            let elements = document.querySelectorAll(`[data-column="${col.columnId}"][data-id="${this.id}"]`)
+            for (let el of elements) {
+                el.style.width = col.size + 'px'
+                el.style.order = ((col.order * 2) + 100)
+                document.querySelector(`[data-column-size="${col.columnId}"][data-id="${this.id}"]`).style.order = ((col.order * 2) + 101)
+            }
+        }
+    }
+    sortRows() {
         let teams = [...this.teams]
         let data = this.getColumnById(this.activeColumn).data
         teams.sort((a, b) => {
@@ -222,17 +305,9 @@ class Table extends Widget {
             document.querySelector(`[data-team="${teams[team]}"][data-id="${this.id}"]`).style.order = team
         }
     }
-    refresh() {
-        super.refresh()
-
-        for (let col of this.columns) {
-            let elements = document.querySelectorAll(`[data-column="${col.columnId}"][data-id="${this.id}"]`)
-            for (let el of elements) {
-                el.style.width = col.size + 'px'
-                el.style.order = ((col.order * 2) + 100)
-                document.querySelector(`[data-column-size="${col.columnId}"][data-id="${this.id}"]`).style.order = ((col.order * 2) + 101)
-            }
-        }
+    indexOfColumn(column) {
+        if (typeof column === "string") column = this.getColumnById(column)
+        return this.columns.indexOf(column)
     }
 
     /**
@@ -257,6 +332,8 @@ class Table extends Widget {
             }
         }
 
+        this.addTeamEl(this.teams)
+
         // TODO add refresh for values
     }
 }
@@ -268,7 +345,7 @@ class Graph extends Widget {
         this.content.classList.add("no-scroll")
 
         this.column = getColumnFromID("match`Scoring`Coral Scored")
-        this.teams = [4915, 2412, 360, 1318, 2046, 1899, 2910, 9023]
+        this.teams = [4915, 2046, 2910, 2907]
         this.selectedTeam = null
 
         document.addEventListener("mouseup", () => {
@@ -301,7 +378,7 @@ class Graph extends Widget {
 
     refresh() {
         super.refresh();
-        if (this.content.offsetHeight < 500) this.content.classList.add("small")
+        if (this.content.offsetHeight < 500 || this.content.offsetWidth < 550 || (this.teamsEl.offsetHeight / this.content.offsetHeight > 0.25)) this.content.classList.add("small")
         else this.content.classList.remove("small")
         this.calcEl.style.width = this.content.offsetWidth - 2 + "px"
         this.calcEl.style.height = this.content.offsetHeight - this.teamsEl.offsetHeight + "px"
@@ -322,8 +399,12 @@ class Graph extends Widget {
         this.createExpressions()
     }
 
-    createExpressions(maintainBounds = false) {
-        this.calculator.getExpressions().forEach((expression) => {this.calculator.removeExpression(expression)})
+    createExpressions(maintainBounds = false, clearExpressions = true) {
+        if (clearExpressions) {
+            this.calculator.getExpressions().forEach((expression) => {
+                this.calculator.removeExpression(expression)
+            })
+        }
         this.calculator.updateSettings({xAxisLabel: graphSettings.x === "absolute" ? "Event Match #" : "Team Match #", yAxisLabel: this.column.name})
 
         let minX = Infinity
@@ -362,10 +443,11 @@ class Graph extends Widget {
                 }
             }
 
-            this.calculator.setExpression({ latex: 'x_' + i + ' = \\left['+matches+'\\right]' });
-            this.calculator.setExpression({ latex: 'y_' + i + ' = \\left['+values+'\\right]' });
+            this.calculator.setExpression({ id: "x" + team, latex: 'x_' + i + ' = \\left['+matches+'\\right]' });
+            this.calculator.setExpression({ id: "y" + team,  latex: 'y_' + i + ' = \\left['+values+'\\right]' });
             if (graphSettings.points)
                 this.calculator.setExpression({
+                    id: "points" + team,
                     latex: '(x_{' + i + '},y_{' + i + '})',
                     color: this.getTeamColor(i),
                     pointStyle: this.getTeamShape(i),
@@ -375,6 +457,7 @@ class Graph extends Widget {
                 });
             if (graphSettings.bestfit)
                 this.calculator.setExpression({
+                    id: "line" + team,
                     latex: 'y_{' + i + '}\\sim a_{' + i + '}x_{' + i + '}+b_{' + i + '}',
                     color: this.getTeamColor(i),
                     lineWidth: 4,
@@ -419,7 +502,7 @@ class Graph extends Widget {
             teamEl.addEventListener("mousedown", (e) => {
                 e.preventDefault()
                 this.selectedTeam = t
-                this.createExpressions(true)
+                this.createExpressions(true, false)
             })
 
             this.teamsEl.appendChild(teamEl)
@@ -456,4 +539,3 @@ class Graph extends Widget {
         this.createTeamList()
     }
 }
-
