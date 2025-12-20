@@ -1,0 +1,22 @@
+.team-info-logo {
+    width: 6rem;
+    height: 6rem;
+    border: 2px solid black;
+    border-radius: 0.5rem;
+    box-sizing: border-box;
+}
+
+.team-info-flex-horizontal {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.team-info-basic-holder {
+    display: flex;
+    flex-direction: column;
+}
+
+.team-info-name {
+    font-size: 1.5rem;
+    font-weight: bolder;
+}

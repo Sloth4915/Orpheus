@@ -1,6 +1,7 @@
 .table {
     display: flex;
     flex-direction: column;
+    overflow-x: auto;
 }
 .row {
     height: 70px;
@@ -10,6 +11,7 @@
     flex-shrink: 0;
     background: var(--bg);
     align-items: center;
+    overflow-x: visible;
 }
 .row.header {
     position: sticky;

@@ -539,3 +539,61 @@ class Graph extends Widget {
         this.createTeamList()
     }
 }
+
+class TeamInfo extends Widget {
+    constructor() {
+        super();
+
+        this.minWidth = 170
+        this.minHeight = 100
+    }
+    setTeam(team) {
+        this.content.innerHTML = ""
+
+        let imageAndBasicHolderHolder = document.createElement("div")
+        imageAndBasicHolderHolder.className = "team-info-flex-horizontal"
+        this.content.appendChild(imageAndBasicHolderHolder)
+
+        let logo = document.createElement("img")
+        logo.setAttribute("data-team-logo", team)
+        logo.setAttribute("data-id", this.id)
+        logo.className = "team-info-logo"
+        imageAndBasicHolderHolder.appendChild(logo)
+
+        let basicInfoHolder = document.createElement("div")
+        basicInfoHolder.className = "team-info-basic-holder"
+        imageAndBasicHolderHolder.appendChild(basicInfoHolder)
+
+        let nameEl = document.createElement("div")
+        nameEl.classList = "team-info-name"
+        basicInfoHolder.appendChild(nameEl)
+
+        let location = document.createElement("div")
+        location.classList = "team-info-basic-text"
+        basicInfoHolder.appendChild(location)
+
+        let rookieYear = document.createElement("div")
+        rookieYear.classList = "team-info-basic-text"
+        basicInfoHolder.appendChild(rookieYear)
+
+        let matches = document.createElement("div")
+        matches.classList = "team-info-matches"
+
+        if (usingTBA) {
+            this.name = team + " " + team_data[team].Name
+
+            nameEl.innerText = this.name
+            location.innerText = team_data[team].TBA["school_name"]
+            location.title = team_data[team].TBA["city"] + ", " + team_data[team].TBA["state_prov"] + " (" + team_data[team].TBA["country"] + ")"
+            rookieYear.innerText = "Rookie Year: " + team_data[team].TBA["rookie_year"]
+
+            if (usingTBAMedia) {
+                if (typeof team_data[team] !== "undefined" && typeof team_data[team].Icon !== "undefined") logo.src = team_data[team].Icon
+                else logo.src = MISSING_LOGO
+            }
+        } else {
+            this.name = team
+            logo.remove()
+        }
+    }
+}

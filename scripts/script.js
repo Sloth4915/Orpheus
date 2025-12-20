@@ -543,6 +543,10 @@ function processData() {
 
     graph = new Graph()
     tabGroup.addChild(graph)
+
+    teamInfo = new TeamInfo()
+    teamInfo.setTeam(4915)
+    tabGroup.addChild(teamInfo)
 }
 
 function evaluate(expression, schema, context) {
