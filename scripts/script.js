@@ -156,17 +156,17 @@ function loadEvent() {
         load("event/" + year + eventKey + "/teams", function (data) {
             event_data = data
             for (let team of data) {
-                // Todo - just replace all team["team_number"] with a variable you don't need to keep getting it 3 trillion times
-                team_data[team["team_number"]] = {}
-                team_data[team["team_number"]].Team_Number = team["team_number"]
-                team_data[team["team_number"]].Name = team["nickname"]
-                team_data[team["team_number"]].TBA = team
-                team_data[team["team_number"]].TBA["matches"] = {}
-                processedData["orpheus"]["data"]["name"][team["team_number"]] = team["nickname"]
+                let teamNum = team["team_number"]
+                team_data[teamNum] = {}
+                team_data[teamNum].Team_Number = teamNum
+                team_data[teamNum].Name = team["nickname"]
+                team_data[teamNum].TBA = team
+                team_data[teamNum].TBA["matches"] = {}
+                processedData["orpheus"]["data"]["name"][teamNum] = team["nickname"]
                 main.hardRefresh()
                 if (usingTBAMatches) { // TODO (see other todo aaa) - replace this with only one api call to lower loading times.
                     loading++
-                    load("team/frc" + team["team_number"] + "/event/" + year + eventKey + "/matches", function (data) {
+                    load("team/frc" + teamNum + "/event/" + year + eventKey + "/matches", function (data) {
                         loading--
                         checkLoading()
                         let matchesWon = 0
@@ -181,46 +181,44 @@ function loadEvent() {
                             if (match["alliances"]["blue"]["score"] !== -1) {
                                 matchesPlayed++
                                 fouls += match["score_breakdown"][alliance]["foulPoints"]
-                                matchesWon += checkTeamWonMatch(match, team["team_number"])
+                                matchesWon += checkTeamWonMatch(match, teamNum)
                             }
 
                             if (match["comp_level"] === "qm") {
-                                team_data[team["team_number"]].TBA["matches"][match["match_number"]] = match
+                                team_data[teamNum].TBA["matches"][match["match_number"]] = match
                             }
                         }
-                        team_data[team["team_number"]]["Matches Played"] = matchesPlayed
-                        team_data[team["team_number"]]["Winrate"] = (matchesWon / matchesPlayed)
-                        team_data[team["team_number"]]["Average Alliance Penalties"] = (fouls / matchesPlayed)
+                        team_data[teamNum]["Matches Played"] = matchesPlayed
+                        team_data[teamNum]["Winrate"] = (matchesWon / matchesPlayed)
+                        team_data[teamNum]["Average Alliance Penalties"] = (fouls / matchesPlayed)
                     })
                 }
                 if (usingTBAMedia) {
                     loading++
-                    load("team/frc" + team["team_number"] + "/media/" + year, function (data) {
+                    load("team/frc" + teamNum + "/media/" + year, function (data) {
                         loading--
                         checkLoading()
-                        team_data[team["team_number"]].TBA.images = []
+                        team_data[teamNum].TBA.images = []
 
                         for (let x of data) {
                             if (x.type === "avatar") {
-                                team_data[team["team_number"]].Icon = "data:image/png;base64," + x.details["base64Image"]
+                                team_data[teamNum].Icon = "data:image/png;base64," + x.details["base64Image"]
                                 main.hardRefresh()
                             }
-                            else if (x.type === "imgur") team_data[team["team_number"]].TBA.images.push({type: "image", src: x["direct_url"]})
-                            else if (x.type === "youtube") team_data[team["team_number"]].TBA.images.push({type: "youtube", src: x["foreign_key"]})
-                            else console.log("Unsupported media type: " + x.type + ". (Team " + team["team_number"] + ")")
+                            else if (x.type === "imgur") team_data[teamNum].TBA.images.push({type: "image", src: x["direct_url"]})
+                            else if (x.type === "youtube") team_data[teamNum].TBA.images.push({type: "youtube", src: x["foreign_key"]})
+                            else console.log("Unsupported media type: " + x.type + ". (Team " + teamNum + ")")
                         }
                     })
                 }
                 if (usingStatbotics) {
                     loading++
-                    loadOther("https://api.statbotics.io/v3/team_event/" + team["team_number"] + "/" + year + eventKey, function(data) {
-                        team_data[team["team_number"]]["statbotics"] = data
-                        team_data[team["team_number"]]["District Points"] = data["district_points"]
-                        team_data[team["team_number"]]["EPA"] = data["epa"]["total_points"]["mean"]
-                        team_data[team["team_number"]]["Auto EPA"] = data["epa"]["breakdown"]["auto_points"]
-                        team_data[team["team_number"]]["Teleop EPA"] = data["epa"]["breakdown"]["teleop_points"]
-                        team_data[team["team_number"]]["Endgame EPA"] = data["epa"]["breakdown"]["endgame_points"]
-                        team_data[team["team_number"]]["Event Rank"] = data["record"]["qual"]["rank"]
+                    loadOther("https://api.statbotics.io/v3/team_event/" + teamNum + "/" + year + eventKey, function(data) {
+                        team_data[teamNum]["statbotics"] = data
+                        team_data[teamNum]["EPA"] = data["epa"]["total_points"]["mean"]
+                        team_data[teamNum]["Auto EPA"] = data["epa"]["breakdown"]["auto_points"]
+                        team_data[teamNum]["Teleop EPA"] = data["epa"]["breakdown"]["teleop_points"]
+                        team_data[teamNum]["Endgame EPA"] = data["epa"]["breakdown"]["endgame_points"]
                         loading--
                         checkLoading()
                     })
