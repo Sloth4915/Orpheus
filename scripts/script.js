@@ -1,8 +1,6 @@
 // TODO consider "use strict";
 
 //#region Local Storage Keys
-const YEAR = "scouting_4915_year"
-const TBA_KEY = "scouting_4915_apikey"
 const EVENT = "scouting_4915_event"
 const DATA = "scouting_4915_data"
 const MAPPING = "scouting_4915_mapping"
@@ -13,7 +11,7 @@ const WIDGETS = "scouting_4915_settings_widgets"
 const TEAM_SAVES = "scouting_4915_settings_starignore"
 const NOTES = "scouting_4915_settings_notes"
 const SAVED_API_DATA = "scouting_4915_api_saved"
-const LOCAL_STORAGE_KEYS = [YEAR, TBA_KEY, EVENT, DATA, MAPPING, THEME, ENABLED_APIS, SETTINGS, WIDGETS, TEAM_SAVES, NOTES]
+const LOCAL_STORAGE_KEYS = [EVENT, DATA, MAPPING, THEME, ENABLED_APIS, SETTINGS, WIDGETS, TEAM_SAVES, NOTES]
 //#endregion
 
 //#region Variables
@@ -30,7 +28,9 @@ let uploadedData = {}
 let team_data = {}
 let api_data = {}
 let tbaMatches = {}
+
 let mapping
+let gameMapping
 
 let theme
 
@@ -56,10 +56,14 @@ let onDesmosLoad = []
 
 let showNamesInTeamComments
 
-let tbaKey
+/*
+This API key should only be used on Orpheus. If you fork Orpheus, please get your own API key from https://www.thebluealliance.com/
+*/
+const TBA_KEY = "bmeU7Z99M2lCyuStu4sKU7NuLvsZAE3UoxBgxR5J3fcK6hDoZx92FcURLEHyHgTM"
 let usingTBA
 let usingTBAMatches
 let usingTBAMedia
+let usingTBARank
 let usingDesmos
 let usingStatbotics
 
@@ -124,18 +128,6 @@ document.addEventListener("click", () => {
 //#endregion
 
 //#region API Key, Event Loading, Year setting
-document.querySelector("#top-setapi").onclick = function() {
-    let x = prompt("What is your TBA API key? 'get' to get it, leave blank to skip")
-    if (x === "get") alert(tbaKey)
-    else if (x === "clear") {
-        localforage.removeItem(TBA_KEY)
-        window.location.reload()
-    }
-    else if (x !== "") {
-        localforage.setItem(TBA_KEY, x)
-        window.location.reload()
-    }
-}
 document.querySelector("#top-load-event").onclick = function() {
     let x = prompt("What event code do you want?")
     if (x === "get") alert(eventKey)
@@ -149,15 +141,6 @@ document.querySelector("#top-load-event").onclick = function() {
         clearSavedTeams()
     }
 
-}
-document.querySelector("#top-year").onclick = function() {
-    let x = prompt("Change year").trim()
-    if (x === "get") alert(year)
-    else if (x !== "") {
-        localforage.setItem(YEAR, x)
-        window.location.reload()
-        clearSavedTeams()
-    }
 }
 document.querySelector("#top-clear-event").onclick = function() {
     clearSavedTeams()
@@ -279,7 +262,7 @@ document.querySelector("#top-mapping").onclick = function() {
         mapping = JSON.parse(result)
         localforage.setItem(MAPPING, mapping)
         //columns = JSON.parse(JSON.stringify(availableColumns))
-        processData()
+        location.reload()
     })
 }
 
@@ -1044,7 +1027,7 @@ document.querySelector("#top-show-hide-ignored").addEventListener("click", () =>
 //#region File and API loading functions (+ download, API Toggles)
 // Loads data from TheBlueAlliance
 async function load(sub, onload) {
-    let url = (`https://www.thebluealliance.com/api/v3/${sub}?X-TBA-Auth-Key=${tbaKey}`)
+    let url = (`https://www.thebluealliance.com/api/v3/${sub}?X-TBA-Auth-Key=${TBA_KEY}`)
     if (usingOffline) {
         onload(api_data[url])
         return api_data[url]
@@ -1117,11 +1100,11 @@ function download(filename, text) {
 }
 
 document.querySelector("#top-toggle-use-allapi").addEventListener("click", () => {
-    usingTBAMedia = usingTBAMatches = usingTBA = usingDesmos = usingStatbotics = true
+    usingTBAMedia = usingTBAMatches = usingTBA = usingTBARank = usingDesmos = usingStatbotics = true
     setEnabledAPIS()
 })
 document.querySelector("#top-toggle-use-noneapi").addEventListener("click", () => {
-    usingTBAMedia = usingTBAMatches = usingTBA = usingDesmos = usingStatbotics = false
+    usingTBAMedia = usingTBAMatches = usingTBA = usingTBARank = usingDesmos = usingStatbotics = false
     setEnabledAPIS()
 })
 document.querySelector("#top-toggle-use-tbaevent").addEventListener("click", () => {
@@ -1134,6 +1117,10 @@ document.querySelector("#top-toggle-use-tbamatch").addEventListener("click", () 
 })
 document.querySelector("#top-toggle-use-tbamedia").addEventListener("click", () => {
     usingTBAMedia = !usingTBAMedia
+    setEnabledAPIS()
+})
+document.querySelector("#top-toggle-use-tbarank").addEventListener("click", () => {
+    usingTBARank = !usingTBARank
     setEnabledAPIS()
 })
 document.querySelector("#top-toggle-use-desmos").addEventListener("click", () => {
@@ -1151,6 +1138,7 @@ function setEnabledAPIS() {
         tbaevent: usingTBA,
         tbamatch: usingTBAMatches,
         tbamedia: usingTBAMedia,
+        tbarank: usingTBARank,
         desmos: usingDesmos,
         statbotics: usingStatbotics
     })
@@ -1237,6 +1225,7 @@ function saveAPIData() {
         tbaevent: usingTBA,
         tbamatch: usingTBAMatches,
         tbamedia: usingTBAMedia,
+        tbarank: usingTBARank,
         desmos: false,
         statbotics: usingStatbotics
     }
@@ -1267,15 +1256,14 @@ function exportSettings() {
         columns: columns,
         mapping: mapping,
         data: uploadedData,
-        year: year,
         apis: {
             tbaevent: usingTBA,
             tbamatch: usingTBAMatches,
             tbamedia: usingTBAMedia,
+            tbarank: usingTBARank,
             desmos: usingDesmos,
             statbotics: usingStatbotics
         },
-        tbakey: tbaKey,
         event: eventKey,
         theme: theme,
         notes: notes
@@ -1304,12 +1292,11 @@ function importSettings(settings) {
     mapping = settings.mapping
     localforage.setItem(MAPPING, mapping)
     localforage.setItem(DATA, settings.data)
-    localforage.setItem(YEAR, settings.year)
     localforage.setItem(EVENT, settings.event)
-    localforage.setItem(TBA_KEY, settings.tbakey)
     usingTBA = settings.apis.tbaevent
     usingTBAMatches = settings.apis.tbamatch
     usingTBAMedia = settings.apis.tbamedia
+    usingTBARank = settings.apis.tbarank
     usingStatbotics = settings.apis.statbotics
     usingDesmos = settings.apis.desmos
     notes = settings.notes
@@ -1672,23 +1659,13 @@ function setStarbook() {
 
 //#region Init
 
-let initLoading = 12
+let initLoading = 10
 
-// Year
+// Theme
 localforage.getItem(THEME, (err, val) => {
     if (val === null) theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"
     else theme = val
     changeThemeTo(theme)
-    if (!--initLoading) finishInit()
-})
-
-localforage.getItem(YEAR, (err, val) => {
-    year = val
-    if (year === null || year < 1992) {
-        year = new Date().getFullYear().toString()
-        localforage.setItem(YEAR, new Date().getFullYear().toString())
-    }
-    document.querySelector("#top-year").innerText = year
     if (!--initLoading) finishInit()
 })
 
@@ -1767,8 +1744,15 @@ localforage.getItem(DATA, (err, val) => {
     if (!--initLoading) finishInit()
 })
 localforage.getItem(MAPPING, (err, val) => {
-    mapping = val == null ? undefined : val
-    document.querySelector("#top-mapping-download").disabled = mapping === undefined
+    if (val == null) {
+        document.querySelector("#top-mapping-download").disabled = true
+    } else {
+        mapping = val["data"]
+        gameMapping = val["game"]
+
+        year = gameMapping["year"]
+    }
+
     dataButtons()
     if (!--initLoading) finishInit()
 })
@@ -1800,8 +1784,8 @@ if (!usingOffline) {
 // Apis
 localforage.getItem(ENABLED_APIS, (err, apis) => {
     if (apis === null) {
-        localforage.setItem(ENABLED_APIS, {tbaevent: true, tbamatch: true, tbamedia: true, desmos: true, statbotics: true})
-        apis = {tbaevent: true, tbamatch: true, tbamedia: true, desmos: true, statbotics: true}
+        localforage.setItem(ENABLED_APIS, {tbaevent: true, tbamatch: true, tbamedia: true, tbarank: true, desmos: true, statbotics: true})
+        apis = {tbaevent: true, tbamatch: true, tbamedia: true, tbarank: true, desmos: true, statbotics: true}
     }
 
     if (usingOffline) {
@@ -1812,22 +1796,25 @@ localforage.getItem(ENABLED_APIS, (err, apis) => {
     usingTBA = apis.tbaevent
     document.querySelector("#top-toggle-use-tbaevent").innerText = "TBA API: " + (usingTBA ? "Enabled" : "Disabled")
 
-    usingTBAMatches = apis.tbamatch
+    usingTBAMatches = apis.tbamatch && usingTBA
     document.querySelector("#top-toggle-use-tbamatch").innerText = "TBA API (Matches): " + (usingTBAMatches ? "Enabled" : "Disabled")
+
+    usingTBAMedia = apis.tbamedia && usingTBA
+    document.querySelector("#top-toggle-use-tbamedia").innerText = "TBA API (Media): " + (usingTBAMedia ? "Enabled" : "Disabled")
+
+    showTeamIcons = showTeamIcons ? (usingTBA && usingTBAMedia) : false
+    saveGeneralSettings()
+
+    usingTBARank = apis.tbarank && usingTBA
+    document.querySelector("#top-toggle-use-tbarank").innerText = "TBA API (Event Ranking): " + (usingTBARank ? "Enabled" : "Disabled")
+
     if (!usingTBA) {
-        usingTBAMatches = false
-        document.querySelector("#top-toggle-use-tbamatch").innerText = "TBA API (Media): Disabled"
         document.querySelector("#top-toggle-use-tbamatch").disabled = true
+        document.querySelector("#top-toggle-use-tbamedia").disabled = true
+        document.querySelector("#top-toggle-use-tbarank").disabled = true
     }
 
-    usingTBAMedia = apis.tbamedia
-    document.querySelector("#top-toggle-use-tbamedia").innerText = "TBA API (Media): " + (usingTBAMedia ? "Enabled" : "Disabled")
-    if (!usingTBA) {
-        usingTBAMedia = false
-        document.querySelector("#top-toggle-use-tbamedia").innerText = "TBA API (Media): Disabled"
-        document.querySelector("#top-toggle-use-tbamedia").disabled = true
-    }
-    showTeamIcons = showTeamIcons ? (usingTBA && usingTBAMedia) : false
+    showTeamIcons = showTeamIcons && usingTBA && usingTBAMedia
     saveGeneralSettings()
 
     usingDesmos = apis.desmos
@@ -1851,11 +1838,6 @@ localforage.getItem(NOTES, (err, val) => {
         }
         saveNotes()
     } else notes = val
-    if (!--initLoading) finishInit()
-})
-
-localforage.getItem(TBA_KEY, (err, val) => {
-    if (val !== null) tbaKey = val
     if (!--initLoading) finishInit()
 })
 
