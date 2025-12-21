@@ -525,7 +525,7 @@ function processData() {
     tabGroup.addChild(graph)
 
     teamInfo = new TeamInfo()
-    teamInfo.setTeam(4915)
+    teamInfo.setTeams(Object.keys(team_data))
     tabGroup.addChild(teamInfo)
 }
 

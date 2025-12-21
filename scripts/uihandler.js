@@ -410,7 +410,7 @@ class WidgetTabGroup extends WidgetBase {
             this.children[this.activeChild].setSize(this.width, this.height - 19)
 
         for (let i in this.header.selectButtons) {
-            this.header.selectButtons[i].innerText = this.children[i].name
+            this.header.selectButtons[i].innerText = this.children[i].displayName()
             if (this.activeChild == i) this.header.selectButtons[i].classList.add("selected")
             else this.header.selectButtons[i].classList.remove("selected")
         }
@@ -797,8 +797,13 @@ class Widget extends WidgetBase {
     }
     set name(to) {
         super.name = to
-        this._header.name.innerText = this._name
+        this._header.name.innerText = this.displayName()
         if (this.parent) this.parent.refresh()
+    }
+
+    displayName() {
+        if (this._name.length > 40) return this._name.substring(0, 15) + " ... " + this.name.substring(this._name.length - 15)
+        return this._name
     }
 
     refresh() {

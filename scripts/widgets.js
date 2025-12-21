@@ -454,7 +454,7 @@ class Graph extends Widget {
                     latex: '(x_{' + i + '},y_{' + i + '})',
                     color: this.getTeamColor(i),
                     pointStyle: this.getTeamShape(i),
-                    pointSize: 16,
+                    pointSize: (this.selectedTeam === null ? 16 : (this.selectedTeam === team ? 18 : 16)),
                     pointOpacity: (this.selectedTeam === null ? 0.8 : (this.selectedTeam === team ? 1 : 0.25)),
                     label: team + " (${x_" + i + "}, ${y_" + i + "})"
                 });
@@ -463,7 +463,7 @@ class Graph extends Widget {
                     id: "line" + team,
                     latex: 'y_{' + i + '}\\sim a_{' + i + '}x_{' + i + '}+b_{' + i + '}',
                     color: this.getTeamColor(i),
-                    lineWidth: 4,
+                    lineWidth: (this.selectedTeam === null ? 4 : (this.selectedTeam === team ? 5 : 4)),
                     lineOpacity: (this.selectedTeam === null ? 0.8 : (this.selectedTeam === team ? 1 : 0.25))
                 })
         }
@@ -550,61 +550,68 @@ class TeamInfo extends Widget {
         this.minWidth = 170
         this.minHeight = 100
     }
-    setTeam(team) {
+    setTeams(teams) {
+        if (typeof teams !== "object") teams = [teams]
         this.content.innerHTML = ""
 
-        let imageAndBasicHolderHolder = document.createElement("div")
-        imageAndBasicHolderHolder.className = "team-info-flex-horizontal"
-        this.content.appendChild(imageAndBasicHolderHolder)
+        this.name = ""
 
-        let logo = document.createElement("img")
-        logo.setAttribute("data-team-logo", team)
-        logo.setAttribute("data-id", this.id)
-        logo.className = "team-info-logo"
-        imageAndBasicHolderHolder.appendChild(logo)
+        for (let team of teams) {
+            let imageAndBasicHolderHolder = document.createElement("div")
+            imageAndBasicHolderHolder.className = "team-info-flex-horizontal"
+            this.content.appendChild(imageAndBasicHolderHolder)
 
-        let basicInfoHolder = document.createElement("div")
-        basicInfoHolder.className = "team-info-basic-holder"
-        imageAndBasicHolderHolder.appendChild(basicInfoHolder)
+            let logo = document.createElement("img")
+            logo.setAttribute("data-team-logo", team)
+            logo.setAttribute("data-id", this.id)
+            logo.className = "team-info-logo"
+            imageAndBasicHolderHolder.appendChild(logo)
 
-        let nameEl = document.createElement("div")
-        nameEl.className = "team-info-name"
-        basicInfoHolder.appendChild(nameEl)
+            let basicInfoHolder = document.createElement("div")
+            basicInfoHolder.className = "team-info-basic-holder"
+            imageAndBasicHolderHolder.appendChild(basicInfoHolder)
 
-        let location = document.createElement("div")
-        location.className = "team-info-basic-text"
-        basicInfoHolder.appendChild(location)
+            let nameEl = document.createElement("div")
+            nameEl.className = "team-info-name"
+            basicInfoHolder.appendChild(nameEl)
 
-        let rookieYear = document.createElement("div")
-        rookieYear.className = "team-info-basic-text"
-        basicInfoHolder.appendChild(rookieYear)
+            let location = document.createElement("div")
+            location.className = "team-info-basic-text"
+            basicInfoHolder.appendChild(location)
 
-        let eventRank = document.createElement("div")
-        eventRank.className = "team-info-basic-text"
-        basicInfoHolder.appendChild(eventRank)
+            let rookieYear = document.createElement("div")
+            rookieYear.className = "team-info-basic-text"
+            basicInfoHolder.appendChild(rookieYear)
 
-        let matches = document.createElement("div")
-        matches.className = "team-info-matches"
+            let eventRank = document.createElement("div")
+            eventRank.className = "team-info-basic-text"
+            basicInfoHolder.appendChild(eventRank)
 
-        if (usingTBA) {
-            this.name = team + " " + team_data[team].Name
+            let matches = document.createElement("div")
+            matches.className = "team-info-matches"
 
-            nameEl.innerText = this.name
-            location.innerText = team_data[team].TBA["school_name"]
-            location.title = team_data[team].TBA["city"] + ", " + team_data[team].TBA["state_prov"] + " (" + team_data[team].TBA["country"] + ")"
-            rookieYear.innerText = "Rookie Year: " + team_data[team].TBA["rookie_year"]
+            if (usingTBA) {
+                if (teams.length > 1) this.name = this.name + ", " + team
+                else this.name = this.name + ", " + team + " " + team_data[team].Name
 
-            if (usingTBAMedia) {
-                if (typeof team_data[team] !== "undefined" && typeof team_data[team].Icon !== "undefined") logo.src = team_data[team].Icon
-                else logo.src = MISSING_LOGO
+                nameEl.innerText = team + " " + team_data[team].Name
+                location.innerText = team_data[team].TBA["school_name"]
+                location.title = team_data[team].TBA["city"] + ", " + team_data[team].TBA["state_prov"] + " (" + team_data[team].TBA["country"] + ")"
+                rookieYear.innerText = "Rookie Year: " + team_data[team].TBA["rookie_year"]
+
+                if (usingTBAMedia) {
+                    if (typeof team_data[team] !== "undefined" && typeof team_data[team].Icon !== "undefined") logo.src = team_data[team].Icon
+                    else logo.src = MISSING_LOGO
+                }
+                if (usingTBARank) {
+                    eventRank.innerText = "Rank " + processedData.orpheus.data["ranking"][team] + " of " + Object.keys(team_data).length
+                }
+            } else {
+                this.name = this.name + ", " + team
+                logo.remove()
             }
-            if (usingTBARank) {
-                eventRank.innerText = "Rank " + processedData.orpheus.data["ranking"][team] + " of " + Object.keys(team_data).length
-            }
-        } else {
-            this.name = team
-            logo.remove()
         }
 
+        this.name = this.name.substring(2)
     }
 }
