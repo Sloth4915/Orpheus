@@ -102,12 +102,13 @@ class Table extends Widget {
             colDragger.innerText = "drag_indicator"
 
             let dragging = false
-            let dragData = {
-                column: null,
-                insertBefore: null,
-            }
+            let dragData
             let dragRemovalEl
             colDragger.addEventListener("mousedown", (e) => {
+                dragData = {
+                    column: null,
+                    insertBefore: null,
+                }
                 dragging = true
                 colDragger.classList.add("dragging")
                 for (let col of this.columns) col.order *= 2
@@ -147,14 +148,16 @@ class Table extends Widget {
                 dragging = false
                 this.columnDragIndicator.style.order = "0"
 
-                let removalBounds = dragRemovalEl.getBoundingClientRect()
-                if (removalBounds.left < e.clientX && e.clientX < removalBounds.right && removalBounds.top < e.clientY && e.clientY < removalBounds.bottom) {
-                    this.removeColumn(thisColumn.columnId)
-                } else {
-                    if (dragData.insertBefore) {
-                        thisColumn.order = dragData.column.order - 1
+                if (dragData.column !== null) {
+                    let removalBounds = dragRemovalEl.getBoundingClientRect()
+                    if (removalBounds.left < e.clientX && e.clientX < removalBounds.right && removalBounds.top < e.clientY && e.clientY < removalBounds.bottom) {
+                        this.removeColumn(thisColumn.columnId)
                     } else {
-                        thisColumn.order = dragData.column.order + 1
+                        if (dragData.insertBefore) {
+                            thisColumn.order = dragData.column.order - 1
+                        } else {
+                            thisColumn.order = dragData.column.order + 1
+                        }
                     }
                 }
 

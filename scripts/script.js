@@ -27,7 +27,7 @@ let event_data
 let uploadedData = {}
 let team_data = {}
 let api_data = {}
-let tbaMatches = {}
+let tba_match_data = {}
 
 let mapping
 let gameMapping
@@ -155,6 +155,7 @@ function loadEvent() {
     if (usingTBA) {
         load("event/" + year + eventKey + "/teams", function (data) {
             event_data = data
+
             for (let team of data) {
                 let teamNum = team["team_number"]
                 team_data[teamNum] = {}
@@ -164,35 +165,6 @@ function loadEvent() {
                 team_data[teamNum].TBA["matches"] = {}
                 processedData["orpheus"]["data"]["name"][teamNum] = team["nickname"]
                 main.hardRefresh()
-                if (usingTBAMatches) { // TODO (see other todo aaa) - replace this with only one api call to lower loading times.
-                    loading++
-                    load("team/frc" + teamNum + "/event/" + year + eventKey + "/matches", function (data) {
-                        loading--
-                        checkLoading()
-                        let matchesWon = 0
-                        let matchesPlayed = 0
-                        let fouls = 0
-                        for (let match of data) {
-                            let alliance = "blue"
-                            if (match["alliances"]["blue"]["team_keys"].includes(team)) alliance = "red"
-
-                            if (match["actual_time"] !== null)
-
-                            if (match["alliances"]["blue"]["score"] !== -1) {
-                                matchesPlayed++
-                                fouls += match["score_breakdown"][alliance]["foulPoints"]
-                                matchesWon += checkTeamWonMatch(match, teamNum)
-                            }
-
-                            if (match["comp_level"] === "qm") {
-                                team_data[teamNum].TBA["matches"][match["match_number"]] = match
-                            }
-                        }
-                        team_data[teamNum]["Matches Played"] = matchesPlayed
-                        team_data[teamNum]["Winrate"] = (matchesWon / matchesPlayed)
-                        team_data[teamNum]["Average Alliance Penalties"] = (fouls / matchesPlayed)
-                    })
-                }
                 if (usingTBAMedia) {
                     loading++
                     load("team/frc" + teamNum + "/media/" + year, function (data) {
@@ -227,14 +199,18 @@ function loadEvent() {
             loading--
             checkLoading()
         })
-        if (usingTBAMatches) { // TODO (see other todo aaa)
+        if (usingTBAMatches) {
+            loading++
             load("event/" + year + eventKey + "/matches", function (data) {
+                tba_match_data = {}
                 for (let m of data) {
                     if (m["comp_level"] === "qm") {
-                        tbaMatches[m["match_number"]] = m
-                        // TODO
+                        tba_match_data[m["match_number"]] = m
                     }
                 }
+
+                loading--
+                checkLoading()
             })
         }
     }
@@ -297,7 +273,7 @@ function getTeam(schema, team) {
 
         // Red 1, Blue 2, etc.
         else if ((team.replaceAll(/\s/g, "").startsWith("red") || team.replaceAll(/\s/g, "").startsWith("blue")) && mapping[schema]["input_format"] === "match")
-            return (parseInt(tbaMatches[datum[mapping[schema]["match_key"]]]["alliances"]["red"]["team_keys"][team.slice(team.indexOf(/\s/g)) - 1].slice(3)))
+            return (parseInt(tba_match_data[datum[mapping[schema]["match_key"]]]["alliances"]["red"]["team_keys"][team.slice(team.indexOf(/\s/g)) - 1].slice(3)))
 
         // Spartronics, Jack in the Bot, etc
         else {
@@ -310,6 +286,15 @@ function getTeam(schema, team) {
     return -1
 }
 function processData() {
+    // Gives each team their matches
+    if (usingTBAMatches) {
+        for (let t in team_data) {
+            let matches = {}
+            for (let m in tba_match_data) matches[m] = tba_match_data[m]
+            team_data[t]["TBA"]["matches"] = matches
+        }
+    }
+
     let dataOut = {}
 
     // Get a list of teams
@@ -354,24 +339,24 @@ function processData() {
                             let matchNum = match[mapping[schema]["match_key"]]
 
                             let otherBots = {
-                                "red 1": parseInt(tbaMatches[matchNum]["alliances"]["red"]["team_keys"][0].slice(3)),
-                                "red 2": parseInt(tbaMatches[matchNum]["alliances"]["red"]["team_keys"][1].slice(3)),
-                                "red 3": parseInt(tbaMatches[matchNum]["alliances"]["red"]["team_keys"][2].slice(3)),
-                                "blue 1": parseInt(tbaMatches[matchNum]["alliances"]["blue"]["team_keys"][0].slice(3)),
-                                "blue 2": parseInt(tbaMatches[matchNum]["alliances"]["blue"]["team_keys"][1].slice(3)),
-                                "blue 3": parseInt(tbaMatches[matchNum]["alliances"]["blue"]["team_keys"][2].slice(3))
+                                "red 1": parseInt(tba_match_data[matchNum]["alliances"]["red"]["team_keys"][0].slice(3)),
+                                "red 2": parseInt(tba_match_data[matchNum]["alliances"]["red"]["team_keys"][1].slice(3)),
+                                "red 3": parseInt(tba_match_data[matchNum]["alliances"]["red"]["team_keys"][2].slice(3)),
+                                "blue 1": parseInt(tba_match_data[matchNum]["alliances"]["blue"]["team_keys"][0].slice(3)),
+                                "blue 2": parseInt(tba_match_data[matchNum]["alliances"]["blue"]["team_keys"][1].slice(3)),
+                                "blue 3": parseInt(tba_match_data[matchNum]["alliances"]["blue"]["team_keys"][2].slice(3))
                             }
-                            let alliance = tbaMatches[matchNum]["alliances"]["red"]["team_keys"].includes("frc"+team) ? "red" : "blue"
-                            let position = tbaMatches[matchNum]["alliances"][alliance]["team_keys"].indexOf("frc"+team) + 1
+                            let alliance = tba_match_data[matchNum]["alliances"]["red"]["team_keys"].includes("frc"+team) ? "red" : "blue"
+                            let position = tba_match_data[matchNum]["alliances"][alliance]["team_keys"].indexOf("frc"+team) + 1
 
-                            otherBots["other 1"] = parseInt(tbaMatches[matchNum]["alliances"][alliance]["team_keys"][((position + 1) % 3)].slice(3))
-                            otherBots["other 2"] = parseInt(tbaMatches[matchNum]["alliances"][alliance]["team_keys"][((position) % 3)].slice(3))
+                            otherBots["other 1"] = parseInt(tba_match_data[matchNum]["alliances"][alliance]["team_keys"][((position + 1) % 3)].slice(3))
+                            otherBots["other 2"] = parseInt(tba_match_data[matchNum]["alliances"][alliance]["team_keys"][((position) % 3)].slice(3))
 
                             let evalContext = Object.assign({
                                 "match": matchNum,
                                 "team": team,
                                 "data": match,
-                                "tba": tbaMatches[matchNum],
+                                "tba": tba_match_data[matchNum],
                                 "alliance": alliance,
                                 "position": position,
                                 "functions": mapping[schema]["functions"]
