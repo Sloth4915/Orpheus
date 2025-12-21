@@ -51,7 +51,6 @@ let year
 
 let tieValue = 0.5
 
-let desmosColors
 let onDesmosLoad = []
 
 let showNamesInTeamComments
@@ -147,14 +146,6 @@ document.querySelector("#top-load-event").onclick = function() {
     }
 
 }
-document.querySelector("#top-clear-event").onclick = function() {
-    clearSavedTeams()
-    starred = []
-    ignored = []
-    usingStar = true
-    usingIgnore = true
-    setHeader()
-}
 function loadEvent() {
     loading++
     if (usingTBA) {
@@ -246,13 +237,6 @@ function loadEvent() {
         checkLoading()
         processData()
     }
-}
-function checkTeamWonMatch(match, team) {
-    team = "frc" + team
-    if (match["winning_alliance"] === "") return tieValue
-    let alliance = "red"
-    if (match["alliances"]["blue"]["team_keys"].includes(team)) alliance = "blue"
-    return alliance === match["winning_alliance"]
 }
 //#endregion
 
@@ -505,8 +489,6 @@ function processData() {
 
     // dataOut
     for (let schema of Object.keys(mapping)) {
-        let inFormat = mapping[schema]["input_format"] ? mapping[schema]["input_format"] : "match"
-
         let constants = {}
         if (mapping[schema]["constants"])
             for (let x of Object.keys(mapping[schema]["constants"])) {
@@ -548,7 +530,6 @@ function processData() {
 }
 
 function evaluate(expression, schema, context) {
-
     function replaceConstants(exp, params = {}) {
         exp = (""+exp).replaceAll("#team#", context.team)
                       .replaceAll("#alliance#", context.alliance)
@@ -599,9 +580,7 @@ function evaluate(expression, schema, context) {
                 return math.evaluate(replaceConstants(context["functions"][f]["returns"], parameters))
             }
 
-    let result = math.evaluate(replaceConstants(expression), functions)
-
-    return result
+    return math.evaluate(replaceConstants(expression), functions)
 }
 
 function dataButtons() {
@@ -814,19 +793,6 @@ document.querySelector("#top-graph-display").addEventListener("click", () => {
 //#region Column edit panel, Keyboard Controls
 let controlPressed = false
 
-let columnEditOpen = false
-
-function resetColumns() {
-    setColumnOptions()
-    columns = JSON.parse(JSON.stringify(availableColumns))
-    selectedSort = columns[0]
-    showTeamIcons = usingTBAMedia
-    saveGeneralSettings()
-    saveColumns()
-    setHeader()
-    if (columnEditOpen) columnEditPanel()
-}
-
 document.querySelector("#top-keyboard").onclick = function() {
     keyboardControls = !keyboardControls
     document.querySelector("#top-keyboard").innerText = "Keyboard Controls: " + (keyboardControls ? "Enabled" : "Disabled")
@@ -840,192 +806,6 @@ document.addEventListener("keyup", (e) => {
     let key = e.key.toLowerCase()
     if (key === "control") controlPressed = false
 })
-document.querySelector("#top-column-reset").addEventListener("click", resetColumns)
-document.querySelector("#top-columns").addEventListener("click", () => {
-    columnEditOpen = !columnEditOpen
-    document.querySelector(".edit-columns").classList.toggle("hidden")
-    if (columnEditOpen) columnEditPanel()
-})
-
-function columnEditPanel() {
-    setColumnOptions()
-
-    let columnPanel = document.querySelector(".edit-columns")
-    columnPanel.style.left = (window.innerWidth * .2) + "px"
-    columnPanel.style.top = (window.innerHeight * .3) + "px"
-    columnPanel.innerHTML = ""
-
-    let currentColumnsTitle = document.createElement("div")
-    currentColumnsTitle.className = "edit-columns-title"
-    currentColumnsTitle.innerText = "Table"
-    columnPanel.appendChild(currentColumnsTitle)
-
-    let currentColumns = document.createElement("div")
-    currentColumns.className = "edit-columns-list"
-    columnPanel.appendChild(currentColumns)
-
-    // https://stackoverflow.com/questions/74335612/drag-and-drop-when-using-flex-wrap
-    currentColumns.addEventListener("dragover", (e) => {
-        e.preventDefault();
-        const afterElement = getDragAfterElement(currentColumns, e.clientX, e.clientY);
-        const draggable = document.querySelector(".dragging");
-        if (afterElement == null) {
-            currentColumns.appendChild(draggable);
-        } else {
-            currentColumns.insertBefore(draggable, afterElement);
-        }
-    })
-
-    let unEnabledColumnsTitle = document.createElement("div")
-    unEnabledColumnsTitle.className = "edit-columns-title"
-    unEnabledColumnsTitle.innerText = "Unused Columns"
-    columnPanel.appendChild(unEnabledColumnsTitle)
-
-    let unEnabledColumns = document.createElement("div")
-    unEnabledColumns.className = "edit-columns-list"
-    columnPanel.appendChild(unEnabledColumns)
-    unEnabledColumns.addEventListener("dragover", (e) => {
-        e.preventDefault();
-        const afterElement = getDragAfterElement(unEnabledColumns, e.clientX, e.clientY);
-        const draggable = document.querySelector(".dragging");
-        if (afterElement == null) {
-            unEnabledColumns.appendChild(draggable);
-        } else {
-            unEnabledColumns.insertBefore(draggable, afterElement);
-        }
-    })
-
-    function getDragAfterElement(container, x, y) {
-        const draggableElements = [
-            ...container.querySelectorAll(".draggable:not(.dragging)")
-        ];
-        return draggableElements.reduce(
-            (closest, child, index) => {
-                const box = child.getBoundingClientRect();
-                const nextBox = draggableElements[index + 1] && draggableElements[index + 1].getBoundingClientRect();
-                const inRow = y - box.bottom <= 0 && y - box.top >= 0; // check if this is in the same row
-                const offset = x - (box.left + box.width / 2);
-                if (inRow) {
-                    if (offset < 0 && offset > closest.offset) {
-                        return {
-                            offset: offset,
-                            element: child
-                        };
-                    } else {
-                        if ( // handle row ends,
-                            nextBox && // there is a box after this one.
-                            y - nextBox.top <= 0 && // the next is in a new row
-                            closest.offset === Number.NEGATIVE_INFINITY // we didn't find a fit in the current row.
-                        ) {
-                            return {
-                                offset: 0,
-                                element: draggableElements[index + 1]
-                            };
-                        }
-                        return closest;
-                    }
-                } else {
-                    return closest;
-                }
-            }, {
-                offset: Number.NEGATIVE_INFINITY
-            }
-        ).element;
-    }
-
-    for (let column of availableColumns) {
-        let columnEl = document.createElement("div")
-        columnEl.className = "edit-column draggable"
-        columnEl.innerText = column.name.replaceAll("_", " ")
-        columnEl.draggable = true
-        columnEl.setAttribute("data-column-name", column.name)
-
-        let enabled = false
-        for (let x of columns)
-            if (column.name === x.name) enabled = true
-        if (enabled) currentColumns.appendChild(columnEl)
-        else unEnabledColumns.appendChild(columnEl)
-
-        columnEl.addEventListener("dragstart", () => {
-            columnEl.classList.add("dragging");
-        });
-        columnEl.addEventListener("dragend", () => {
-            columnEl.classList.remove("dragging");
-            updateColumns()
-        });
-    }
-
-    function updateColumns() {
-        let newColumns = []
-        for (let child of currentColumns.children) {
-            for (let x of availableColumns)
-                if (x.name === child.getAttribute("data-column-name")) {
-                    let size = x.size
-                    for (let col of columns) {
-                        if (col.name === x.name) size = col.size
-                    }
-                    newColumns.push(x)
-                    newColumns[newColumns.length-1].size = size
-                }
-        }
-        columns = newColumns
-        setHeader()
-        saveColumns()
-    }
-
-    let iconsDiv = document.createElement("div")
-    iconsDiv.className = "edit-column-buttons"
-    if (usingTBAMedia)
-        columnPanel.appendChild(iconsDiv)
-
-    let iconBox = document.createElement("input")
-    iconBox.type = "checkbox"
-    iconBox.checked = showTeamIcons
-    iconBox.id = "edit-column-icons-checkbox"
-    iconBox.addEventListener("change", () => {
-        showTeamIcons = iconBox.checked
-        saveGeneralSettings()
-        setHeader()
-    })
-    iconsDiv.appendChild(iconBox)
-
-    let iconLabel = document.createElement("label")
-    iconLabel.setAttribute("for", "edit-column-icons-checkbox")
-    iconLabel.innerText = "Show team icons"
-    iconsDiv.appendChild(iconLabel)
-
-    let buttons = document.createElement("div")
-    buttons.className = "edit-column-buttons"
-    columnPanel.appendChild(buttons)
-
-    let resetButton = document.createElement("button")
-    resetButton.innerText = "Enable All"
-    resetButton.addEventListener("click", () => {
-        resetColumns()
-        columnEditPanel()
-        saveColumns()
-    })
-    buttons.appendChild(resetButton)
-
-    let hideAll = document.createElement("button")
-    hideAll.innerText = "Hide All"
-    hideAll.addEventListener("click", () => {
-        columns = []
-        showTeamIcons = false
-        columnEditPanel()
-        setHeader()
-        saveColumns()
-    })
-    buttons.appendChild(hideAll)
-
-    let close = document.createElement("button")
-    close.innerText = "Close"
-    close.addEventListener("click", () => {
-        columnEditOpen = false
-        columnPanel.classList.add("hidden")
-    })
-    buttons.appendChild(close)
-}
 
 //#endregion
 
@@ -1042,25 +822,7 @@ document.querySelector("#top-show-hide-ignored").addEventListener("click", () =>
 //#region File and API loading functions (+ download, API Toggles)
 // Loads data from TheBlueAlliance
 async function load(sub, onload) {
-    let url = (`https://www.thebluealliance.com/api/v3/${sub}?X-TBA-Auth-Key=${TBA_KEY}`)
-    if (usingOffline) {
-        onload(api_data[url])
-        return api_data[url]
-    }
-
-    loading++
-    await fetch(url).then(response => {
-        if (!response.ok) {
-            throw new Error('Network response was not ok')
-        }
-        loading--
-        checkLoading()
-        return response.json()
-    }).then(data => {
-        onload(data)
-        api_data[url] = data
-        saveAPIData()
-    })
+    return loadOther(`https://www.thebluealliance.com/api/v3/${sub}?X-TBA-Auth-Key=${TBA_KEY}`, onload)
 }
 async function loadOther(url, onload) {
     if (usingOffline) {
@@ -1156,8 +918,9 @@ function setEnabledAPIS() {
         tbarank: usingTBARank,
         desmos: usingDesmos,
         statbotics: usingStatbotics
+    }, () => {
+        location.reload()
     })
-    location.reload()
 }
 //#endregion
 
@@ -1230,9 +993,6 @@ function clearSavedTeams() {
         "usingStar": true,
         "usingIgnore": true,
     })
-}
-function saveColumns() {
-    localforage.setItem(COLUMNS, columns)
 }
 function saveAPIData() {
     api_data["lastSaved"] = new Date().toLocaleString([], {year: 'numeric', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit'})
@@ -1357,318 +1117,6 @@ document.querySelector("#top-reset-preferences").addEventListener("click", () =>
     for (let key of LOCAL_STORAGE_KEYS) localforage.removeItem(key)
     window.location.reload()
 })
-
-//#endregion
-
-//#region Notes, Teamlist, View Robots
-let notes
-let starbook = {
-    open: false,
-    stars: false,
-    ignored: false,
-    other: false,
-}
-
-function openNotes() {
-    let notebook = document.createElement("div")
-    notebook.className = "notebook"
-
-    let notebookNav = document.createElement("div")
-    notebookNav.className = "notebook-nav"
-    notebook.appendChild(notebookNav)
-
-    let notebookContents = document.createElement("textarea")
-    notebookContents.className = "notes"
-    notebookContents.value = notes.tabs[notes.activeTab]
-    notebookContents.style.width = "300px"
-    notebookContents.style.height = "200px"
-    notebookContents.addEventListener("focus", () => {
-        brieflyDisableKeyboard = true
-    })
-    notebookContents.addEventListener("blur", () => {
-        brieflyDisableKeyboard = false
-    })
-    notebookContents.addEventListener("change", () => {
-        notes.tabs[notes.activeTab] = notebookContents.value
-        saveNotes()
-    })
-    notebookContents.addEventListener("mousemove", () => {
-        notebook.style.maxWidth = notebookContents.offsetWidth + "px"
-    })
-    notebook.appendChild(notebookContents)
-
-    let tabElements = []
-
-    let drag = document.createElement("span")
-    drag.className = "material-symbols-outlined notebook-drag"
-    drag.innerText = "drag_indicator"
-
-    let dragging = false
-    let dragScreenStart
-    let dragPositionStart
-
-    drag.addEventListener("mousedown", (e) => {
-        dragScreenStart = {x: e.clientX, y: e.clientY}
-        dragPositionStart = {x: notebook.offsetLeft, y: notebook.offsetTop}
-        dragging = true
-    })
-    document.body.addEventListener("mousemove", (e) => {
-        if (dragging) {
-            notebook.style.left = (dragPositionStart.x - (dragScreenStart.x - e.clientX)) + "px"
-            notebook.style.top = (dragPositionStart.y - (dragScreenStart.y - e.clientY)) + "px"
-        }
-    })
-    document.body.addEventListener("mouseup", (e) => {
-        dragging = false
-    })
-    notebookNav.appendChild(drag)
-
-    let close = document.createElement("span")
-    close.className = "material-symbols-outlined notebook-btn"
-    close.innerText = "close"
-    close.addEventListener("click", () => {
-        document.querySelector(".notebook").remove()
-        notes.open = !notes.open
-        document.querySelector("#top-notebook").innerText = (notes.open ? "Close" : "Open") + " Notebook"
-    })
-    notebookNav.appendChild(close)
-
-    let addTab = document.createElement("span")
-    addTab.className = "material-symbols-outlined notebook-btn"
-    addTab.innerText = "add"
-    addTab.addEventListener("click", () => {
-        for (let otherEl of tabElements) otherEl.classList.remove("selected")
-
-        let tabEl = document.createElement("div")
-        tabEl.className = "notebook-tab selected"
-        let tab = "Tab " + (Object.keys(notes.tabs).length + 1)
-        tabEl.innerText = tab
-        notebookNav.appendChild(tabEl)
-        tabElements.push(tabEl)
-
-        notes.activeTab = tab
-        notes.tabs[tab] = ""
-        notebookContents.value = ""
-
-        tabEl.addEventListener("click", () => {
-            if (notes.activeTab === tab) {
-                tabEl.contentEditable = true
-                tabEl.focus()
-                brieflyDisableKeyboard = true
-            }
-
-            for (let otherEl of tabElements) otherEl.classList.remove("selected")
-            tabEl.classList.add("selected")
-
-            notes.activeTab = tab
-            notebookContents.value = notes.tabs[notes.activeTab]
-        })
-
-        tabEl.addEventListener("blur", () => {
-            brieflyDisableKeyboard = false
-            tabEl.contentEditable = false
-            if (tabEl.innerText === "\n") {
-                delete notes.tabs[notes.activeTab]
-                tabElements.splice(tabElements.indexOf(tabEl), 1)
-                tabEl.remove()
-                notes.activeTab = Object.keys(notes.tabs)[0]
-                notebookContents.value = notes.tabs[notes.activeTab]
-                tabElements[0].classList.add("selected")
-            }
-            saveNotes()
-        })
-
-        tabEl.addEventListener("keyup", (e) => {
-            if (e.key === "Enter") {
-                e.preventDefault()
-                tabEl.innerText = notes.activeTab
-            }
-            let text = notes.tabs[tab]
-            delete notes.tabs[notes.activeTab]
-            notes.activeTab = tab = tabEl.innerText
-            notes.tabs[tab] = text
-            saveNotes()
-        })
-
-        brieflyDisableKeyboard = true
-        tabEl.contentEditable = true
-        tabEl.focus()
-
-    })
-    notebookNav.appendChild(addTab)
-
-    for (let tab of Object.keys(notes.tabs)) {
-        let tabEl = document.createElement("div")
-        tabEl.className = "notebook-tab"
-        tabEl.innerText = tab
-        if (tab === notes.activeTab) tabEl.classList.add("selected")
-        notebookNav.appendChild(tabEl)
-        tabElements.push(tabEl)
-
-        tabEl.addEventListener("click", () => {
-            if (notes.activeTab === tab) {
-                tabEl.contentEditable = true
-                tabEl.focus()
-                brieflyDisableKeyboard = true
-            }
-
-            for (let otherEl of tabElements) otherEl.classList.remove("selected")
-            tabEl.classList.add("selected")
-
-            notes.activeTab = tab
-            notebookContents.value = notes.tabs[notes.activeTab]
-        })
-
-        tabEl.addEventListener("blur", () => {
-            brieflyDisableKeyboard = false
-            tabEl.contentEditable = false
-            if (tabEl.innerText === "\n") {
-                delete notes.tabs[notes.activeTab]
-                tabElements.splice(tabElements.indexOf(tabEl), 1)
-                tabEl.remove()
-                notes.activeTab = Object.keys(notes.tabs)[0]
-                notebookContents.value = notes.tabs[notes.activeTab]
-                tabElements[0].classList.add("selected")
-            }
-            saveNotes()
-        })
-
-        tabEl.addEventListener("keyup", (e) => {
-            if (e.key === "Enter") {
-                e.preventDefault()
-                tabEl.innerText = notes.activeTab
-            }
-            let text = notes.tabs[tab]
-            delete notes.tabs[notes.activeTab]
-            notes.activeTab = tab = tabEl.innerText
-            notes.tabs[tab] = text
-            saveNotes()
-        })
-    }
-
-    document.body.appendChild(notebook)
-    notebook.style.left = (window.innerWidth * .5) + "px"
-    notebook.style.top = (window.innerHeight * .2) + "px"
-    notebook.style.maxWidth = notebookContents.offsetWidth + "px"
-}
-
-document.querySelector("#top-notebook").addEventListener("click", () => {
-    if (notes.open) document.querySelector(".notebook").remove()
-    else openNotes()
-    notes.open = !notes.open
-    document.querySelector("#top-notebook").innerText = (notes.open ? "Close" : "Open") + " Notebook"
-})
-
-document.querySelector("#top-notebook-clear").addEventListener("click", () => {
-    if (!confirm("Are you sure? This cannot be undone.")) return
-    notes.activeTab = "Tab 1"
-    notes.tabs = {"Tab 1": ""}
-    if (notes.open) document.querySelector(".notebook").remove()
-    openNotes()
-    saveNotes()
-})
-
-function saveNotes() {
-    let isOpen = notes.open
-    notes.open = false
-    localforage.setItem(NOTES, notes)
-    notes.open = isOpen
-}
-
-document.querySelector("#top-stars").addEventListener("click", () => {
-    setStarbook()
-    document.querySelector(".notebook-stars").classList.toggle("hidden")
-    starbook.open = !starbook.open
-    document.querySelector("#top-stars").innerText = (starbook.open ? "Close" : "Open") + " team list"
-})
-document.querySelector(".notebook-stars").style.left = (window.innerWidth * .5) + "px"
-document.querySelector(".notebook-stars").style.top = (window.innerHeight * .2) + "px"
-
-function setStarbook() {
-    let starbookEl = document.querySelector(".notebook-stars")
-    starbookEl.innerHTML = ""
-
-    let notebookNav = document.createElement("div")
-    notebookNav.className = "notebook-nav"
-    starbookEl.appendChild(notebookNav)
-
-    //#region Drag
-    let drag = document.createElement("span")
-    drag.className = "material-symbols-outlined notebook-drag"
-    drag.innerText = "drag_indicator"
-
-    let dragging = false
-    let dragScreenStart
-    let dragPositionStart
-
-    drag.addEventListener("mousedown", (e) => {
-        dragScreenStart = {x: e.clientX, y: e.clientY}
-        dragPositionStart = {x: starbookEl.offsetLeft, y: starbookEl.offsetTop}
-        dragging = true
-    })
-    document.body.addEventListener("mousemove", (e) => {
-        if (dragging) {
-            starbookEl.style.left = (dragPositionStart.x - (dragScreenStart.x - e.clientX)) + "px"
-            starbookEl.style.top = (dragPositionStart.y - (dragScreenStart.y - e.clientY)) + "px"
-        }
-    })
-    document.body.addEventListener("mouseup", (e) => {
-        dragging = false
-    })
-    notebookNav.appendChild(drag)
-    //#endregion
-
-    let teamListTitle = document.createElement("div")
-    teamListTitle.innerText = "Team List"
-    notebookNav.appendChild(teamListTitle)
-
-    let remainingTeams = []
-    for (let team of Object.keys(team_data))
-        if (!ignored.includes(team) && !starred.includes(team))
-            remainingTeams.push(team)
-
-    function group(title, teams, showing) {
-        let toggler = document.createElement("div")
-        toggler.className = "starbook-toggler"
-        starbookEl.appendChild(toggler)
-
-        let dropdown = document.createElement("span")
-        dropdown.className = "material-symbols-outlined"
-        dropdown.innerText = showing ? "keyboard_arrow_down" : "keyboard_arrow_right"
-        toggler.appendChild(dropdown)
-
-        let titleEl = document.createElement("div")
-        titleEl.innerText = title
-        toggler.appendChild(titleEl)
-
-        if (showing) {
-            let teamHolder = document.createElement("div")
-            teamHolder.className = "starbook-team-list"
-            for (let team of teams) {
-                let teamEl = document.createElement("div")
-                teamEl.className = "starbook-team"
-                teamHolder.appendChild(teamEl)
-
-                teamEl.innerText = team + " " + team_data[team].Name
-            }
-            starbookEl.appendChild(teamHolder)
-        }
-
-        return toggler
-    }
-    group("Starred Teams", starred, starbook.stars).addEventListener("click", () => {
-        starbook.stars = !starbook.stars
-        setStarbook()
-    })
-    group("Ignored Teams", ignored, starbook.ignored).addEventListener("click", () => {
-        starbook.ignored = !starbook.ignored
-        setStarbook()
-    })
-    group("Remaining Teams", remainingTeams, starbook.other).addEventListener("click", () => {
-        starbook.other = !starbook.other
-        setStarbook()
-    })
-}
 
 //#endregion
 
@@ -1802,6 +1250,7 @@ localforage.getItem(ENABLED_APIS, (err, apis) => {
         localforage.setItem(ENABLED_APIS, {tbaevent: true, tbamatch: true, tbamedia: true, tbarank: true, desmos: true, statbotics: true})
         apis = {tbaevent: true, tbamatch: true, tbamedia: true, tbarank: true, desmos: true, statbotics: true}
     }
+    console.log(apis)
 
     if (usingOffline) {
         apis = api_data.apis
@@ -1881,11 +1330,6 @@ main.addChild(tabGroup)
 let graph
 
 function finishInit() {
-    // View robots
-    if (usingTBAMedia || (mapping["pit_scouting"] !== undefined && mapping["pit_scouting"]["image"] !== undefined)) {
-        document.querySelector("#top-pictures").disabled = false
-    }
-
     // Final Prep
     if (eventKey)
         document.querySelector("#top-load-event").innerText = eventKey.toUpperCase()

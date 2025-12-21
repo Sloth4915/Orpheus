@@ -568,23 +568,23 @@ class TeamInfo extends Widget {
         imageAndBasicHolderHolder.appendChild(basicInfoHolder)
 
         let nameEl = document.createElement("div")
-        nameEl.classList = "team-info-name"
+        nameEl.className = "team-info-name"
         basicInfoHolder.appendChild(nameEl)
 
         let location = document.createElement("div")
-        location.classList = "team-info-basic-text"
+        location.className = "team-info-basic-text"
         basicInfoHolder.appendChild(location)
 
         let rookieYear = document.createElement("div")
-        rookieYear.classList = "team-info-basic-text"
+        rookieYear.className = "team-info-basic-text"
         basicInfoHolder.appendChild(rookieYear)
 
         let eventRank = document.createElement("div")
-        eventRank.classList = "team-info-basic-text"
+        eventRank.className = "team-info-basic-text"
         basicInfoHolder.appendChild(eventRank)
 
         let matches = document.createElement("div")
-        matches.classList = "team-info-matches"
+        matches.className = "team-info-matches"
 
         if (usingTBA) {
             this.name = team + " " + team_data[team].Name

@@ -88,7 +88,7 @@ class WidgetBase {
         while (widgetIds.includes(id + String.fromCharCode(ascii))) {
             if (++ascii == 122) id = id + Math.round(Math.random() * 26) + 65
         }
-        id = id + String.fromCharCode(ascii)
+        id = "" + (id + String.fromCharCode(ascii))
 
         widgetIds.push(id)
         return id
