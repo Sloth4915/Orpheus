@@ -579,6 +579,10 @@ class TeamInfo extends Widget {
         rookieYear.classList = "team-info-basic-text"
         basicInfoHolder.appendChild(rookieYear)
 
+        let eventRank = document.createElement("div")
+        eventRank.classList = "team-info-basic-text"
+        basicInfoHolder.appendChild(eventRank)
+
         let matches = document.createElement("div")
         matches.classList = "team-info-matches"
 
@@ -594,9 +598,13 @@ class TeamInfo extends Widget {
                 if (typeof team_data[team] !== "undefined" && typeof team_data[team].Icon !== "undefined") logo.src = team_data[team].Icon
                 else logo.src = MISSING_LOGO
             }
+            if (usingTBARank) {
+                eventRank.innerText = "Rank " + processedData.orpheus.data["ranking"][team] + " of " + Object.keys(team_data).length
+            }
         } else {
             this.name = team
             logo.remove()
         }
+
     }
 }

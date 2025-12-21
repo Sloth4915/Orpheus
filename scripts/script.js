@@ -75,7 +75,12 @@ let crossOutUnicode = "X"
 
 let processedData = {
     "orpheus": {
-        "data": {"number": {}, "name": {}}
+        "data": {
+            "number": {},
+            "name": {},
+            "ranking": {},
+            "matches_played": {},
+        }
     }
 }
 
@@ -213,6 +218,28 @@ function loadEvent() {
                 checkLoading()
             })
         }
+        if (usingTBARank) {
+            loading++
+            load("event/" + year + eventKey + "/rankings", function (data) {
+                for (let extra in data["extra_stats_info"]) {
+                    internalMapping[data["extra_stats_info"][extra]["name"]] = {"alias": data["extra_stats_info"][extra]["name"]}
+                    processedData["orpheus"]["data"][data["extra_stats_info"][extra]["name"]] = {}
+                }
+
+                for (let i in data["rankings"]) {
+                    let team = parseInt(data["rankings"][i]["team_key"].substring(3))
+                    processedData["orpheus"]["data"]["ranking"][team] = data["rankings"][i]["rank"]
+                    processedData["orpheus"]["data"]["matches_played"][team] = data["rankings"][i]["matches_played"]
+
+                    for (let extra in data["extra_stats_info"]) {
+                        processedData["orpheus"]["data"][data["extra_stats_info"][extra]["name"]][team] = data["rankings"][i]["extra_stats"][extra]
+                    }
+                }
+
+                loading--
+                checkLoading()
+            })
+        }
     }
     else {
         loading--
@@ -252,6 +279,12 @@ let internalMapping = {
     },
     "name": {
         "alias": "Team Name"
+    },
+    "matches_played": {
+        "alias": "Matches Played"
+    },
+    "ranking": {
+        "alias": "Event Rank"
     }
 }
 
@@ -499,9 +532,8 @@ function processData() {
     }
     processedData["orpheus"] = orpheus
 
-    table.addColumn(["orpheus`number", "orpheus`name", "match`Scoring`Coral Scored", "match`tba climb"])
+    table.addColumn(["orpheus`number", "orpheus`name", "orpheus`matches_played", "orpheus`ranking", "orpheus`Total Ranking Points"])
     table.addTeam(teams)
-    table.addColumn("pit`Drivetrain")
 
     table2.addColumn(["orpheus`number", "orpheus`name", "match`Scoring`Coral Scored", "match`tba climb"])
     table2.addTeam(teams)
