@@ -53,6 +53,8 @@ html, body {
     --green: rgb(146, 212, 162);
     --yellow: rgb(245, 214, 153);
     --placeholder: rgb(133, 133, 133);
+
+    --font-light: var(--bg);
 }
 :root.dark, .force-dark {
     --bg: rgb(29, 30, 31);
@@ -68,6 +70,8 @@ html, body {
     --green: rgb(34, 129, 31);
     --yellow: rgb(159, 92, 10);
     --placeholder: rgb(152, 152, 152);
+
+    --font-light: var(--font);
 }
 :root.spartronics_theme, .force-spartronics {
     --bg: rgb(0, 103, 185);
@@ -83,6 +87,8 @@ html, body {
     --green: rgb(34, 129, 31);
     --yellow: rgb(159, 92, 10);
     --placeholder: rgb(171, 159, 0);
+
+    --font-light: var(--font);
 }
 
 * {

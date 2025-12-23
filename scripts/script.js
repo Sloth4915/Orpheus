@@ -159,6 +159,7 @@ function loadEvent() {
                 team_data[teamNum].Name = team["nickname"]
                 team_data[teamNum].TBA = team
                 team_data[teamNum].TBA["matches"] = {}
+                team_data[teamNum].media = []
                 processedData["orpheus"]["data"]["name"][teamNum] = team["nickname"]
                 main.hardRefresh()
                 if (usingTBAMedia) {
@@ -173,8 +174,8 @@ function loadEvent() {
                                 team_data[teamNum].Icon = "data:image/png;base64," + x.details["base64Image"]
                                 main.hardRefresh()
                             }
-                            else if (x.type === "imgur") team_data[teamNum].TBA.images.push({type: "image", src: x["direct_url"]})
-                            else if (x.type === "youtube") team_data[teamNum].TBA.images.push({type: "youtube", src: x["foreign_key"]})
+                            else if (x.type === "imgur") team_data[teamNum].media.push({type: "image", src: x["direct_url"]})
+                            else if (x.type === "youtube") team_data[teamNum].media.push({type: "youtube", src: x["foreign_key"]})
                             else console.log("Unsupported media type: " + x.type + ". (Team " + teamNum + ")")
                         }
                     })
@@ -313,6 +314,7 @@ function processData() {
     }
 
     let dataOut = {}
+    let teamMedia = {}
 
     // Get a list of teams
     let teams = new Set()
@@ -324,7 +326,6 @@ function processData() {
 
     function handleData(schema, datumMapping, context) {
         let out = {}
-        console.log(schema, datumMapping, context)
         for (let x of Object.keys(datumMapping)) {
             if (datumMapping[x]["type"]) { // If has type, then we can evaluate
                 if (datumMapping[x]["type"] === "comment") {
@@ -463,21 +464,21 @@ function processData() {
                     out[x] = data
                 }
                 else if (datumMapping[x]["type"] === "media") {
-                    let media = {}
-                    for (let team of teams) media[team] = []
+                    for (let team of teams) {
+                        if (typeof teamMedia[team] === "undefined") teamMedia[team] = []
+                    }
                     for (let i of uploadedData[schema]) {
                         let team = getTeam(schema, i[mapping[schema]["team_key"]])
                         if (typeof datumMapping[x]["key"] === "string") {
                             if (i[datumMapping[x]["key"]].trim() !== "")
-                                media[team].push(i[datumMapping[x]["key"]])
+                                teamMedia[team].push(i[datumMapping[x]["key"]])
                         }
                         else {
                             for (let key of datumMapping[x]["key"])
                                 if (i[key].trim() !== "")
-                                    media[team].push(i[key])
+                                    teamMedia[team].push(i[key])
                         }
                     }
-                    out[x] = media
                 }
                 else console.error("Unexpected datum type " + datumMapping[x]["type"] + " for " + x)
             } else {
@@ -514,6 +515,14 @@ function processData() {
     }
     processedData["orpheus"] = orpheus
 
+    for (let teamNum in teamMedia) {
+        for (let media of teamMedia[teamNum]) {
+            // Add to start instead of pushing to the end. This is so scouting images will always come before images sourced from TBA, which may be outdated
+            if (typeof team_data[teamNum] !== "undefined") team_data[teamNum].media.unshift({type: "image", src: media})
+        }
+    }
+
+    // Temporary widget stuff for testing
     table.addColumn(["orpheus`number", "orpheus`name", "orpheus`matches_played", "orpheus`ranking", "orpheus`Total Ranking Points"])
     table.addTeam(teams)
 
@@ -527,6 +536,10 @@ function processData() {
     teamInfo = new TeamInfo()
     teamInfo.setTeams(Object.keys(team_data))
     tabGroup.addChild(teamInfo)
+
+    media4915 = new TeamMedia()
+    media4915.setTeam(4915)
+    tabGroup.addChild(media4915)
 }
 
 function evaluate(expression, schema, context) {
@@ -1327,7 +1340,7 @@ tabGroup.addChild(table2)
 
 main.addChild(tabGroup)
 
-let graph
+let graph, media4915
 
 function finishInit() {
     // Final Prep

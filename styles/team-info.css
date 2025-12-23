@@ -1,3 +1,4 @@
+/* Team Info Widget */
 .team-info-logo {
     width: 5.5rem;
     height: 5.5rem;
@@ -19,4 +20,43 @@
 .team-info-name {
     font-size: 1.5rem;
     font-weight: bolder;
+}
+
+/* Team Media Widget */
+.team-media-widget {
+    overflow: hidden;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.team-media-widget img {
+    object-fit: contain;
+    max-width: 100%;
+    max-height: 100%;
+}
+
+.team-media-controls {
+    display: flex;
+    gap: 1rem;
+    background-color: rgba(0,0,0,0.5);
+    border-radius: 0.5rem;
+    padding: 0.5rem;
+    backdrop-filter: blur(3px);
+    color: var(--font-light);
+    opacity: 0;
+    transition: 200ms opacity;
+    position: absolute;
+}
+.team-media-controls.shown {
+    opacity: 1;
+}
+
+.team-media-controls div {
+    color: var(--font-light);
+    font-size: 1.5rem;
+}
+
+.team-media-controls button {
+    font-size: 1.5rem;
 }

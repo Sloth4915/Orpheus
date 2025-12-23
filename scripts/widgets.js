@@ -615,3 +615,116 @@ class TeamInfo extends Widget {
         this.name = this.name.substring(2)
     }
 }
+
+class TeamMedia extends Widget {
+    constructor() {
+        super()
+        this.minWidth = 200
+        this.minHeight = 70
+
+        this.content.classList.add("no-scroll")
+        this.content.classList.add("team-media-widget")
+
+        this.activeMedia = null
+        this.activeMediaType = ""
+
+        this.controls = document.createElement("div")
+        this.controls.className = "team-media-controls"
+        this.content.appendChild(this.controls)
+
+        this.previous = document.createElement("button")
+        this.previous.className = "material-symbols-outlined"
+        this.previous.innerText = "arrow_left"
+        this.previous.addEventListener("click", () => {
+            this.mediaOn--
+            if (this.mediaOn < 0) this.mediaOn = team_data[this.team].media.length + this.mediaOn
+            this.setMedia(this)
+        })
+        this.controls.appendChild(this.previous)
+
+        this.progress = document.createElement("div")
+        this.controls.appendChild(this.progress)
+
+        this.next = document.createElement("button")
+        this.next.className = "material-symbols-outlined"
+        this.next.innerText = "arrow_right"
+        this.next.addEventListener("click", () => {
+            this.mediaOn++
+            if (this.mediaOn >= team_data[this.team].media.length) this.mediaOn = 0
+            this.setMedia()
+        })
+        this.controls.appendChild(this.next)
+
+        this.content.addEventListener("mouseenter", () => {
+            this.controls.classList.add("shown")
+        })
+        this.content.addEventListener("mouseleave", () => {
+            this.controls.classList.remove("shown")
+        })
+
+        this.mediaOn = 0
+        this.team = null
+    }
+    setTeam(team) {
+        this.activeMedia = null
+        this.activeMediaType = ""
+
+        if (usingTBA) {
+            this.name = team + " " + team_data[team].Name + " Media"
+        } else {
+            this.name = this.name + ", " + team
+        }
+
+        this.mediaOn = 0
+        this.team = team
+
+        this.setMedia()
+
+        this.refresh()
+    }
+    refresh() {
+        super.refresh()
+        this.controls.style.left = (this.content.getBoundingClientRect().left + this.content.offsetWidth / 2 - this.controls.offsetWidth / 2) + "px"
+        this.controls.style.top = (this.content.getBoundingClientRect().top + this.content.offsetHeight / 2 - this.controls.offsetHeight / 2) + "px"
+
+        if (this.activeMedia === null) return
+        if (this.activeMediaType === "image") {
+            this.activeMedia.style.width = (this.content.offsetWidth - 2) + "px"
+            this.activeMedia.style.height = (this.content.offsetHeight - 2) + "px"
+        }
+        if (this.activeMediaType === "video") {
+            this.activeMedia.width = this.content.offsetWidth
+            this.activeMedia.height = this.content.offsetHeight
+        }
+    }
+    hardRefresh() {
+        super.hardRefresh();
+        this.refresh()
+    }
+    setMedia() {
+        if (this.activeMedia !== null) this.activeMedia.remove()
+        this.progress.innerText = (this.mediaOn + 1) + " / " + team_data[this.team].media.length
+        let media = team_data[this.team].media[this.mediaOn]
+        if (media.type === "image") {
+            let image = document.createElement("img")
+            image.src = media.src
+            this.activeMedia = image
+            this.activeMediaType = "image"
+            this.content.appendChild(image)
+        }
+        if (media.type === "youtube") {
+            let video = document.createElement("iframe")
+            video.setAttribute("allow", "fullscreen")
+            video.src = "https://www.youtube.com/embed/" + media.src
+            video.width = this.content.offsetWidth - 2
+            video.height = this.content.offsetHeight - 2
+            video.frameBorder = "0"
+            video.allow = "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            video.referrerPolicy = "strict-origin-when-cross-origin"
+            video.allowFullscreen = true
+            this.activeMedia = video
+            this.activeMediaType = "video"
+            this.content.appendChild(video)
+        }
+    }
+}
