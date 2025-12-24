@@ -175,7 +175,6 @@ function loadEvent() {
                                 main.hardRefresh()
                             }
                             else if (x.type === "imgur") team_data[teamNum].media.push({type: "image", src: x["direct_url"]})
-                            else if (x.type === "youtube") team_data[teamNum].media.push({type: "youtube", src: x["foreign_key"]})
                             else console.log("Unsupported media type: " + x.type + ". (Team " + teamNum + ")")
                         }
                     })
@@ -1041,7 +1040,6 @@ function exportSettings() {
             "usingStar": usingStar,
             "usingIgnore": usingIgnore
         },
-        columns: columns,
         mapping: mapping,
         data: uploadedData,
         apis: {
@@ -1073,8 +1071,6 @@ function importSettings(settings) {
     ignored = settings.team.ignored
     usingStar = settings.team.usingStar
     usingIgnore = settings.team.usingIgnore
-    columns = settings.columns
-    saveColumns()
     saveGeneralSettings()
     saveTeams()
     mapping = settings.mapping

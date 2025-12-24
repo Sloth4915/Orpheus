@@ -685,21 +685,19 @@ class TeamMedia extends Widget {
     refresh() {
         super.refresh()
         this.controls.style.left = (this.content.getBoundingClientRect().left + this.content.offsetWidth / 2 - this.controls.offsetWidth / 2) + "px"
-        this.controls.style.top = (this.content.getBoundingClientRect().top + this.content.offsetHeight / 2 - this.controls.offsetHeight / 2) + "px"
+        this.controls.style.top = (this.content.getBoundingClientRect().bottom - this.controls.offsetHeight) + "px"
 
         if (this.activeMedia === null) return
         if (this.activeMediaType === "image") {
-            this.activeMedia.style.width = (this.content.offsetWidth - 2) + "px"
-            this.activeMedia.style.height = (this.content.offsetHeight - 2) + "px"
-        }
-        if (this.activeMediaType === "video") {
-            this.activeMedia.width = this.content.offsetWidth
-            this.activeMedia.height = this.content.offsetHeight
+            this.activeMedia.style.width = (this.content.offsetWidth) + "px"
+            this.activeMedia.style.height = (this.content.offsetHeight) + "px"
         }
     }
     hardRefresh() {
         super.hardRefresh();
-        this.refresh()
+        setTimeout(() => {
+            this.refresh()
+        }, 0)
     }
     setMedia() {
         if (this.activeMedia !== null) this.activeMedia.remove()
@@ -711,20 +709,6 @@ class TeamMedia extends Widget {
             this.activeMedia = image
             this.activeMediaType = "image"
             this.content.appendChild(image)
-        }
-        if (media.type === "youtube") {
-            let video = document.createElement("iframe")
-            video.setAttribute("allow", "fullscreen")
-            video.src = "https://www.youtube.com/embed/" + media.src
-            video.width = this.content.offsetWidth - 2
-            video.height = this.content.offsetHeight - 2
-            video.frameBorder = "0"
-            video.allow = "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-            video.referrerPolicy = "strict-origin-when-cross-origin"
-            video.allowFullscreen = true
-            this.activeMedia = video
-            this.activeMediaType = "video"
-            this.content.appendChild(video)
         }
     }
 }
