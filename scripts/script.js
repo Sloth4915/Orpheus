@@ -17,8 +17,6 @@ const MISSING_LOGO = "https://frc-cdn.firstinspires.org/eventweb_frc/ProgramLogo
 const toolName = "Orpheus"
 const version = 0.1
 
-let doingInitialSetup = false
-
 let eventKey
 let event_data
 let uploadedData = {}
@@ -31,22 +29,12 @@ let gameMapping
 
 let theme
 
-let starred
-let ignored
-
 let loading = 0
 
 let showTeamIcons
 
 let roundingDigits = 3
 let rounding = Math.pow(10, roundingDigits)
-
-let keyboardControls
-let brieflyDisableKeyboard = false
-
-let year
-
-let tieValue = 0.5
 
 let onDesmosLoad = []
 
@@ -83,7 +71,7 @@ let processedData = {
 //#endregion
 
 //#region Init Header Controls
-let modalShowing = false
+let headerControlsShowing = false
 for (let el of document.querySelector("#top-controls").children) {
     if (el.tagName === "BUTTON" && el.classList.contains("dropdown-button")) {
         el.onclick = function() {
@@ -91,13 +79,13 @@ for (let el of document.querySelector("#top-controls").children) {
                 el.close()
             let modal = document.querySelector(`dialog[for="${el.id}"]`)
             modal.show()
-            modalShowing = false
-            setTimeout(() => modalShowing = true, 0)
+            headerControlsShowing = false
+            setTimeout(() => headerControlsShowing = true, 0)
         }
     } else if (el.tagName === "DIALOG") {
         el.onclick = function() {
-            modalShowing = false
-            setTimeout(() => modalShowing = true, 0)
+            headerControlsShowing = false
+            setTimeout(() => headerControlsShowing = true, 0)
         }
         let inner = document.createElement("div")
         inner.innerHTML = el.innerHTML
@@ -119,10 +107,10 @@ function setHeaderControlsPositions() {
 }
 
 document.addEventListener("click", () => {
-    if (modalShowing) {
+    if (headerControlsShowing) {
         for (let el of document.getElementsByClassName("top-control-dropdown"))
             el.close()
-        modalShowing = false
+        headerControlsShowing = false
     }
 })
 
@@ -130,7 +118,7 @@ document.addEventListener("click", () => {
 
 //#region API Key, Event Loading, Year setting
 document.querySelector("#top-load-event").onclick = function() {
-    let x = prompt("What event code do you want?")
+    let x = prompt("What event code do you want? For example: 2024wabon, 2025waahs, 2025pncmp, etc")
     if (x === "get") alert(eventKey)
     else if (x === "clear") {
         localforage.removeItem(storageKeys.EVENT)
@@ -139,14 +127,13 @@ document.querySelector("#top-load-event").onclick = function() {
     else if (x !== "") {
         localforage.setItem(storageKeys.EVENT, x.toLowerCase())
         window.location.reload()
-        clearSavedTeams()
     }
 
 }
 function loadEvent() {
     loading++
     if (usingTBA) {
-        load("event/" + year + eventKey + "/teams", function (data) {
+        load("event/" + eventKey + "/teams", function (data) {
             event_data = data
 
             for (let team of data) {
@@ -161,7 +148,7 @@ function loadEvent() {
                 main.hardRefresh()
                 if (usingTBAMedia) {
                     loading++
-                    load("team/frc" + teamNum + "/media/" + year, function (data) {
+                    load("team/frc" + teamNum + "/media/" + gameMapping.year, function (data) {
                         loading--
                         checkLoading()
                         team_data[teamNum].TBA.images = []
@@ -178,7 +165,7 @@ function loadEvent() {
                 }
                 if (usingStatbotics) {
                     loading++
-                    loadOther("https://api.statbotics.io/v3/team_event/" + teamNum + "/" + year + eventKey, function(data) {
+                    loadOther("https://api.statbotics.io/v3/team_event/" + teamNum + "/" + eventKey, function(data) {
                         team_data[teamNum]["statbotics"] = data
                         team_data[teamNum]["EPA"] = data["epa"]["total_points"]["mean"]
                         team_data[teamNum]["Auto EPA"] = data["epa"]["breakdown"]["auto_points"]
@@ -194,7 +181,7 @@ function loadEvent() {
         })
         if (usingTBAMatches) {
             loading++
-            load("event/" + year + eventKey + "/matches", function (data) {
+            load("event/" + eventKey + "/matches", function (data) {
                 tba_match_data = {}
                 for (let m of data) {
                     if (m["comp_level"] === "qm") {
@@ -208,7 +195,7 @@ function loadEvent() {
         }
         if (usingTBARank) {
             loading++
-            load("event/" + year + eventKey + "/rankings", function (data) {
+            load("event/" + eventKey + "/rankings", function (data) {
                 for (let extra in data["extra_stats_info"]) {
                     internalMapping[data["extra_stats_info"][extra]["name"]] = {"alias": data["extra_stats_info"][extra]["name"]}
                     processedData["orpheus"]["data"][data["extra_stats_info"][extra]["name"]] = {}
@@ -608,9 +595,7 @@ function dataButtons() {
             uploadedData[schema] = data
             localforage.setItem(storageKeys.DATA, uploadedData)
             document.querySelector("#top-download-" + schema).disabled = false
-            delete maintainedTeamPageSettings["graph"]
             saveGeneralSettings()
-            if (doingInitialSetup) window.location.reload()
             if (mapping !== undefined) processData()
         })
     }
@@ -799,33 +784,17 @@ document.querySelector("#top-graph-display").addEventListener("click", () => {
 })
 //#endregion
 
-//#region Column edit panel, Keyboard Controls
+//#region Keyboard Controls
 let controlPressed = false
 
-document.querySelector("#top-keyboard").onclick = function() {
-    keyboardControls = !keyboardControls
-    document.querySelector("#top-keyboard").innerText = "Keyboard Controls: " + (keyboardControls ? "Enabled" : "Disabled")
-    saveGeneralSettings()
-}
 document.addEventListener("keydown", (e) => {
-    if (!keyboardControls || brieflyDisableKeyboard) return
+    let key = e.key.toLowerCase()
+    if (key === "control") controlPressed = true
 })
 document.addEventListener("keyup", (e) => {
-    if (!keyboardControls || brieflyDisableKeyboard) return
     let key = e.key.toLowerCase()
     if (key === "control") controlPressed = false
 })
-
-//#endregion
-
-//#region Sorting, Stars, Ignore
-document.querySelector("#top-show-hide-ignored").addEventListener("click", () => {
-    showIgnoredTeams = !showIgnoredTeams
-    document.querySelector("top-show-hide-ignored").innerText = "Ignored Teams: " + (showIgnoredTeams ? "Shown" : "Hidden")
-    main.hardRefresh()
-    saveGeneralSettings()
-})
-
 //#endregion
 
 //#region File and API loading functions (+ download, API Toggles)
@@ -978,29 +947,10 @@ function closeContextMenu() {
 //#region Save Settings, Load Config File, Credits Page
 function saveGeneralSettings() {
     localforage.setItem(storageKeys.SETTINGS, {
-        "keyboardControls": keyboardControls,
         "showNamesInTeamComments": showNamesInTeamComments,
-        "showIgnoredTeams": showIgnoredTeams,
         "rounding": roundingDigits,
-        "teamPageSettings": maintainedTeamPageSettings,
         "graphSettings": graphSettings,
         "showTeamIcons": showTeamIcons,
-    })
-}
-function saveTeams() {
-    localforage.setItem(storageKeys.TEAM_SAVES, {
-        "starred": starred,
-        "ignored": ignored,
-        "usingStar": usingStar,
-        "usingIgnore": usingIgnore
-    })
-}
-function clearSavedTeams() {
-    localforage.setItem(storageKeys.TEAM_SAVES, {
-        "starred": [],
-        "ignored": [],
-        "usingStar": true,
-        "usingIgnore": true,
     })
 }
 function saveAPIData() {
@@ -1036,29 +986,6 @@ document.querySelector("#top-import-settings").addEventListener("click", () => {
     })
 })
 
-function closeCredits() {
-    document.querySelector(".sticky-header").classList.remove("hidden")
-    if (tableMode === "team")
-        document.querySelector(".team-page").classList.remove("hidden")
-    else {
-        document.querySelector(".table.main-table").classList.remove("hidden")
-        document.querySelector(".table-head.main-table").classList.remove("hidden")
-    }
-
-    document.querySelector(".credits").classList.add("hidden")
-}
-
-document.querySelector("#top-credits").addEventListener("click", () => {
-    document.querySelector(".team-page").classList.add("hidden")
-    document.querySelector(".table.main-table").classList.add("hidden")
-    document.querySelector(".table-head.main-table").classList.add("hidden")
-
-    document.querySelector(".credits").classList.remove("hidden")
-
-    document.querySelector("#close-credits").innerText = "Return to " + (tableMode === "team" ? "team page" : "table")
-})
-document.querySelector("#close-credits").addEventListener("click", closeCredits)
-
 document.querySelector("#top-reset-preferences").addEventListener("click", () => {
     if (!confirm("Are you sure? This will clear all saved data, preferences, columns, etc, and cannot be undone.")) return
     for (let key of Object.keys(storageKeys)) localforage.removeItem(key)
@@ -1069,7 +996,7 @@ document.querySelector("#top-reset-preferences").addEventListener("click", () =>
 
 //#region Init
 
-let initLoading = 8
+let initLoading = 7
 
 // Theme
 localforage.getItem(storageKeys.THEME, (err, val) => {
@@ -1083,9 +1010,7 @@ localforage.getItem(storageKeys.THEME, (err, val) => {
 localforage.getItem(storageKeys.SETTINGS, (err, settings) => {
     if (settings === null) {
         settings = {
-            "keyboardControls": true,
             "showNamesInTeamComments": true,
-            "showIgnoredTeams": true,
             "rounding": 3,
             "teamPageSettings": {
                 "teamInfoWidth": 450,
@@ -1102,21 +1027,12 @@ localforage.getItem(storageKeys.SETTINGS, (err, settings) => {
         localforage.setItem(storageKeys.SETTINGS, settings)
     }
 
-    keyboardControls = settings.keyboardControls
-    document.querySelector("#top-keyboard").innerText = "Keyboard Controls: " + (keyboardControls ? "Enabled" : "Disabled")
     showNamesInTeamComments = settings.showNamesInTeamComments
     document.querySelector("#top-show-hide-comment-names").innerText = "Names in Comments: " + (showNamesInTeamComments ? "Shown" : "Hidden")
-    showIgnoredTeams = settings.showIgnoredTeams
-    document.querySelector("#top-show-hide-ignored").innerText = "Ignored Teams: " + (showIgnoredTeams ? "Shown" : "Hidden")
     roundingDigits = settings.rounding
     rounding = Math.pow(10, roundingDigits)
     setRoundingEl()
     showTeamIcons = settings.showTeamIcons
-
-    if (settings.robotViewScope !== undefined)
-        robotViewScope = settings.robotViewScope
-
-    maintainedTeamPageSettings = settings.teamPageSettings
 
     graphSettings = settings.graphSettings
     document.querySelector("#top-graph-x").innerText = "X Axis: " + (graphSettings.x === "relative" ? "Relative" : "Absolute")
@@ -1124,26 +1040,6 @@ localforage.getItem(storageKeys.SETTINGS, (err, settings) => {
         if (graphSettings.bestfit) document.querySelector("#top-graph-display").innerText = "Graphs: Points & Lines"
         else document.querySelector("#top-graph-display").innerText = "Graphs: Only Points"
     } else document.querySelector("#top-graph-display").innerText = "Graphs: Only lines of best fit"
-
-    if (!--initLoading) finishInit()
-})
-
-// Stars and Ignore setup
-localforage.getItem(storageKeys.TEAM_SAVES, (err, val) => {
-    if (val === null) {
-        val = {
-            "starred": [],
-            "ignored": [],
-            "usingStar": true,
-            "usingIgnore": true,
-        }
-        teamSaves = val
-    } else teamSaves = val
-    starred = teamSaves.starred
-    ignored = teamSaves.ignored
-    usingStar = teamSaves.usingStar
-    usingIgnore = teamSaves.usingIgnore
-    saveTeams()
 
     if (!--initLoading) finishInit()
 })
@@ -1159,8 +1055,6 @@ localforage.getItem(storageKeys.MAPPING, (err, val) => {
     } else {
         mapping = val["data"]
         gameMapping = val["game"]
-
-        year = gameMapping["year"]
     }
 
     dataButtons()
@@ -1257,8 +1151,7 @@ let graph, media4915
 
 function finishInit() {
     // Final Prep
-    if (eventKey)
-        document.querySelector("#top-load-event").innerText = eventKey.toUpperCase()
+    if (eventKey) document.querySelector("#top-load-event").innerText = eventKey
     if (usingTBA) {
         loading++
         checkLoading()

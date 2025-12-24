@@ -72,10 +72,8 @@
             <button id="top-control-preferences" class="dropdown-button">Preferences</button>
             <dialog class="top-control-dropdown" for="top-control-preferences">
                 <button id="top-theme">Toggle Theme</button>
-                <button id="top-keyboard">Keyboard Controls: Enabled</button>
                 <button id="top-projector">Projector Mode: Disabled</button>
                 <button id="top-show-hide-comment-names">Names in Comments: Shown</button>
-                <button id="top-show-hide-ignored">Ignored Teams: Hidden</button>
                 <button id="top-rounding">Rounding: 3 Digits</button>
                 <div class="dropdown-pause"></div>
                 <button id="top-graph-x">Graphs: Relative/Absolute</button>
@@ -86,7 +84,8 @@
 
             <div style="flex-grow: 1"></div>
 
-            <button id="top-credits">Credits</button>
+            <button id="top-patch-notes" disabled>Patch Notes</button>
+            <button id="top-credits" disabled>Credits</button>
         </div>
 
         <h1 class="tool-name">Orpheus</h1>
@@ -96,51 +95,6 @@
 
     <div class="content">
 
-    </div>
-
-    <div class="credits hidden">
-        <div class="credits-section">
-            <img class="spartronics-logo" src="images/spartronics.jpg">
-            <div class="credits-spartronics-section">
-                <h1>Spartronics</h1>
-                <div>
-                    <span class="tool-name"></span> is created by FRC team 4915.
-                    <br/>
-                    <a href="https://spartronics4915.com/">Team Website</a>
-                    <br/>
-                    <a href="https://spartronics4915.com/donate/">Donate here</a> <!-- TODO: update with new link because website is being redone -->
-                </div>
-            </div>
-        </div>
-        <div class="credits-section">
-            <a class="big" href="https://www.thebluealliance.com/">Powered by The Blue Alliance</a> <br/>
-            The Blue Alliance has been providing FRC data since 2006 and is an immensely valuable resource.
-            Thank you to TBA for providing an API that provides a plethora of information about every team, event, and match.
-        </div>
-        <div class="credits-section">
-            <a class="big" href="https://www.desmos.com/">Created with the Desmos API, used with permission from Desmos Studio PBC.</a> <br/>
-            Desmos is a really great company, providing free, fantastic math tools including a graphing calculator, scientific calculator, and more, all without advertisements.
-            Thank you to Desmos for providing an easy-to-use API for their amazing graphing calculator.
-        </div>
-        <div class="credits-section">
-            <a class="big" href="https://www.statbotics.io/">Statbotics</a> <br/>
-            Statbotics is a very cool website that calculates a bunch of statistics such as Expected Points Added (EPA).
-        </div>
-        <div class="credits-section">
-            <a class="big" href="https://github.com/localForage/localForage">localForage</a> <br/>
-            localForage is a simple library for storing data, implementing IndexedDB, WebSQl, and localStorage in an to use API.
-        </div>
-        <div class="credits-section">
-            <a class="big" href="https://mathjs.org/">mathjs</a> <br/>
-            mathjs is a fantastic math library for Javascript and it is used in Orpheus for evaluating formulas.
-        </div>
-        <div class="credits-section horizontal">
-            <h2><u>Open Source</u></h2>
-            This project is open source and can be found on Github <a href="https://github.com/FinnSpartronics/Orpheus">here.</a> Feel free to contribute or make your own version :) <br/>
-            <a href="LICENSE">License</a>
-        </div>
-
-        <button class="big" id="close-credits">Return</button>
     </div>
 
     <footer>
