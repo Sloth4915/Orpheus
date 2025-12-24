@@ -1,3 +1,5 @@
+'use strict';
+
 /**
  * Clamps a value to a minimum and maximum
  * @param value The value to be clamped

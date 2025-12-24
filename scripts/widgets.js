@@ -1,3 +1,5 @@
+'use strict';
+
 class Table extends Widget {
     constructor() {
         super();

@@ -1,4 +1,4 @@
-// TODO consider "use strict";
+'use strict';
 
 //#region Variables
 const storageKeys = {
@@ -38,8 +38,6 @@ let rounding = Math.pow(10, roundingDigits)
 
 let onDesmosLoad = []
 
-let showNamesInTeamComments
-
 /*
 This API key should only be used on Orpheus. If you fork Orpheus, please get your own API key from https://www.thebluealliance.com/
 */
@@ -66,6 +64,12 @@ let processedData = {
             "matches_played": {},
         }
     }
+}
+
+let graphSettings = {
+    x: "relative",
+    points: true,
+    bestfit: true
 }
 
 //#endregion
@@ -947,7 +951,6 @@ function closeContextMenu() {
 //#region Save Settings, Load Config File, Credits Page
 function saveGeneralSettings() {
     localforage.setItem(storageKeys.SETTINGS, {
-        "showNamesInTeamComments": showNamesInTeamComments,
         "rounding": roundingDigits,
         "graphSettings": graphSettings,
         "showTeamIcons": showTeamIcons,
@@ -1010,7 +1013,6 @@ localforage.getItem(storageKeys.THEME, (err, val) => {
 localforage.getItem(storageKeys.SETTINGS, (err, settings) => {
     if (settings === null) {
         settings = {
-            "showNamesInTeamComments": true,
             "rounding": 3,
             "teamPageSettings": {
                 "teamInfoWidth": 450,
@@ -1027,8 +1029,6 @@ localforage.getItem(storageKeys.SETTINGS, (err, settings) => {
         localforage.setItem(storageKeys.SETTINGS, settings)
     }
 
-    showNamesInTeamComments = settings.showNamesInTeamComments
-    document.querySelector("#top-show-hide-comment-names").innerText = "Names in Comments: " + (showNamesInTeamComments ? "Shown" : "Hidden")
     roundingDigits = settings.rounding
     rounding = Math.pow(10, roundingDigits)
     setRoundingEl()
@@ -1147,7 +1147,7 @@ tabGroup.addChild(table2)
 
 main.addChild(tabGroup)
 
-let graph, media4915
+let graph, media4915, teamInfo
 
 function finishInit() {
     // Final Prep
