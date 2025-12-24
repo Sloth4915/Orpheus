@@ -1,20 +1,17 @@
 // TODO consider "use strict";
 
-//#region Local Storage Keys
-const EVENT = "scouting_4915_event"
-const DATA = "scouting_4915_data"
-const MAPPING = "scouting_4915_mapping"
-const THEME = "scouting_4915_theme"
-const ENABLED_APIS = "scouting_4915_apis"
-const SETTINGS = "scouting_4915_settings_general"
-const WIDGETS = "scouting_4915_settings_widgets"
-const TEAM_SAVES = "scouting_4915_settings_starignore"
-const NOTES = "scouting_4915_settings_notes"
-const SAVED_API_DATA = "scouting_4915_api_saved"
-const LOCAL_STORAGE_KEYS = [EVENT, DATA, MAPPING, THEME, ENABLED_APIS, SETTINGS, WIDGETS, TEAM_SAVES, NOTES]
-//#endregion
-
 //#region Variables
+const storageKeys = {
+    EVENT: "scouting_4915_event",
+    DATA: "scouting_4915_data",
+    MAPPING: "scouting_4915_mapping",
+    THEME: "scouting_4915_theme",
+    ENABLED_APIS: "scouting_4915_apis",
+    SETTINGS: "scouting_4915_settings_general",
+    TEAM_SAVES: "scouting_4915_settings_starignore",
+    SAVED_API_DATA: "scouting_4915_api_saved",
+}
+
 const MISSING_LOGO = "https://frc-cdn.firstinspires.org/eventweb_frc/ProgramLogos/FIRSTicon_RGB_withTM.png"
 
 const toolName = "Orpheus"
@@ -136,11 +133,11 @@ document.querySelector("#top-load-event").onclick = function() {
     let x = prompt("What event code do you want?")
     if (x === "get") alert(eventKey)
     else if (x === "clear") {
-        localforage.removeItem(EVENT)
+        localforage.removeItem(storageKeys.EVENT)
         window.location.reload()
     }
     else if (x !== "") {
-        localforage.setItem(EVENT, x.toLowerCase())
+        localforage.setItem(storageKeys.EVENT, x.toLowerCase())
         window.location.reload()
         clearSavedTeams()
     }
@@ -245,7 +242,7 @@ function loadEvent() {
 document.querySelector("#top-mapping").onclick = function() {
     loadFile(".json", (result) => {
         mapping = JSON.parse(result)
-        localforage.setItem(MAPPING, mapping)
+        localforage.setItem(storageKeys.MAPPING, mapping)
         //columns = JSON.parse(JSON.stringify(availableColumns))
         location.reload()
     })
@@ -609,7 +606,7 @@ function dataButtons() {
             else return
             console.log(data)
             uploadedData[schema] = data
-            localforage.setItem(DATA, uploadedData)
+            localforage.setItem(storageKeys.DATA, uploadedData)
             document.querySelector("#top-download-" + schema).disabled = false
             delete maintainedTeamPageSettings["graph"]
             saveGeneralSettings()
@@ -736,8 +733,8 @@ function setRoundingEl() {
 }
 
 document.querySelector("#top-clear-files").addEventListener("click", () => {
-    localforage.removeItem(DATA)
-    localforage.removeItem(MAPPING)
+    localforage.removeItem(storageKeys.DATA)
+    localforage.removeItem(storageKeys.MAPPING)
     window.location.reload()
 })
 
@@ -751,7 +748,7 @@ function changeThemeTo(to) {
     theme = to
     if (theme === "dark") root.add("dark")
     if (theme === "4915") root.add("spartronics_theme")
-    localforage.setItem(THEME, theme)
+    localforage.setItem(storageKeys.THEME, theme)
 }
 // Theme toggle button
 document.querySelector("#top-theme").onclick = function() {
@@ -923,7 +920,7 @@ document.querySelector("#top-toggle-use-statbotics").addEventListener("click", (
 
 // Saves enabled apis
 function setEnabledAPIS() {
-    localforage.setItem(ENABLED_APIS, {
+    localforage.setItem(storageKeys.ENABLED_APIS, {
         tbaevent: usingTBA,
         tbamatch: usingTBAMatches,
         tbamedia: usingTBAMedia,
@@ -980,7 +977,7 @@ function closeContextMenu() {
 
 //#region Save Settings, Load Config File, Credits Page
 function saveGeneralSettings() {
-    localforage.setItem(SETTINGS, {
+    localforage.setItem(storageKeys.SETTINGS, {
         "keyboardControls": keyboardControls,
         "showNamesInTeamComments": showNamesInTeamComments,
         "showIgnoredTeams": showIgnoredTeams,
@@ -991,7 +988,7 @@ function saveGeneralSettings() {
     })
 }
 function saveTeams() {
-    localforage.setItem(TEAM_SAVES, {
+    localforage.setItem(storageKeys.TEAM_SAVES, {
         "starred": starred,
         "ignored": ignored,
         "usingStar": usingStar,
@@ -999,7 +996,7 @@ function saveTeams() {
     })
 }
 function clearSavedTeams() {
-    localforage.setItem(TEAM_SAVES, {
+    localforage.setItem(storageKeys.TEAM_SAVES, {
         "starred": [],
         "ignored": [],
         "usingStar": true,
@@ -1018,76 +1015,17 @@ function saveAPIData() {
     }
     document.querySelector("#top-last-saved-apis").innerText = "Last Saved for offline use: \n" + api_data["lastSaved"]
 
-    localforage.setItem(SAVED_API_DATA, api_data)
+    localforage.setItem(storageKeys.SAVED_API_DATA, api_data)
 }
 
 function exportSettings() {
-    let notesOpen = notes.open
-    notes.open = false
     let data = {
-        general: {
-            "keyboardControls": keyboardControls,
-            "showNamesInTeamComments": showNamesInTeamComments,
-            "showIgnoredTeams": showIgnoredTeams,
-            "rounding": roundingDigits,
-            "teamPageSettings": maintainedTeamPageSettings,
-            "graphSettings": graphSettings,
-            "showTeamIcons": showTeamIcons,
-        },
-        team: {
-            "starred": starred,
-            "ignored": ignored,
-            "usingStar": usingStar,
-            "usingIgnore": usingIgnore
-        },
-        mapping: mapping,
-        data: uploadedData,
-        apis: {
-            tbaevent: usingTBA,
-            tbamatch: usingTBAMatches,
-            tbamedia: usingTBAMedia,
-            tbarank: usingTBARank,
-            desmos: usingDesmos,
-            statbotics: usingStatbotics
-        },
-        event: eventKey,
-        theme: theme,
-        notes: notes
+
     }
-    notes.open = notesOpen
     download("settings.orpheus", JSON.stringify(data))
 }
 function importSettings(settings) {
-    keyboardControls = settings.general.keyboardControls
-    showNamesInTeamComments = settings.general.showNamesInTeamComments
-    showIgnoredTeams = settings.general.showIgnoredTeams
-    roundingDigits = settings.general.rounding
-    rounding = Math.pow(10, roundingDigits)
-    maintainedTeamPageSettings = settings.general.teamPageSettings
-    showTeamIcons = settings.general.showTeamIcons
-    graphSettings = settings.general.graphSettings
-    robotViewScope = settings.general.robotViewScope
-    starred = settings.team.starred
-    ignored = settings.team.ignored
-    usingStar = settings.team.usingStar
-    usingIgnore = settings.team.usingIgnore
-    saveGeneralSettings()
-    saveTeams()
-    mapping = settings.mapping
-    localforage.setItem(MAPPING, mapping)
-    localforage.setItem(DATA, settings.data)
-    localforage.setItem(EVENT, settings.event)
-    usingTBA = settings.apis.tbaevent
-    usingTBAMatches = settings.apis.tbamatch
-    usingTBAMedia = settings.apis.tbamedia
-    usingTBARank = settings.apis.tbarank
-    usingStatbotics = settings.apis.statbotics
-    usingDesmos = settings.apis.desmos
-    notes = settings.notes
-    saveNotes()
-    setEnabledAPIS()
-    changeThemeTo(settings.theme)
-    window.location.reload()
+
 }
 
 document.querySelector("#top-export-settings").addEventListener("click", exportSettings)
@@ -1123,7 +1061,7 @@ document.querySelector("#close-credits").addEventListener("click", closeCredits)
 
 document.querySelector("#top-reset-preferences").addEventListener("click", () => {
     if (!confirm("Are you sure? This will clear all saved data, preferences, columns, etc, and cannot be undone.")) return
-    for (let key of LOCAL_STORAGE_KEYS) localforage.removeItem(key)
+    for (let key of Object.keys(storageKeys)) localforage.removeItem(key)
     window.location.reload()
 })
 
@@ -1131,10 +1069,10 @@ document.querySelector("#top-reset-preferences").addEventListener("click", () =>
 
 //#region Init
 
-let initLoading = 10
+let initLoading = 8
 
 // Theme
-localforage.getItem(THEME, (err, val) => {
+localforage.getItem(storageKeys.THEME, (err, val) => {
     if (val === null) theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"
     else theme = val
     changeThemeTo(theme)
@@ -1142,7 +1080,7 @@ localforage.getItem(THEME, (err, val) => {
 })
 
 // General Settings Setup
-localforage.getItem(SETTINGS, (err, settings) => {
+localforage.getItem(storageKeys.SETTINGS, (err, settings) => {
     if (settings === null) {
         settings = {
             "keyboardControls": true,
@@ -1161,7 +1099,7 @@ localforage.getItem(SETTINGS, (err, settings) => {
             },
             "showTeamIcons": true,
         }
-        localforage.setItem(SETTINGS, settings)
+        localforage.setItem(storageKeys.SETTINGS, settings)
     }
 
     keyboardControls = settings.keyboardControls
@@ -1191,7 +1129,7 @@ localforage.getItem(SETTINGS, (err, settings) => {
 })
 
 // Stars and Ignore setup
-localforage.getItem(TEAM_SAVES, (err, val) => {
+localforage.getItem(storageKeys.TEAM_SAVES, (err, val) => {
     if (val === null) {
         val = {
             "starred": [],
@@ -1211,11 +1149,11 @@ localforage.getItem(TEAM_SAVES, (err, val) => {
 })
 
 // Loading saved mappings or data
-localforage.getItem(DATA, (err, val) => {
+localforage.getItem(storageKeys.DATA, (err, val) => {
     uploadedData = val == null ? undefined : val
     if (!--initLoading) finishInit()
 })
-localforage.getItem(MAPPING, (err, val) => {
+localforage.getItem(storageKeys.MAPPING, (err, val) => {
     if (val == null) {
         document.querySelector("#top-mapping-download").disabled = true
     } else {
@@ -1229,14 +1167,8 @@ localforage.getItem(MAPPING, (err, val) => {
     if (!--initLoading) finishInit()
 })
 
-// Loading saved columns
-localforage.getItem(WIDGETS, (err, val) => {
-    // TODO add widget layout saving
-    if (!--initLoading) finishInit()
-})
-
 // Saved API Data
-localforage.getItem(SAVED_API_DATA, (err, val) => {
+localforage.getItem(storageKeys.SAVED_API_DATA, (err, val) => {
     api_data = val
     if (api_data === null) api_data = {}
     if (!navigator.onLine) {
@@ -1254,9 +1186,9 @@ if (!usingOffline) {
 }
 
 // Apis
-localforage.getItem(ENABLED_APIS, (err, apis) => {
+localforage.getItem(storageKeys.ENABLED_APIS, (err, apis) => {
     if (apis === null) {
-        localforage.setItem(ENABLED_APIS, {tbaevent: true, tbamatch: true, tbamedia: true, tbarank: true, desmos: true, statbotics: true})
+        localforage.setItem(storageKeys.ENABLED_APIS, {tbaevent: true, tbamatch: true, tbamedia: true, tbarank: true, desmos: true, statbotics: true})
         apis = {tbaevent: true, tbamatch: true, tbamedia: true, tbarank: true, desmos: true, statbotics: true}
     }
     console.log(apis)
@@ -1299,22 +1231,7 @@ localforage.getItem(ENABLED_APIS, (err, apis) => {
     if (!--initLoading) finishInit()
 })
 
-// Notes
-localforage.getItem(NOTES, (err, val) => {
-    if (val == null) {
-        notes = {
-            activeTab: "Tab 1",
-            open: false,
-            tabs: {
-                "Tab 1": "",
-            }
-        }
-        saveNotes()
-    } else notes = val
-    if (!--initLoading) finishInit()
-})
-
-localforage.getItem(EVENT, (err, val) => {
+localforage.getItem(storageKeys.EVENT, (err, val) => {
     if (val != null) eventKey = val
     if (!--initLoading) finishInit()
 })
