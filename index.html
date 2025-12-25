@@ -45,8 +45,6 @@
                 <button id="top-mapping">Import mapping</button>
                 <button id="top-mapping-download">Download saved mapping</button>
                 <div class="dropdown-pause"></div>
-                <button id="top-import-settings">Import Settings</button>
-                <button id="top-export-settings">Export Settings</button>
                 <div class="dropdown-pause"></div>
                 <button id="top-load-event">Set Event</button>
                 <div class="dropdown-pause"></div>
@@ -78,7 +76,9 @@
                 <button id="top-graph-x">Graphs: Relative/Absolute</button>
                 <button id="top-graph-display">Graphs: Points and Lines</button>
                 <div class="dropdown-pause"></div>
-                <button id="top-reset-preferences">Reset to defaults</button>
+                <button id="top-reset-preferences">Reset all to defaults</button>
+                <button id="top-import-settings" disabled>Import State</button>
+                <button id="top-export-settings" disabled>Export Current State</button>
             </dialog>
 
             <div style="flex-grow: 1"></div>
@@ -88,8 +88,6 @@
         </div>
 
         <h1 class="tool-name">Orpheus</h1>
-
-        <div id="loading"></div>
     </div>
 
     <div class="content">
@@ -123,6 +121,11 @@
 
     <div class="notebook-stars hidden">
 
+    </div>
+
+    <div id="loading">
+        <div id="loading-text">Loading...</div>
+        <div id="loading-status"></div>
     </div>
 </body>
 </html>

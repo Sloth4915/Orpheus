@@ -135,7 +135,6 @@ document.querySelector("#top-load-event").onclick = function() {
 
 }
 function loadEvent() {
-    loading++
     if (usingTBA) {
         load("event/" + eventKey + "/teams", function (data) {
             event_data = data
@@ -151,10 +150,7 @@ function loadEvent() {
                 processedData["orpheus"]["data"]["name"][teamNum] = team["nickname"]
                 main.hardRefresh()
                 if (usingTBAMedia) {
-                    loading++
                     load("team/frc" + teamNum + "/media/" + gameMapping.year, function (data) {
-                        loading--
-                        checkLoading()
                         team_data[teamNum].TBA.images = []
 
                         for (let x of data) {
@@ -168,23 +164,17 @@ function loadEvent() {
                     })
                 }
                 if (usingStatbotics) {
-                    loading++
                     loadOther("https://api.statbotics.io/v3/team_event/" + teamNum + "/" + eventKey, function(data) {
                         team_data[teamNum]["statbotics"] = data
                         team_data[teamNum]["EPA"] = data["epa"]["total_points"]["mean"]
                         team_data[teamNum]["Auto EPA"] = data["epa"]["breakdown"]["auto_points"]
                         team_data[teamNum]["Teleop EPA"] = data["epa"]["breakdown"]["teleop_points"]
                         team_data[teamNum]["Endgame EPA"] = data["epa"]["breakdown"]["endgame_points"]
-                        loading--
-                        checkLoading()
                     })
                 }
             }
-            loading--
-            checkLoading()
         })
         if (usingTBAMatches) {
-            loading++
             load("event/" + eventKey + "/matches", function (data) {
                 tba_match_data = {}
                 for (let m of data) {
@@ -192,13 +182,9 @@ function loadEvent() {
                         tba_match_data[m["match_number"]] = m
                     }
                 }
-
-                loading--
-                checkLoading()
             })
         }
         if (usingTBARank) {
-            loading++
             load("event/" + eventKey + "/rankings", function (data) {
                 for (let extra in data["extra_stats_info"]) {
                     internalMapping[data["extra_stats_info"][extra]["name"]] = {"alias": data["extra_stats_info"][extra]["name"]}
@@ -214,14 +200,10 @@ function loadEvent() {
                         processedData["orpheus"]["data"][data["extra_stats_info"][extra]["name"]][team] = data["rankings"][i]["extra_stats"][extra]
                     }
                 }
-
-                loading--
-                checkLoading()
             })
         }
     }
     else {
-        loading--
         checkLoading()
         processData()
     }
@@ -527,6 +509,10 @@ function processData() {
     media4915 = new TeamMedia()
     media4915.setTeam(4915)
     tabGroup.addChild(media4915)
+
+    let media3876 = new TeamMedia() // has no media
+    media3876.setTeam(3876)
+    tabGroup.addChild(media3876)
 }
 
 function evaluate(expression, schema, context) {
@@ -829,10 +815,12 @@ async function loadOther(url, onload) {
 function checkLoading() {
     if (loading === 0) {
         document.querySelector("#loading").className = "hidden"
-        if (mapping !== undefined) processData()
+        if (mapping !== undefined)
+            setTimeout(() => processData(), 1)
     } else {
         document.querySelector("#loading").className = ""
-        document.querySelector("#loading").innerHTML = "Loading..."
+        document.querySelector("#loading-text").innerText = "Loading".padEnd(10 - (loading % 4), ".")
+        document.querySelector("#loading-status").innerText = "Waiting on " + loading + " requests"
     }
 }
 function loadFile(accept, listener) {

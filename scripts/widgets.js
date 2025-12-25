@@ -658,7 +658,7 @@ class TeamMedia extends Widget {
         this.controls.appendChild(this.next)
 
         this.content.addEventListener("mouseenter", () => {
-            this.controls.classList.add("shown")
+            if (team_data[this.team].media.length > 0) this.controls.classList.add("shown")
         })
         this.content.addEventListener("mouseleave", () => {
             this.controls.classList.remove("shown")
@@ -676,6 +676,9 @@ class TeamMedia extends Widget {
         } else {
             this.name = this.name + ", " + team
         }
+
+        this.previous.disabled = team_data[team]["media"].length === 0
+        this.next.disabled = team_data[team]["media"].length === 0
 
         this.mediaOn = 0
         this.team = team
@@ -703,14 +706,22 @@ class TeamMedia extends Widget {
     }
     setMedia() {
         if (this.activeMedia !== null) this.activeMedia.remove()
-        this.progress.innerText = (this.mediaOn + 1) + " / " + team_data[this.team].media.length
-        let media = team_data[this.team].media[this.mediaOn]
-        if (media.type === "image") {
-            let image = document.createElement("img")
-            image.src = media.src
-            this.activeMedia = image
-            this.activeMediaType = "image"
-            this.content.appendChild(image)
+        if (team_data[this.team].media.length === 0) {
+            let info = document.createElement("div")
+            info.innerText = "Team " + this.team + " does not have any media"
+            this.activeMedia = info
+            this.activeMediaType = "text"
+            this.content.appendChild(info)
+        } else {
+            this.progress.innerText = (this.mediaOn + 1) + " / " + team_data[this.team].media.length
+            let media = team_data[this.team].media[this.mediaOn]
+            if (media.type === "image") {
+                let image = document.createElement("img")
+                image.src = media.src
+                this.activeMedia = image
+                this.activeMediaType = "image"
+                this.content.appendChild(image)
+            }
         }
     }
 }
