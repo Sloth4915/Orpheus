@@ -89,6 +89,7 @@ class Table extends Widget {
                 e.preventDefault()
                 window.getSelection().empty()
                 this.refresh()
+                this.setTextSizes(this.columns[index])
             })
             document.body.addEventListener("mouseup", () => resizing = false)
             document.body.addEventListener("mouseleave", () => resizing = false)
@@ -294,6 +295,8 @@ class Table extends Widget {
                 document.querySelector(`[data-column-size="${col.columnId}"][data-id="${this.id}"]`).style.order = ((col.order * 2) + 101)
             }
         }
+        // TODO do this less
+        for (let col of this.columns) this.setTextSizes(col)
     }
     sortRows() {
         let teams = [...this.teams]
@@ -313,6 +316,19 @@ class Table extends Widget {
     indexOfColumn(column) {
         if (typeof column === "string") column = this.getColumnById(column)
         return this.columns.indexOf(column)
+    }
+    setTextSizes(col) {
+        let elements = document.querySelectorAll(`[data-column="${col.columnId}"][data-id="${this.id}"]`)
+
+        for (let el of elements) {
+            let fontSize = 1.06
+            do {
+                fontSize -= Math.max(el.scrollHeight - el.clientHeight, (el.scrollHeight - el.clientHeight) < 1 ? 0 : 20) / 200
+                el.style.fontSize = fontSize + "rem"
+                if (fontSize < 0.6) break;
+            }
+            while(el.scrollHeight > el.clientHeight)
+        }
     }
 
     /**
