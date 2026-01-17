@@ -239,7 +239,7 @@ let internalMapping = {
     },
     "ranking": {
         "alias": "Event Rank"
-    }
+    },
 }
 
 function findMatchData(schema, team, match) {
@@ -492,7 +492,7 @@ function processData() {
     }
 
     // Temporary widget stuff for testing
-    table.addColumn(["orpheus`number", "orpheus`name", "orpheus`matches_played", "orpheus`ranking", "orpheus`Total Ranking Points"])
+    table.addColumn(["orpheus`number", "orpheus`name", "orpheus`matches_played", "orpheus`ranking"])
     table.addTeam(teams)
 
     table2.addColumn(["orpheus`number", "orpheus`name", "match`Scoring`Coral Scored", "match`tba climb"])

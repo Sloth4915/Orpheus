@@ -6,6 +6,10 @@ body {
     margin-left: 0;
 }
 
+body {
+    overflow: hidden;
+}
+
 dialog {
     z-index: 10000;
 }

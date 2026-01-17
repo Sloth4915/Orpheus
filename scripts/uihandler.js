@@ -408,6 +408,8 @@ class WidgetTabGroup extends WidgetBase {
     refresh() {
         super.refresh()
 
+        this.header.holder.style.width = this.width + "px"
+
         if (this.children.length)
             this.children[this.activeChild].setSize(this.width, this.height - 19)
 
