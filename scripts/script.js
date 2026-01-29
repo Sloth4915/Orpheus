@@ -207,6 +207,8 @@ function loadEvent() {
         checkLoading()
         processData()
     }
+    loading--
+    checkLoading()
 }
 //#endregion
 
@@ -1139,12 +1141,8 @@ let graph, media4915, teamInfo
 
 function finishInit() {
     // Final Prep
+    loading++ // For loadEvent()
     if (eventKey) document.querySelector("#top-load-event").innerText = eventKey
-    if (usingTBA) {
-        loading++
-        checkLoading()
-        loading--
-    }
     loadEvent()
 }
 
