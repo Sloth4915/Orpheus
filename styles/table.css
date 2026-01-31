@@ -1,3 +1,5 @@
+/* Table Widget */
+
 .table {
     display: flex;
     flex-direction: column;
@@ -77,8 +79,7 @@
     width: calc(70px - 0.5rem);
     height: calc(70px - 0.5rem);
     margin-right: 0.25rem;
-    margin-left: 0.25rem;
-    border-radius: 0.25rem;
+    border-radius: 0.5rem;
     border: 1px solid var(--line);
     object-fit: contain;
     flex-shrink: 0;
@@ -98,4 +99,21 @@
     background-color: rgba(255, 0, 0, 0.3);
     border-radius: 12px;
     backdrop-filter: blur(4px);
+}
+
+.table-settings-block {
+    width: 2.6rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-evenly;
+    flex-wrap: wrap;
+    order: 0;
+}
+
+.table-setting {
+    border: 0;
+    padding: 0;
+    font-size: 1.05rem;
+    cursor: pointer;
 }

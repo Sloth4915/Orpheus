@@ -83,16 +83,19 @@ class WidgetBase {
         this.refresh()
     }
 
+    /**
+     * @returns {string}
+     */
     static generateId() {
         let id = Date.now()
 
         let ascii = 65
-        while (widgetIds.includes(id + String.fromCharCode(ascii))) {
+        while (uniqueIds.includes(id + String.fromCharCode(ascii))) {
             if (++ascii == 122) id = id + Math.round(Math.random() * 26) + 65
         }
         id = "" + (id + String.fromCharCode(ascii))
 
-        widgetIds.push(id)
+        uniqueIds.push(id)
         return id
     }
 
@@ -834,7 +837,7 @@ class Color extends Widget {
  * @param rem
  * @returns {number} Pixel rem size
  */
-function getRem(rem) {
+function getRem(rem = 1) {
     return rem * parseFloat(getComputedStyle(document.documentElement).fontSize);
 }
 
@@ -843,19 +846,18 @@ widgetDragPreview.className = "widget-drag-preview"
 document.body.appendChild(widgetDragPreview)
 
 let activeWidgets = []
-let widgetIds = [] // Documents widget ids that have been used
+let uniqueIds = [] // Documents widget ids that have been used
 
 let main = new WidgetGroup()
 main.name = "main"
 document.querySelector(".content").appendChild(main.el)
 
-let headerAndFooterHeight = 90
 window.addEventListener("resize", () => {
     main.width = window.innerWidth
-    main.height = window.innerHeight - headerAndFooterHeight
+    main.height = window.innerHeight - document.querySelector(".sticky-header").offsetHeight - document.querySelector("footer").offsetHeight
 })
 main.width = window.innerWidth
-main.height = window.innerHeight - headerAndFooterHeight
+main.height = window.innerHeight - document.querySelector(".sticky-header").offsetHeight - document.querySelector("footer").offsetHeight
 
 /**
 let red = new Color("darkred")

@@ -1,6 +1,8 @@
 'use strict';
 
 //#region Variables
+let headerControlsShowing = false
+
 const storageKeys = {
     EVENT: "scouting_4915_event",
     DATA: "scouting_4915_data",
@@ -52,8 +54,6 @@ let usingStatbotics
 let projectorMode = false
 
 let usingOffline = false
-let starUnicode = String.fromCodePoint(9733)
-let crossOutUnicode = "X"
 
 let processedData = {
     "orpheus": {
@@ -71,11 +71,9 @@ let graphSettings = {
     points: true,
     bestfit: true
 }
-
 //#endregion
 
-//#region Init Header Controls
-let headerControlsShowing = false
+//#region Init header controls
 for (let el of document.querySelector("#top-controls").children) {
     if (el.tagName === "BUTTON" && el.classList.contains("dropdown-button")) {
         el.onclick = function() {
@@ -117,10 +115,9 @@ document.addEventListener("click", () => {
         headerControlsShowing = false
     }
 })
-
 //#endregion
 
-//#region API Key, Event Loading, Year setting
+//#region Event Loading
 document.querySelector("#top-load-event").onclick = function() {
     let x = prompt("What event code do you want? For example: 2024wabon, 2025waahs, 2025pncmp, etc")
     if (x === "get") alert(eventKey)
@@ -203,12 +200,6 @@ function loadEvent() {
             })
         }
     }
-    else {
-        checkLoading()
-        processData()
-    }
-    loading--
-    checkLoading()
 }
 //#endregion
 
@@ -717,33 +708,165 @@ document.querySelector("#top-clear-files").addEventListener("click", () => {
 
 //#endregion
 
-//#region Theme, Projector Mode
+//#region Lists
+class List {
+    constructor(name, icon, color, sort = List.Sort.NO_CHANGE, teams = [], editable = true) {
+        this.name = name
+        this.icon = icon
+        this.sort = sort
+        this.color = color
+        this.teams = teams
+        this.editable = editable
+        this.id = Widget.generateId()
+    }
+
+    add(team) {
+        if (!this.teams.includes(team)) this.teams.push(team)
+        main.refresh()
+    }
+    remove(team) {
+        if (this.teams.includes(team)) this.teams.splice(this.teams.indexOf(team), 1)
+        main.refresh()
+    }
+    includes(team) {
+        return this.teams.includes(team)
+    }
+    indexOf(team) {
+        return this.teams.indexOf(team)
+    }
+    toggle(team) {
+        if (this.includes(team)) this.remove(team)
+        else this.add(team)
+        main.refresh()
+    }
+    reorder(team, index) {
+        [this.teams[index], this.teams[this.teams.indexOf(team)]] = [this.teams[this.teams.indexOf(team)], this.teams[index]]
+        main.refresh()
+    }
+
+    static ICONS = [
+        "favorite",
+        "star",
+        "check_box",
+        "check_circle",
+        "cancel",
+        "bolt",
+        "block",
+        "do_not_disturb_on",
+        "person",
+        "skull",
+        "handshake",
+        "mood",
+        "sentiment_satisfied",
+        "sentiment_neutral",
+        "sentiment_dissatisfied",
+        "sentiment_very_dissatisfied",
+        "sentiment_sad",
+        "editor_choice",
+        "diamond_shine",
+        "bookmark",
+        "bookmark_heart",
+        "bookmark_flag",
+        "bookmark_star",
+        "skull_list",
+        "rocket_launch",
+        "chess_pawn",
+        "falling",
+        "target",
+        "shield",
+        "taunt",
+        "filter_1",
+        "filter_2",
+        "filter_3",
+        "filter_4",
+    ]
+    static Colors = Object.freeze({
+        RED: {name: "Red", color: "var(--list-red)"},
+        WATERMELON: {name: "Watermelon", color: "var(--list-watermelon)"},
+        ORANGE: {name: "Orange", color: "var(--list-orange)"},
+        GOLD: {name: "Gold", color: "var(--list-gold)"},
+        LIME: {name: "Lime", color: "var(--list-lime)"},
+        EMERALD: {name: "Emerald", color: "var(--list-emerald)"},
+        TURQUOISE: {name: "Turquoise", color: "var(--list-turquoise)"},
+        SKY: {name: "Sky", color: "var(--list-sky)"},
+        BLUE: {name: "Blue", color: "var(--list-blue)"},
+        PURPLE: {name: "Purple", color: "var(--list-purple)"},
+        PASTEL_PURPLE: {name: "Pastel Purple", color: "var(--list-purple-pastel)"},
+        MAGENTA: {name: "Magenta", color: "var(--list-magenta)"},
+        BROWN: {name: "Brown", color: "var(--list-brown)"},
+    })
+
+    static Sort = Object.freeze({
+        // No change between a team that has no list and a team that is on a list
+        NO_CHANGE: 0,
+        // Teams with a list set to SORT_ABOVE will be placed above other teams and sorted amongst themselves.
+        SORT_ABOVE: 1,
+        // Teams with a list set to SORT_BELOW will be placed below other teams and sorted amongst themselves.
+        SORT_BELOW: 2,
+        // Teams with a list set to HIDE will be hidden unless the team also has a higher priority list that isn't set to HIDE.
+        HIDE: 3,
+    })
+}
+const Lists = {
+    /**
+     * List priority goes from 0 to length where 0 is highest priority.
+     */
+    lists: [
+        new List("High Scoring", "star", List.Colors.GOLD, List.Sort.SORT_ABOVE, [4915, 2910, 2412, 2046, 1318]),
+        new List("Picklist", "bookmark_heart", List.Colors.EMERALD, List.Sort.NO_CHANGE, [4915]),
+        // chosen only for being the lowest 3 team numbers at 2025waahs
+        new List("Ignore", "cancel", List.Colors.WATERMELON, List.Sort.SORT_BELOW, [360, 488, 1294], false),
+    ],
+    add(list) {
+        this.lists.push(list)
+        main.hardRefresh()
+    },
+    remove(list) {
+        this.lists.splice(this.lists.indexOf(list), 1)
+        main.hardRefresh()
+    },
+    indexOf(list) {
+        if (typeof list === "string") {
+            for (let l of this.lists) if (l.id === list) return this.lists.indexOf(l)
+            return -1
+        }
+        return this.lists.indexOf(list)
+    },
+    reorder(list, index) {
+        [this.lists[index], this.lists[this.indexOf(list)]] = [this.lists[this.indexOf(list)], this.lists[index]]
+        main.hardRefresh()
+    },
+    getLists(team) {
+        let lists = []
+        for (let list of this.lists) if (list.includes(team)) lists.push(list)
+        return lists
+    }
+}
+//#endregion
+
+//#region Theme, Projector Mode, Graph Settings
 function changeThemeTo(to) {
     let root = document.querySelector(":root").classList
     root.remove("dark")
     root.remove("spartronics_theme")
     theme = to
     if (theme === "dark") root.add("dark")
-    if (theme === "4915") root.add("spartronics_theme")
+    else if (theme === "4915") root.add("spartronics_theme")
     localforage.setItem(storageKeys.THEME, theme)
 }
 // Theme toggle button
 document.querySelector("#top-theme").onclick = function() {
-    changeThemeTo(theme == "light" ? "dark" : theme == "dark" ? "4915" : "light")
+    changeThemeTo(theme === "light" ? "dark" : (theme === "dark" ? "4915" : "light"))
 }
 document.querySelector("#top-projector").addEventListener("click", () => {
     projectorMode = !projectorMode
-    setProjectorModeSheet()
-})
-
-function setProjectorModeSheet() {
     document.querySelector("#top-projector").innerText = "Projector Mode: " + (projectorMode ? "Enabled" : "Disabled")
 
     if (projectorMode) document.querySelector(":root").classList.add("projector")
     else document.querySelector(":root").classList.remove("projector")
 
     setTimeout(setHeaderControlsPositions, 1000)
-}
+})
 
 document.querySelector("#top-graph-x").addEventListener("click", () => {
     graphSettings.x = graphSettings.x === "relative" ? "absolute" : "relative"
@@ -805,13 +928,13 @@ async function loadOther(url, onload) {
         if (!response.ok) {
             throw new Error('Network response was not ok')
         }
-        loading--
-        checkLoading()
         return response.json()
     }).then(data => {
         onload(data)
         api_data[url] = data
         saveAPIData()
+        loading--
+        checkLoading()
     })
 }
 function checkLoading() {
@@ -938,7 +1061,7 @@ function closeContextMenu() {
 }
 //#endregion
 
-//#region Save Settings, Load Config File, Credits Page
+//#region Save Settings, Load Config File
 function saveGeneralSettings() {
     localforage.setItem(storageKeys.SETTINGS, {
         "rounding": roundingDigits,
@@ -988,18 +1111,14 @@ document.querySelector("#top-reset-preferences").addEventListener("click", () =>
 //#endregion
 
 //#region Init
-
 let initLoading = 7
 
-// Theme
 localforage.getItem(storageKeys.THEME, (err, val) => {
     if (val === null) theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"
     else theme = val
     changeThemeTo(theme)
     if (!--initLoading) finishInit()
 })
-
-// General Settings Setup
 localforage.getItem(storageKeys.SETTINGS, (err, settings) => {
     if (settings === null) {
         settings = {
@@ -1033,8 +1152,6 @@ localforage.getItem(storageKeys.SETTINGS, (err, settings) => {
 
     if (!--initLoading) finishInit()
 })
-
-// Loading saved mappings or data
 localforage.getItem(storageKeys.DATA, (err, val) => {
     uploadedData = val == null ? undefined : val
     if (!--initLoading) finishInit()
@@ -1050,8 +1167,6 @@ localforage.getItem(storageKeys.MAPPING, (err, val) => {
     dataButtons()
     if (!--initLoading) finishInit()
 })
-
-// Saved API Data
 localforage.getItem(storageKeys.SAVED_API_DATA, (err, val) => {
     api_data = val
     if (api_data === null) api_data = {}
@@ -1069,7 +1184,6 @@ if (!usingOffline) {
     saveAPIData()
 }
 
-// Apis
 localforage.getItem(storageKeys.ENABLED_APIS, (err, apis) => {
     if (apis === null) {
         localforage.setItem(storageKeys.ENABLED_APIS, {tbaevent: true, tbamatch: true, tbamedia: true, tbarank: true, desmos: true, statbotics: true})
@@ -1114,7 +1228,6 @@ localforage.getItem(storageKeys.ENABLED_APIS, (err, apis) => {
 
     if (!--initLoading) finishInit()
 })
-
 localforage.getItem(storageKeys.EVENT, (err, val) => {
     if (val != null) eventKey = val
     if (!--initLoading) finishInit()
@@ -1141,7 +1254,6 @@ let graph, media4915, teamInfo
 
 function finishInit() {
     // Final Prep
-    loading++ // For loadEvent()
     if (eventKey) document.querySelector("#top-load-event").innerText = eventKey
     loadEvent()
 }

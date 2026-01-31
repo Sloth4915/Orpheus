@@ -22,6 +22,10 @@ dialog {
     display: none;
 }
 
+.dropdown-button {
+    display: flex;
+    justify-content: space-evenly;
+}
 .top-control-dropdown {
     background: var(--bg);
     backdrop-filter: blur(4px);
@@ -63,6 +67,8 @@ dialog {
     flex-direction: column;
     transform: translateX(-50%) translateY(-50%);
     padding: 1rem;
+    width: max-content;
+    height: max-content;
 }
 #loading-status {
     font-size: 1.6rem;
@@ -122,3 +128,5 @@ footer a {
     display: flex;
     align-items: center;
 }
+
+

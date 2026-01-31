@@ -10,14 +10,40 @@ class Table extends Widget {
         this.activeColumn = ""
         this.sort = 1
 
+        // FIXME maybe not?
+        this.showMultipleTimes = true
+
+        /**
+         * Are all teams shown or just those with a list enabled in the table's scope?
+         */
+        this.showAll = true
+        this.scope = []
+        for (let list of Lists.lists) {
+            this.scope[list.id] = {
+                "sort": null, // If sort == null, it defaults to the default for that id.
+                "shown": true,
+            }
+        }
+
         this.content.classList.add("table")
 
         this.header = document.createElement("div")
         this.header.classList.add("row", "header")
         this.content.appendChild(this.header)
 
+        let teamSettingsBlock = document.createElement("div")
+        teamSettingsBlock.className = "table-settings-block"
+        teamSettingsBlock.setAttribute("data-id", this.id)
+        this.header.appendChild(teamSettingsBlock)
+
+        let teamFilterButton = document.createElement("button")
+        teamFilterButton.className = "table-setting material-symbols-outlined"
+        teamFilterButton.innerText = "view_agenda"
+        teamSettingsBlock.appendChild(teamFilterButton)
+
         this.columnDragIndicator = document.createElement("div")
         this.columnDragIndicator.className = "data-drag-indicator"
+        this.columnDragIndicator.style.order = "-99"
         this.header.appendChild(this.columnDragIndicator)
 
         if (usingTBAMedia) {
@@ -140,7 +166,7 @@ class Table extends Widget {
             })
             document.body.addEventListener("mouseleave", () => {
                 dragging = false
-                this.columnDragIndicator.style.order = "0"
+                this.columnDragIndicator.style.order = "-999"
                 if (dragRemovalEl !== undefined) {
                     dragRemovalEl.remove()
                     dragRemovalEl = undefined
@@ -149,7 +175,7 @@ class Table extends Widget {
             document.body.addEventListener("mouseup", (e) => {
                 if (!dragging) return
                 dragging = false
-                this.columnDragIndicator.style.order = "0"
+                this.columnDragIndicator.style.order = "-999"
 
                 if (dragData.column !== null) {
                     let removalBounds = dragRemovalEl.getBoundingClientRect()
@@ -230,6 +256,32 @@ class Table extends Widget {
             teamEl.setAttribute("data-team", team)
             teamEl.setAttribute("data-id", this.id)
 
+            let teamSettingsBlock = document.createElement("div")
+            teamSettingsBlock.className = "table-settings-block"
+            teamSettingsBlock.setAttribute("data-id", this.id)
+            teamEl.appendChild(teamSettingsBlock)
+            for (let i in Lists.lists) {
+                let index = parseInt(i)
+                let list = Lists.lists[index]
+
+                let listEl = document.createElement("div")
+                listEl.className = "table-setting material-symbols-outlined"
+                listEl.style.color = ""
+                listEl.innerText = list.icon
+                listEl.setAttribute("data-list", list.id)
+                listEl.setAttribute("data-team", team)
+                listEl.setAttribute("data-id", this.id)
+                if (list.includes(team)) {
+                    listEl.classList.add("filled")
+                    listEl.style.color = list.color.color
+                }
+                listEl.addEventListener("click", () => {
+                    list.toggle(team)
+                })
+                teamSettingsBlock.appendChild(listEl)
+
+            }
+
             for (let column of this.columns) {
                 let data = document.createElement("div")
                 data.className = "data"
@@ -293,6 +345,18 @@ class Table extends Widget {
                 el.style.width = col.size + 'px'
                 el.style.order = ((col.order * 2) + 100)
                 document.querySelector(`[data-column-size="${col.columnId}"][data-id="${this.id}"]`).style.order = ((col.order * 2) + 101)
+            }
+        }
+        for (let team of this.teams) {
+            for (let list of Lists.lists) {
+                let listEl = document.querySelector(`[data-list="${list.id}"][data-id="${this.id}"][data-team="${team}"]`)
+                if (list.includes(team)) {
+                    listEl.classList.add("filled")
+                    listEl.style.color = list.color.color
+                } else {
+                    listEl.classList.remove("filled")
+                    listEl.style.color = ""
+                }
             }
         }
         // TODO do this less
@@ -739,5 +803,21 @@ class TeamMedia extends Widget {
                 this.content.appendChild(image)
             }
         }
+    }
+}
+
+/**
+ * Widget to display a list of teams
+ */
+class ListWidget extends Widget {
+    constructor() {
+        super();
+    }
+    refresh() {
+        super.refresh();
+    }
+
+    hardRefresh() {
+        super.hardRefresh();
     }
 }
