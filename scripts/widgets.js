@@ -26,6 +26,7 @@ class Table extends Widget {
                 "shown": true,
             }
         }
+        Events.on(Events.LIST_CHANGE, this.sortRows, this)
 
         this.content.classList.add("table")
 
@@ -361,13 +362,13 @@ class Table extends Widget {
                 }
             }
         }
+
         // TODO do the below less
         for (let col of this.columns) this.setTextSizes(col)
-        try {
-            this.sortRows()
-        } catch(e) {}
     }
     sortRows() {
+        this.content.scrollTop
+        console.log(this.name, "sorting!")
         let teams = [...this.teams]
         let data = this.getColumnById(this.activeColumn).data
         teams.sort((a, b) => {

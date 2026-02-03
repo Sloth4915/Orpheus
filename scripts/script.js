@@ -723,10 +723,12 @@ class List {
     add(team) {
         if (!this.teams.includes(team)) this.teams.push(team)
         main.refresh()
+        Events.emit(Events.LIST_CHANGE)
     }
     remove(team) {
         if (this.teams.includes(team)) this.teams.splice(this.teams.indexOf(team), 1)
         main.refresh()
+        Events.emit(Events.LIST_CHANGE)
     }
     includes(team) {
         return this.teams.includes(team)
@@ -738,10 +740,12 @@ class List {
         if (this.includes(team)) this.remove(team)
         else this.add(team)
         main.refresh()
+        Events.emit(Events.LIST_CHANGE)
     }
     reorder(team, index) {
         [this.teams[index], this.teams[this.teams.indexOf(team)]] = [this.teams[this.teams.indexOf(team)], this.teams[index]]
         main.refresh()
+        Events.emit(Events.LIST_CHANGE)
     }
 
     static ICONS = [
@@ -858,6 +862,29 @@ const Lists = {
         return List.ALL
     }
 }
+//#endregion
+
+//#region Custom Event Handler
+
+const Events = {
+    handlers: {},
+    on(event, handler, context) {
+        if (typeof this.handlers[event] === "undefined") {
+            this.handlers[event] = []
+        }
+        this.handlers[event].push({handler, context})
+    },
+    emit(event) {
+        console.log("emitting " + event)
+        if (typeof this.handlers[event] !== "undefined") {
+            for (let handler of this.handlers[event]) handler.handler.call(handler.context);
+        }
+    },
+
+    // List of Events
+    LIST_CHANGE: 1,
+}
+
 //#endregion
 
 //#region Theme, Projector Mode, Graph Settings
