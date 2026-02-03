@@ -17,7 +17,9 @@ class Table extends Widget {
          * Are all teams shown or just those with a list enabled in the table's scope?
          */
         this.showAll = true
-        this.scope = []
+        this.scope = {}
+        this.scope[ignore.id] = List.Sort.HIDE // FIXME remove this - for testing purposes
+
         for (let list of Lists.lists) {
             this.scope[list.id] = {
                 "sort": null, // If sort == null, it defaults to the default for that id.
@@ -359,8 +361,11 @@ class Table extends Widget {
                 }
             }
         }
-        // TODO do this less
+        // TODO do the below less
         for (let col of this.columns) this.setTextSizes(col)
+        try {
+            this.sortRows()
+        } catch(e) {}
     }
     sortRows() {
         let teams = [...this.teams]
@@ -374,7 +379,9 @@ class Table extends Widget {
         })
         if (this.sort === -1) teams.reverse()
         for (let team in teams) {
-            document.querySelector(`[data-team="${teams[team]}"][data-id="${this.id}"]`).style.order = team
+            let listSort = Lists.getListAffectingTeam(teams[team]).sort
+            let sortOffset = (listSort == List.Sort.SORT_ABOVE ? -1000 : (listSort == List.Sort.SORT_BELOW ? 1000 : 0))
+            document.querySelector(`[data-team="${teams[team]}"][data-id="${this.id}"]`).style.order = (parseInt(team) + sortOffset)
         }
     }
     indexOfColumn(column) {
@@ -400,6 +407,7 @@ class Table extends Widget {
      */
     hardRefresh() {
         super.hardRefresh();
+        this.refresh()
 
         // Add icon to header, if it doesn't exist yet.
         if (this.hasAddedMedia === undefined && usingTBAMedia) {
@@ -668,9 +676,6 @@ class TeamInfo extends Widget {
             let eventRank = document.createElement("div")
             eventRank.className = "team-info-basic-text"
             basicInfoHolder.appendChild(eventRank)
-
-            let matches = document.createElement("div")
-            matches.className = "team-info-matches"
 
             if (usingTBA) {
                 if (teams.length > 1) this.name = this.name + ", " + team

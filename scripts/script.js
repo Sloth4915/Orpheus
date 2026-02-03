@@ -806,16 +806,20 @@ class List {
         // Teams with a list set to HIDE will be hidden unless the team also has a higher priority list that isn't set to HIDE.
         HIDE: 3,
     })
+
+    static ALL = new List("All", "", "", List.Sort.NO_CHANGE, [], false)
 }
+let hs = new List("High Scoring", "star", List.Colors.GOLD, List.Sort.SORT_ABOVE, [4915, 2910, 2412, 2046, 1318])
+// chosen only for being the lowest 3 team numbers at 2025waahs
+let ignore = new List("Ignore", "cancel", List.Colors.WATERMELON, List.Sort.SORT_BELOW, [360, 488, 1294], false)
 const Lists = {
     /**
      * List priority goes from 0 to length where 0 is highest priority.
      */
     lists: [
-        new List("High Scoring", "star", List.Colors.GOLD, List.Sort.SORT_ABOVE, [4915, 2910, 2412, 2046, 1318]),
+        hs,
         new List("Picklist", "bookmark_heart", List.Colors.EMERALD, List.Sort.NO_CHANGE, [4915]),
-        // chosen only for being the lowest 3 team numbers at 2025waahs
-        new List("Ignore", "cancel", List.Colors.WATERMELON, List.Sort.SORT_BELOW, [360, 488, 1294], false),
+        ignore
     ],
     add(list) {
         this.lists.push(list)
@@ -840,6 +844,18 @@ const Lists = {
         let lists = []
         for (let list of this.lists) if (list.includes(team)) lists.push(list)
         return lists
+    },
+    /**
+     * Gets and returns the list that affects a particular team
+     * @param team - Team number
+     * @param scope - An array of the lists allowed
+     * @param overrides - A JSON object with key list ID: List.Sort
+     */
+    getListAffectingTeam(team, scope = Lists.lists, overrides = {}) {
+        for (let list of scope) {
+            if (list.includes(team) && list.sort !== (overrides[list.id] ?? List.Sort.NO_CHANGE)) return list
+        }
+        return List.ALL
     }
 }
 //#endregion
