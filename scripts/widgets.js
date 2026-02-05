@@ -263,7 +263,18 @@ class Table extends Widget {
             teamSettingsBlock.className = "table-settings-block"
             teamSettingsBlock.setAttribute("data-id", this.id)
             teamEl.appendChild(teamSettingsBlock)
+
+            let tsChunk = document.createElement("div")
+            tsChunk.className = "table-settings-chunk"
+            let num = 0
             for (let i in Lists.lists) {
+                num++
+                if (num > Lists.lists.length / 2 + 0.5 && Lists.lists.length > 4) {
+                    num = 0
+                    teamSettingsBlock.appendChild(tsChunk)
+                    tsChunk = document.createElement("div")
+                    tsChunk.className = "table-settings-chunk"
+                }
                 let index = parseInt(i)
                 let list = Lists.lists[index]
 
@@ -281,9 +292,9 @@ class Table extends Widget {
                 listEl.addEventListener("click", () => {
                     list.toggle(team)
                 })
-                teamSettingsBlock.appendChild(listEl)
-
+                tsChunk.appendChild(listEl)
             }
+            teamSettingsBlock.appendChild(tsChunk)
 
             for (let column of this.columns) {
                 let data = document.createElement("div")
@@ -368,7 +379,6 @@ class Table extends Widget {
     }
     sortRows() {
         this.content.scrollTop
-        console.log(this.name, "sorting!")
         let teams = [...this.teams]
         let data = this.getColumnById(this.activeColumn).data
         teams.sort((a, b) => {

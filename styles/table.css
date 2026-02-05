@@ -105,11 +105,27 @@
 .table-settings-block {
     width: 2.6rem;
     display: flex;
-    flex-direction: column;
-    align-items: center;
     justify-content: space-evenly;
-    flex-wrap: wrap;
+    align-items: flex-start;
+    height: 70px;
     order: 0;
+    overflow-y: scroll;
+}
+.header .table-settings-block {
+    flex-direction: column;
+    justify-content: space-evenly;
+    align-items: center;
+}
+.table-settings-block::-webkit-scrollbar {
+    display: none;
+}
+
+.table-settings-chunk {
+    flex-direction: column;
+    justify-content: space-evenly;
+    align-items: center;
+    min-height: 70px;
+    max-height: fit-content;
 }
 
 .table-setting {

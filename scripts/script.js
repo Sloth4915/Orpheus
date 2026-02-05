@@ -822,7 +822,7 @@ const Lists = {
      */
     lists: [
         hs,
-        new List("Picklist", "bookmark_heart", List.Colors.EMERALD, List.Sort.NO_CHANGE, [4915]),
+        new List("Picklist", "bookmark_heart", List.Colors.EMERALD, List.Sort.SORT_ABOVE, [4915]),
         ignore
     ],
     add(list) {
@@ -875,7 +875,6 @@ const Events = {
         this.handlers[event].push({handler, context})
     },
     emit(event) {
-        console.log("emitting " + event)
         if (typeof this.handlers[event] !== "undefined") {
             for (let handler of this.handlers[event]) handler.handler.call(handler.context);
         }
