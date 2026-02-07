@@ -743,7 +743,8 @@ class List {
         Events.emit(Events.LIST_CHANGE)
     }
     reorder(team, index) {
-        [this.teams[index], this.teams[this.teams.indexOf(team)]] = [this.teams[this.teams.indexOf(team)], this.teams[index]]
+        let teamIndex = this.indexOf(team)
+        ;[this.teams[index], this.teams[teamIndex]] = [this.teams[teamIndex], this.teams[index]]
         main.refresh()
         Events.emit(Events.LIST_CHANGE)
     }
@@ -841,7 +842,8 @@ const Lists = {
         return this.lists.indexOf(list)
     },
     reorder(list, index) {
-        [this.lists[index], this.lists[this.indexOf(list)]] = [this.lists[this.indexOf(list)], this.lists[index]]
+        let listIndex = this.indexOf(list)
+        ;[this.lists[index], this.lists[listIndex]] = [this.lists[listIndex], this.lists[index]]
         main.hardRefresh()
     },
     getLists(team) {
@@ -855,6 +857,27 @@ const Lists = {
         for (let list of this.lists) {
             let el = document.createElement("div")
             el.className = "list"
+
+            let moveListHolder = document.createElement("div")
+            moveListHolder.className = "list-move"
+            el.appendChild(moveListHolder)
+
+            let moveUp = document.createElement("div")
+            moveUp.className = "material-symbols-outlined filled list-move-btn"
+            moveUp.innerText = "arrow_drop_up"
+            moveUp.addEventListener("click", () => {
+                Lists.reorder(list, Math.max(Lists.indexOf(list) - 1, 0))
+                this.setListEditPanel()
+            })
+            moveListHolder.appendChild(moveUp)
+            let moveDown = document.createElement("div")
+            moveDown.className = "material-symbols-outlined filled list-move-btn"
+            moveDown.innerText = "arrow_drop_down"
+            moveDown.addEventListener("click", () => {
+                Lists.reorder(list, Math.min(Lists.indexOf(list) + 1, Lists.lists.length - 1))
+                this.setListEditPanel()
+            })
+            moveListHolder.appendChild(moveDown)
 
             let icon = document.createElement("div")
             icon.className = "material-symbols-outlined filled list-icon"
@@ -910,7 +933,7 @@ const Lists = {
             el.appendChild(name)
 
             let nameEditButton = document.createElement("button")
-            nameEditButton.className = "material-symbols-outlined"
+            nameEditButton.className = "material-symbols-outlined list-name-edit"
             nameEditButton.innerText = "edit"
             nameEditButton.addEventListener("click", () => {
                 let x = prompt("New name for " + list.name)
@@ -941,8 +964,27 @@ const Lists = {
             })
             el.appendChild(dropdown)
 
+            let deleteButton = document.createElement("button")
+            deleteButton.className = "material-symbols-outlined list-delete"
+            deleteButton.innerText = "delete"
+            deleteButton.addEventListener("click", () => {
+                if(confirm("Are you sure you want to delete " + list.name + "? This cannot be undone.")) {
+                    Lists.remove(list)
+                    el.remove()
+                }
+            })
+            el.appendChild(deleteButton)
+
             panel.appendChild(el)
         }
+
+        let addList = document.createElement("button")
+        addList.innerText = "New List"
+        addList.addEventListener("click", () => {
+            Lists.add(new List("New List", "check_box", List.Colors.RED))
+            this.setListEditPanel()
+        })
+        panel.appendChild(addList)
     },
     /**
      * Gets and returns the list that affects a particular team

@@ -373,6 +373,7 @@ class Table extends Widget {
         for (let team of this.teams) {
             for (let list of Lists.lists) {
                 let listEl = document.querySelector(`[data-list="${list.id}"][data-id="${this.id}"][data-team="${team}"]`)
+                if (listEl == null) continue
                 if (list.includes(team)) {
                     listEl.classList.add("filled")
                     listEl.style.color = list.color.color
@@ -442,7 +443,6 @@ class Table extends Widget {
      */
     hardRefresh() {
         super.hardRefresh();
-        this.refresh()
 
         // Add icon to header, if it doesn't exist yet.
         if (this.hasAddedMedia === undefined && usingTBAMedia) {
@@ -462,8 +462,6 @@ class Table extends Widget {
 
         this.addTeamEl(this.teams)
         this.sortRows()
-
-        // TODO add refresh for values
     }
 }
 
