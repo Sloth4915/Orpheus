@@ -57,6 +57,14 @@ class Table extends Widget {
             this.hasAddedMedia = true
         }
 
+        this.aboveDivider = document.createElement("div")
+        this.aboveDivider.className = "divider-above hidden"
+        this.content.appendChild(this.aboveDivider)
+
+        this.belowDivider = document.createElement("div")
+        this.belowDivider.className = "divider-below hidden"
+        this.content.appendChild(this.belowDivider)
+
         this.minWidth = 400
         this.minHeight = 280
     }
@@ -282,6 +290,7 @@ class Table extends Widget {
                 listEl.className = "table-setting material-symbols-outlined"
                 listEl.style.color = ""
                 listEl.innerText = list.icon
+                listEl.title = list.name
                 listEl.setAttribute("data-list", list.id)
                 listEl.setAttribute("data-team", team)
                 listEl.setAttribute("data-id", this.id)
@@ -378,6 +387,7 @@ class Table extends Widget {
         for (let col of this.columns) this.setTextSizes(col)
     }
     sortRows() {
+        if (this.teams.length === 0) return
         this.content.scrollTop
         let teams = [...this.teams]
         let data = this.getColumnById(this.activeColumn).data
@@ -389,11 +399,25 @@ class Table extends Widget {
             return valA - valB
         })
         if (this.sort === -1) teams.reverse()
+
+        let hasAbove = false
+        let hasBelow = false
         for (let team in teams) {
             let listSort = Lists.getListAffectingTeam(teams[team]).sort
             let sortOffset = (listSort == List.Sort.SORT_ABOVE ? -1000 : (listSort == List.Sort.SORT_BELOW ? 1000 : 0))
-            document.querySelector(`[data-team="${teams[team]}"][data-id="${this.id}"]`).style.order = (parseInt(team) + sortOffset)
+            let row = document.querySelector(`[data-team="${teams[team]}"][data-id="${this.id}"]`)
+            row.style.order = (parseInt(team) + sortOffset)
+            if (listSort === List.Sort.HIDE) row.classList.add("hidden")
+            else row.classList.remove("hidden")
+
+            if (listSort === List.Sort.SORT_ABOVE) hasAbove = true
+            if (listSort === List.Sort.SORT_BELOW) hasBelow = true
         }
+
+        if (hasAbove) this.aboveDivider.classList.remove("hidden")
+        else this.aboveDivider.classList.add("hidden")
+        if (hasBelow) this.belowDivider.classList.remove("hidden")
+        else this.belowDivider.classList.add("hidden")
     }
     indexOfColumn(column) {
         if (typeof column === "string") column = this.getColumnById(column)
@@ -437,6 +461,7 @@ class Table extends Widget {
         }
 
         this.addTeamEl(this.teams)
+        this.sortRows()
 
         // TODO add refresh for values
     }

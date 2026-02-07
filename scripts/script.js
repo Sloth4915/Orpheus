@@ -758,25 +758,25 @@ class List {
         "block",
         "do_not_disturb_on",
         "person",
-        "skull",
-        "handshake",
+        //"skull",
+        //"handshake",
         "mood",
         "sentiment_satisfied",
         "sentiment_neutral",
         "sentiment_dissatisfied",
         "sentiment_very_dissatisfied",
         "sentiment_sad",
-        "editor_choice",
+        //"editor_choice",
         "diamond_shine",
         "bookmark",
         "bookmark_heart",
         "bookmark_flag",
         "bookmark_star",
-        "skull_list",
+        //"skull_list",
         "rocket_launch",
         "chess_pawn",
-        "falling",
-        "target",
+        //"falling",
+        //"target",
         "shield",
         "taunt",
         "filter_1",
@@ -849,6 +849,101 @@ const Lists = {
         for (let list of this.lists) if (list.includes(team)) lists.push(list)
         return lists
     },
+    setListEditPanel() {
+        let panel = document.querySelector(".list-edit")
+        panel.innerHTML = ""
+        for (let list of this.lists) {
+            let el = document.createElement("div")
+            el.className = "list"
+
+            let icon = document.createElement("div")
+            icon.className = "material-symbols-outlined filled list-icon"
+            icon.innerText = list.icon
+            icon.style.color = list.color.color
+            el.appendChild(icon)
+
+            let iconChanger = document.createElement("div")
+            iconChanger.className = "hidden"
+            icon.addEventListener("click", (e) => {
+                setTimeout(() => iconChanger.classList.toggle("hidden"))
+            })
+
+            let listColors = document.createElement("div")
+            listColors.className = "list-change-holder"
+            for (let color of Object.values(List.Colors)) {
+                let colorEl = document.createElement("div")
+                colorEl.className = "list-icon-color"
+                colorEl.title = color.name
+                colorEl.style.backgroundColor = color.color
+                colorEl.addEventListener("click", () => {
+                    list.color = color
+                    icon.style.color = color.color
+                    main.hardRefresh()
+                })
+                listColors.appendChild(colorEl)
+            }
+            iconChanger.appendChild(listColors)
+
+            let listIcons = document.createElement("div")
+            listIcons.className = "list-change-holder"
+            for (let iconI of List.ICONS) {
+                let iconEl = document.createElement("div")
+                iconEl.className = "list-change-icon material-symbols-outlined"
+                iconEl.innerText = iconI
+                iconEl.title = iconI
+                iconEl.addEventListener("click", () => {
+                    list.icon = iconI
+                    icon.innerText = iconI
+                    main.hardRefresh()
+                })
+                listIcons.appendChild(iconEl)
+            }
+            iconChanger.appendChild(listIcons)
+
+            document.addEventListener("click", (e) => {
+                if (!iconChanger.contains(e.target)) iconChanger.classList.add("hidden")
+            })
+            el.appendChild(iconChanger)
+
+            let name = document.createElement("div")
+            name.innerText = list.name
+            el.appendChild(name)
+
+            let nameEditButton = document.createElement("button")
+            nameEditButton.className = "material-symbols-outlined"
+            nameEditButton.innerText = "edit"
+            nameEditButton.addEventListener("click", () => {
+                let x = prompt("New name for " + list.name)
+                if (x === null || x.trim() === "") return
+                name.innerText = x
+                list.name = x
+                main.hardRefresh()
+            })
+            el.appendChild(nameEditButton)
+
+            let dropdown = document.createElement("select")
+            let options = {
+                "Sort Above": List.Sort.SORT_ABOVE,
+                "Default": List.Sort.NO_CHANGE,
+                "Sort Below": List.Sort.SORT_BELOW,
+                "Hide": List.Sort.HIDE,
+            }
+            for (let option of Object.keys(options)) {
+                let optionEl = document.createElement("option")
+                optionEl.innerText = option
+                optionEl.setAttribute("value", options[option])
+                dropdown.appendChild(optionEl)
+            }
+            dropdown.value = list.sort
+            dropdown.addEventListener("change", () => {
+                list.sort = parseInt(dropdown.value)
+                main.hardRefresh()
+            })
+            el.appendChild(dropdown)
+
+            panel.appendChild(el)
+        }
+    },
     /**
      * Gets and returns the list that affects a particular team
      * @param team - Team number
@@ -862,6 +957,7 @@ const Lists = {
         return List.ALL
     }
 }
+Lists.setListEditPanel()
 //#endregion
 
 //#region Custom Event Handler

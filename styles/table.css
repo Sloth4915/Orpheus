@@ -121,11 +121,11 @@
 }
 
 .table-settings-chunk {
+    display: flex;
     flex-direction: column;
     justify-content: space-evenly;
     align-items: center;
-    min-height: 70px;
-    max-height: fit-content;
+    height: 70px;
 }
 
 .table-setting {
@@ -133,4 +133,16 @@
     padding: 0;
     font-size: 1.05rem;
     cursor: pointer;
+}
+
+.divider-above, .divider-below {
+    width: 100%;
+    min-height: 2px;
+    background-color: var(--font);
+}
+.divider-above {
+    order: -1;
+}
+.divider-below {
+    order: 999;
 }

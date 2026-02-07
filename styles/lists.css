@@ -1,0 +1,54 @@
+.list-edit {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 0.5rem;
+    border: 1px solid var(--line);
+}
+
+.list-edit .list {
+    display: flex;
+    border: 1px solid var(--line);
+    gap: 0.5rem;
+    padding: 0.5rem;
+    flex-direction: row;
+    align-items: center;
+    border-radius: 0.5rem;
+}
+
+.list-edit .list button.material-symbols-outlined {
+    border: 0;
+    width: 0;
+    height: 0;
+}
+
+.list-icon {
+    cursor: pointer;
+}
+
+.list-icon-changer {
+    border: 1px solid var(--line);
+    display: flex;
+    flex-direction: column;
+}
+
+.list-change-holder {
+    display: flex;
+    flex-wrap: wrap;
+    max-height: 2.5rem;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+}
+
+.list-icon-color {
+    width: 2rem;
+    height: 1rem;
+    border-radius: 0.5rem;
+    border: 1px solid var(--line);
+    cursor: pointer;
+}
+
+.list-change-icon {
+    cursor: pointer;
+}

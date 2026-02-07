@@ -11,6 +11,7 @@
     <link rel="stylesheet" href="styles/inputs.css"/>
     <link rel="stylesheet" href="styles/context_menu.css"/>
     <link rel="stylesheet" href="styles/widgets.css"/>
+    <link rel="stylesheet" href="styles/lists.css"/>
     <!-- Widget Stylesheets -->
     <link rel="stylesheet" href="styles/table.css"/>
     <link rel="stylesheet" href="styles/graph.css"/>
@@ -77,6 +78,11 @@
                 <button id="top-reset-preferences">Reset all to defaults</button>
                 <button id="top-import-settings" disabled>Import State</button>
                 <button id="top-export-settings" disabled>Export Current State</button>
+            </dialog>
+
+            <button id="top-control-lists" class="dropdown-button">Lists</button>
+            <dialog class="top-control-dropdown" for="top-control-lists">
+                <div class="list-edit"></div>
             </dialog>
 
             <button id="top-control-widgets" class="dropdown-button" disabled>Widgets</button>
