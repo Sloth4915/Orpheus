@@ -10,22 +10,18 @@ class Table extends Widget {
         this.activeColumn = ""
         this.sort = 1
 
-        // FIXME maybe not?
-        this.showMultipleTimes = true
-
         /**
          * Are all teams shown or just those with a list enabled in the table's scope?
          */
         this.showAll = true
         this.scope = {}
-        this.scope[ignore.id] = List.Sort.HIDE // FIXME remove this - for testing purposes
+        this.scopePanel = document.createElement("dialog")
+        this.scopePanel.className = "table-scope-holder"
+        this.content.appendChild(this.scopePanel)
+        document.addEventListener("click", (e) => {
+            if (!this.scopePanel.contains(e.target) && e.target !== teamFilterButton) this.scopePanel.close()
+        })
 
-        for (let list of Lists.lists) {
-            this.scope[list.id] = {
-                "sort": null, // If sort == null, it defaults to the default for that id.
-                "shown": true,
-            }
-        }
         Events.on(Events.LIST_CHANGE, this.sortRows, this)
 
         this.content.classList.add("table")
@@ -43,6 +39,11 @@ class Table extends Widget {
         teamFilterButton.className = "table-setting material-symbols-outlined"
         teamFilterButton.innerText = "view_agenda"
         teamSettingsBlock.appendChild(teamFilterButton)
+        teamFilterButton.addEventListener("click", (e) => {
+            this.openScopeEditor()
+            this.scopePanel.style.top = e.clientY + "px"
+            this.scopePanel.style.left = e.clientX + "px"
+        })
 
         this.columnDragIndicator = document.createElement("div")
         this.columnDragIndicator.className = "data-drag-indicator"
@@ -404,7 +405,7 @@ class Table extends Widget {
         let hasAbove = false
         let hasBelow = false
         for (let team in teams) {
-            let listSort = Lists.getListAffectingTeam(teams[team]).sort
+            let listSort = Lists.getSortAffectingTeam(teams[team], this.scope, this.showAll)
             let sortOffset = (listSort == List.Sort.SORT_ABOVE ? -1000 : (listSort == List.Sort.SORT_BELOW ? 1000 : 0))
             let row = document.querySelector(`[data-team="${teams[team]}"][data-id="${this.id}"]`)
             row.style.order = (parseInt(team) + sortOffset)
@@ -436,6 +437,95 @@ class Table extends Widget {
             }
             while(el.scrollHeight > el.clientHeight)
         }
+    }
+
+    openScopeEditor() {
+        this.scopePanel.show()
+        this.scopePanel.innerHTML = ""
+
+        let panel = document.createElement("div")
+        panel.className = "table-list-scope-edit"
+        this.scopePanel.appendChild(panel)
+
+        for (let list of Lists.lists) {
+            let el = document.createElement("div")
+            el.className = "list"
+
+            let checkbox = document.createElement("input")
+            checkbox.type = "checkbox"
+            checkbox.checked = (typeof this.scope[list.id] !== "undefined")
+            checkbox.addEventListener("change", () => {
+                dropdown.disabled = !checkbox.checked
+                if (checkbox.checked) {
+                    this.scope[list.id] = List.Sort.LIST_DEFAULT
+                    dropdown.value = List.Sort.LIST_DEFAULT
+                }
+                else {
+                    delete this.scope[list.id]
+                    dropdown.value = "aaa"
+                }
+                this.sortRows()
+            })
+            el.appendChild(checkbox)
+
+            let icon = document.createElement("div")
+            icon.className = "material-symbols-outlined filled list-icon"
+            icon.innerText = list.icon
+            icon.style.color = list.color.color
+            el.appendChild(icon)
+
+            let name = document.createElement("div")
+            name.innerText = list.name
+            el.appendChild(name)
+
+            let dropdown = document.createElement("select")
+            let options = {
+                "Sort Above": List.Sort.SORT_ABOVE,
+                "Sort Below": List.Sort.SORT_BELOW,
+                "Hide": List.Sort.HIDE,
+            }
+            options["List Default (" + Object.fromEntries(Object.entries(options).map(a => a.reverse()))[list.sort] + ")"] = List.Sort.LIST_DEFAULT
+            for (let option of Object.keys(options)) {
+                let optionEl = document.createElement("option")
+                optionEl.innerText = option
+                optionEl.setAttribute("value", options[option])
+                dropdown.appendChild(optionEl)
+            }
+            if (typeof this.scope[list.id] === "undefined") {
+                dropdown.value = "aaa"
+                dropdown.disabled = true
+            }
+            else {
+                dropdown.value = list.sort
+            }
+            dropdown.addEventListener("change", () => {
+                this.scope[list.id] = parseInt(dropdown.value)
+                this.sortRows()
+            })
+            el.appendChild(dropdown)
+
+            panel.appendChild(el)
+        }
+
+        let showAllHolder = document.createElement("div")
+        showAllHolder.style.display = "flex"
+        showAllHolder.style["flex-direction"] = "row"
+        panel.appendChild(showAllHolder)
+
+        let showAllCheckbox = document.createElement("input")
+        showAllCheckbox.type = "checkbox"
+        showAllCheckbox.checked = this.showAll
+        showAllCheckbox.id = "table-label-checkbox"
+        showAllCheckbox.addEventListener("change", () => {
+            this.showAll = showAllCheckbox.checked
+            this.sortRows()
+        })
+        showAllHolder.appendChild(showAllCheckbox)
+
+        let showAllLabel = document.createElement("label")
+        showAllLabel.innerText = "Show unlisted teams"
+        showAllLabel.for = "table-label-checkbox"
+        showAllHolder.appendChild(showAllLabel)
     }
 
     /**

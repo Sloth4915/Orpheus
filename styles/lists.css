@@ -6,7 +6,7 @@
     border: 1px solid var(--line);
 }
 
-.list-edit .list {
+.list-edit .list, .table-list-scope-edit .list {
     display: flex;
     border: 1px solid var(--line);
     gap: 0.5rem;
@@ -16,7 +16,7 @@
     border-radius: 0.5rem;
 }
 
-.list-edit .list button.material-symbols-outlined {
+.list button.material-symbols-outlined {
     border: 0;
     width: 0;
     height: 0;
@@ -53,14 +53,14 @@
     cursor: pointer;
 }
 
-.list-edit .list-name-edit {
+.list-name-edit {
     height: 100%;
     cursor: pointer;
     margin-right: auto;
     padding: 0.25rem 1rem 0.25rem 0.5rem;
 }
 
-.list-edit .list-delete {
+.list-delete {
     cursor: pointer;
 }
 

@@ -810,6 +810,8 @@ class List {
         SORT_BELOW: 2,
         // Teams with a list set to HIDE will be hidden unless the team also has a higher priority list that isn't set to HIDE.
         HIDE: 3,
+        // Only useful for tables and widgets
+        LIST_DEFAULT: 4,
     })
 
     static ALL = new List("All", "", "", List.Sort.NO_CHANGE, [], false)
@@ -989,17 +991,25 @@ const Lists = {
     /**
      * Gets and returns the list that affects a particular team
      * @param team - Team number
-     * @param scope - An array of the lists allowed
-     * @param overrides - A JSON object with key list ID: List.Sort
+     * @param scope - An object of list ids and overridden sort.
+     * @param showAll
      */
-    getListAffectingTeam(team, scope = Lists.lists, overrides = {}) {
-        for (let list of scope) {
-            if (list.includes(team) && list.sort !== (overrides[list.id] ?? List.Sort.NO_CHANGE)) return list
+    getSortAffectingTeam(team, scope = {}, showAll = true) {
+        for (let list of Lists.lists) {
+            if (typeof scope[list.id] !== "undefined") {
+                if (list.includes(team))
+                    return scope[list.id] === List.Sort.LIST_DEFAULT ? list.sort : scope[list.id]
+            }
         }
-        return List.ALL
+        if (showAll) return List.Sort.NO_CHANGE
+        else return List.Sort.HIDE
     }
 }
 Lists.setListEditPanel()
+document.querySelector("#top-control-lists").addEventListener("click", () => {
+    // Panel opens due to header controls
+    Lists.setListEditPanel()
+})
 //#endregion
 
 //#region Custom Event Handler

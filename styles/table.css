@@ -146,3 +146,23 @@
 .divider-below {
     order: 999;
 }
+
+.table-scope-holder {
+    background: var(--bg);
+    backdrop-filter: blur(4px);
+    outline: 0;
+    position: fixed;
+    margin: 0;
+    filter: drop-shadow(-1px 1px 1px var(--shadow));
+    border-radius: .4rem;
+    border: 1px solid var(--line);
+    padding: 0;
+}
+
+.table-list-scope-edit {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 0.5rem;
+}
+/* See lists.css */
