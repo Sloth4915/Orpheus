@@ -18,9 +18,6 @@ class Table extends Widget {
         this.scopePanel = document.createElement("dialog")
         this.scopePanel.className = "table-scope-holder"
         this.content.appendChild(this.scopePanel)
-        document.addEventListener("click", (e) => {
-            if (!this.scopePanel.contains(e.target) && e.target !== teamFilterButton) this.scopePanel.close()
-        })
 
         Events.on(Events.LIST_CHANGE, this.sortRows, this)
 
@@ -35,15 +32,7 @@ class Table extends Widget {
         teamSettingsBlock.setAttribute("data-id", this.id)
         this.header.appendChild(teamSettingsBlock)
 
-        let teamFilterButton = document.createElement("button")
-        teamFilterButton.className = "table-setting material-symbols-outlined"
-        teamFilterButton.innerText = "view_agenda"
-        teamSettingsBlock.appendChild(teamFilterButton)
-        teamFilterButton.addEventListener("click", (e) => {
-            this.openScopeEditor()
-            this.scopePanel.style.top = e.clientY + "px"
-            this.scopePanel.style.left = e.clientX + "px"
-        })
+        this.addHeaderIcon("visibility", "Scope", this.scopePanel, this.openScopeEditor)
 
         this.columnDragIndicator = document.createElement("div")
         this.columnDragIndicator.className = "data-drag-indicator"
@@ -440,7 +429,6 @@ class Table extends Widget {
     }
 
     openScopeEditor() {
-        this.scopePanel.show()
         this.scopePanel.innerHTML = ""
 
         let panel = document.createElement("div")

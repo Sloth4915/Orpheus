@@ -552,20 +552,11 @@ const RefreshMode = Object.freeze({
     HARD: "hard",
 })
 
-const SettingType = Object.freeze({
-    STRING: "string",
-    INTEGER: "int",
-    FLOAT: "float",
-    CHECKBOX: "checkbox"
-})
-
 class Widget extends WidgetBase {
     constructor() {
         super()
 
         this.type = "widget"
-
-        this.settings = {}
 
         //#region Widget header
         this._header = {
@@ -573,7 +564,6 @@ class Widget extends WidgetBase {
             name: document.createElement("div"),
             dragger: document.createElement("div"),
             remover: document.createElement("div"),
-            settings: document.createElement("div")
         }
         this._header.holder.className = "widget-header"
 
@@ -750,51 +740,36 @@ class Widget extends WidgetBase {
 
         //#endregion
 
-        //#region Widget Settings
-        this._header.settings.className = "material-symbols-outlined widget-settings-toggle"
-        this._header.settings.innerText = "settings"
-        this._header.holder.appendChild(this._header.settings)
-
         this._header.holder.appendChild(this._header.name)
         this.name = "Widget"
 
-        this.el.append(this._header.holder)
-        //#endregion
-
-        this.settingsEl = document.createElement("div")
-        this.settingsEl.className = "widget-settings hidden"
-        document.body.appendChild(this.settingsEl)
         //#endregion
 
         this.content = document.createElement("div")
         this.content.className = "widget-content-real"
 
+        this.el.append(this._header.holder)
         this.el.appendChild(this.content)
     }
 
-    /**
-     * Adds a setting to the widget settings menu
-     * @param name Setting name
-     * @param type SettingType or array of {"val":"", "display":""} dropdown options
-     * @param refresh What kind of RefreshMode to use
-     * @param additionalCallbacks Any additional functions that should be called when the setting is changed
-     */
-    addSetting(name, type, refresh = RefreshMode.NORMAL, ...additionalCallbacks) {
-        this.settings[name] = {
-            value: "",
-            type,
-            refresh,
-            additionalCallbacks,
-        }
-        // TODO elements and all that junk
-    }
+    addHeaderIcon(icon, title, dialog, callback) {
+        let el = document.createElement("div")
+        el.className = "material-symbols-outlined widget-header-icon"
+        el.innerText = icon
+        el.title = title
 
-    /**
-     * Gets the value of a setting
-     * @param setting The setting to get the value of
-     */
-    getSetting(setting) {
-        return this.settings[setting].value
+        el.addEventListener("click", (e) => {
+            dialog.style.top = e.clientY + "px"
+            dialog.style.left = e.clientX + "px"
+            dialog.show()
+            callback.call(this)
+        })
+        document.addEventListener("click", (e) => {
+            if (!dialog.contains(e.target) && e.target !== el) dialog.close()
+        })
+
+        this._header.dragger.insertAdjacentElement('afterend', el)
+        console.log(el)
     }
 
     // TODO add setting validation with a addSettingValidation(setting, validityFunction) function where validityFunction returns true if the change is valid, false if not.
