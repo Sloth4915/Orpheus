@@ -1,4 +1,12 @@
 /* Team Info Widget */
+.team-info-widget {
+    gap: 0.5rem;
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: space-between;
+}
+
 .team-info-logo {
     width: 5.5rem;
     height: 5.5rem;
@@ -10,6 +18,9 @@
 .team-info-flex-horizontal {
     display: flex;
     gap: 0.5rem;
+    max-width: 360px;
+    width: 100%;
+    align-items: center;
 }
 
 .team-info-basic-holder {
@@ -71,3 +82,5 @@
 .team-media-controls button:hover {
     backdrop-filter: brightness(110%);
 }
+
+/* Reuses scope editor from graph */

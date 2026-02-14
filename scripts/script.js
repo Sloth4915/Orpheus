@@ -496,7 +496,7 @@ function processData() {
     tabGroup.addChild(graph)
 
     teamInfo = new TeamInfo()
-    teamInfo.setTeams(Object.keys(team_data))
+    teamInfo.redoList(Object.keys(team_data))
     tabGroup.addChild(teamInfo)
 
     media4915 = new TeamMedia()

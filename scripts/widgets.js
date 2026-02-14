@@ -829,6 +829,11 @@ class Graph extends Widget {
                 this.redoWidget()
             })
 
+            if (list == this.list) {
+                el.classList.add("selected")
+                activeList = el
+            }
+
             lists.appendChild(el)
         }
 
@@ -888,14 +893,30 @@ class TeamInfo extends Widget {
 
         this.minWidth = 170
         this.minHeight = 100
+
+        this.list = List.ALL
+        this.teams = Object.keys(team_data)
+
+        this.content.classList.add("team-info-widget")
+
+        this.scopePanel = document.createElement("dialog")
+        this.scopePanel.className = "table-scope-holder"
+        this._header.holder.appendChild(this.scopePanel)
+        this.addHeaderIcon("visibility", "Scope", this.scopePanel, this.openScopeEditor)
+        Events.on(Events.LIST_CHANGE, () => {
+            if (this.list !== null) {
+                this.teams = JSON.parse(JSON.stringify(this.list.teams))
+                if (this.list == List.ALL) this.teams = Object.keys(team_data)
+                this.redoList()
+            }
+        }, this)
     }
-    setTeams(teams) {
-        if (typeof teams !== "object") teams = [teams]
+    redoList() {
         this.content.innerHTML = ""
 
         this.name = ""
 
-        for (let team of teams) {
+        for (let team of this.teams) {
             let imageAndBasicHolderHolder = document.createElement("div")
             imageAndBasicHolderHolder.className = "team-info-flex-horizontal"
             this.content.appendChild(imageAndBasicHolderHolder)
@@ -927,7 +948,7 @@ class TeamInfo extends Widget {
             basicInfoHolder.appendChild(eventRank)
 
             if (usingTBA) {
-                if (teams.length > 1) this.name = this.name + ", " + team
+                if (this.teams.length > 1) this.name = this.name + ", " + team
                 else this.name = this.name + ", " + team + " " + team_data[team].Name
 
                 nameEl.innerText = team + " " + team_data[team].Name
@@ -949,6 +970,108 @@ class TeamInfo extends Widget {
         }
 
         this.name = this.name.substring(2)
+    }
+    openScopeEditor() {
+        this.scopePanel.innerHTML = ""
+
+        let panel = document.createElement("div")
+        panel.className = "graph-list-scope-edit"
+        this.scopePanel.appendChild(panel)
+
+        let listsLabel = document.createElement("div")
+        listsLabel.innerText = "List"
+        panel.appendChild(listsLabel)
+
+        let lists = document.createElement("div")
+        lists.className = "graph-list-of"
+        panel.appendChild(lists)
+
+        let activeList = null
+        for (let list of [List.ALL, ...Lists.lists]) {
+            let el = document.createElement("div")
+            el.className = "list"
+
+            let icon = document.createElement("div")
+            icon.className = "material-symbols-outlined filled list-icon"
+            icon.innerText = list.icon
+            icon.style.color = list.color.color
+            el.appendChild(icon)
+
+            let name = document.createElement("div")
+            name.innerText = list.name
+            el.appendChild(name)
+
+            el.addEventListener("click", () => {
+                this.list = list
+                if (activeList !== null) {
+                    activeList.classList.remove("selected")
+                }
+                activeList = el
+                activeList.classList.add("selected")
+                this.teams = JSON.parse(JSON.stringify(list.teams))
+                if (list == List.ALL) this.teams = Object.keys(team_data)
+                teams.innerHTML = ""
+                for (let team of this.teams) {
+                    addTeamEl(team)
+                }
+                this.redoList()
+            })
+
+            if (list == this.list) {
+                el.classList.add("selected")
+                activeList = el
+            }
+
+            lists.appendChild(el)
+        }
+
+        let teamsLabel = document.createElement("div")
+        teamsLabel.innerText = "Team List"
+        panel.appendChild(teamsLabel)
+
+        let teams = document.createElement("div")
+        teams.className = "graph-list-of"
+        panel.appendChild(teams)
+
+        let context = this
+        function addTeamEl(team) {
+            let teamEl = document.createElement("div")
+            teamEl.className = "graph-scope-team"
+            teamEl.innerText = team
+            teamEl.addEventListener("click", () => {
+                context.teams.splice(context.teams.indexOf(team), 1)
+                context.redoList()
+                context.list = null
+                if (activeList !== null) {
+                    activeList.classList.remove("selected")
+                    activeList = null
+                }
+                setTimeout(() => teamEl.remove(), 1)
+            })
+            teams.appendChild(teamEl)
+        }
+
+        for (let team of this.teams) {
+            addTeamEl(team)
+        }
+
+        let addButton = document.createElement("button")
+        addButton.innerText = "Add team"
+        addButton.addEventListener("click", () => {
+            // TODO better search
+            let x = prompt("What team number?")
+            if (typeof team_data[x] !== "undefined") {
+                this.teams.push(x)
+                addTeamEl(x)
+                this.redoWidget()
+                this.list = null
+                if (activeList !== null) {
+                    activeList.classList.remove("selected")
+                    activeList = null
+                }
+            }
+        })
+        panel.appendChild(addButton)
     }
 }
 
