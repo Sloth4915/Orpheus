@@ -551,7 +551,13 @@ class Graph extends Widget {
 
         this.column = getColumnFromID("match`Scoring`Coral Scored")
         this.teams = [4915, 2046, 2910, 2907]
+        this.list = null
         this.selectedTeam = null
+
+        this.scopePanel = document.createElement("dialog")
+        this.scopePanel.className = "table-scope-holder"
+        this.content.appendChild(this.scopePanel)
+        this.addHeaderIcon("visibility", "Scope", this.scopePanel, this.openScopeEditor)
 
         document.addEventListener("mouseup", () => {
             if (this.selectedTeam == null) return
@@ -579,6 +585,43 @@ class Graph extends Widget {
 
         this.minWidth = 200
         this.minHeight = 200
+
+        Events.on(Events.LIST_CHANGE, () => {
+            if (this.list !== null) {
+                this.teams = JSON.parse(JSON.stringify(this.list.teams))
+                this.redoWidget()
+            }
+        }, this)
+
+        let graphDropdown = document.createElement("select")
+        graphDropdown.className = ""
+        this._header.name.insertAdjacentElement("beforebegin", graphDropdown)
+
+        function findGraphs(context, schema, nameOverride) {
+            let group = document.createElement("optgroup")
+            group.label = nameOverride ?? getColumnFromID(context).name
+            for (let child of Object.keys(schema)) {
+                if (typeof schema[child]["type"] === "undefined") {
+                    findGraphs(context + "`" + child, schema[child], undefined)
+                }
+                else if (schema[child]["graph"]) {
+                    let el = document.createElement("option")
+                    let id = context + "`" + child
+                    el.innerText = getColumnFromID(id).name
+                    el.value = id
+                    group.appendChild(el)
+                }
+            }
+            graphDropdown.appendChild(group)
+        }
+        for (let schema of Object.keys(mapping)) {
+            findGraphs(schema, mapping[schema].data, mapping[schema]["alias"] ?? schema)
+        }
+        graphDropdown.addEventListener("change", () => {
+            this.column = getColumnFromID(graphDropdown.value)
+            this.name = "Graph - " + this.column.name
+            this.redoWidget()
+        })
     }
 
     refresh() {
@@ -588,7 +631,6 @@ class Graph extends Widget {
         this.calcEl.style.width = this.content.offsetWidth - 2 + "px"
         this.calcEl.style.height = this.content.offsetHeight - this.teamsEl.offsetHeight + "px"
     }
-
     createCalculator() {
         this.calculator = Desmos.GraphingCalculator(this.calcEl, {
             graphpaper: true,
@@ -603,7 +645,6 @@ class Graph extends Widget {
         })
         this.createExpressions()
     }
-
     createExpressions(maintainBounds = false, clearExpressions = true) {
         if (clearExpressions) {
             this.calculator.getExpressions().forEach((expression) => {
@@ -680,7 +721,6 @@ class Graph extends Widget {
             this.calculator.setDefaultState(this.calculator.getState())
         }
     }
-
     createTeamList() {
         this.teamsEl.innerHTML = ""
         for (let i in this.teams) {
@@ -713,19 +753,16 @@ class Graph extends Widget {
             this.teamsEl.appendChild(teamEl)
         }
     }
-
     getTeamColor(i) {
         let ctx = new OffscreenCanvas(1,1).getContext("2d")
         ctx.fillStyle = "oklch(56% 46% "+((360 / this.teams.length) * (i))+")"
         ctx.fillRect(0,0,1,1)
         return "rgba(" + ctx.getImageData(0,0,1,1).data.join(", ") + ")"
     }
-
     getTeamShape(i) {
         let shapes = ["POINT", "CROSS", "SQUARE", "PLUS", "TRIANGLE", "DIAMOND", "STAR"]
         return shapes[i % shapes.length]
     }
-
     getShapeSymbol(i) {
         switch (i) {
             case "POINT": return '⬤'
@@ -737,11 +774,111 @@ class Graph extends Widget {
             case "STAR": return '★'
         }
     }
-
     hardRefresh() {
         super.hardRefresh();
         this.createExpressions()
         this.createTeamList()
+    }
+    redoWidget() {
+        this.createTeamList()
+        this.createExpressions()
+        this.refresh()
+    }
+    openScopeEditor() {
+        this.scopePanel.innerHTML = ""
+
+        let panel = document.createElement("div")
+        panel.className = "graph-list-scope-edit"
+        this.scopePanel.appendChild(panel)
+
+        let listsLabel = document.createElement("div")
+        listsLabel.innerText = "List"
+        panel.appendChild(listsLabel)
+
+        let lists = document.createElement("div")
+        lists.className = "graph-list-of"
+        panel.appendChild(lists)
+
+        let activeList = null
+        for (let list of Lists.lists) {
+            let el = document.createElement("div")
+            el.className = "list"
+
+            let icon = document.createElement("div")
+            icon.className = "material-symbols-outlined filled list-icon"
+            icon.innerText = list.icon
+            icon.style.color = list.color.color
+            el.appendChild(icon)
+
+            let name = document.createElement("div")
+            name.innerText = list.name
+            el.appendChild(name)
+
+            el.addEventListener("click", () => {
+                this.list = list
+                if (activeList !== null) {
+                    activeList.classList.remove("selected")
+                }
+                activeList = el
+                activeList.classList.add("selected")
+                this.teams = JSON.parse(JSON.stringify(list.teams))
+                teams.innerHTML = ""
+                for (let team of this.teams) {
+                    addTeamEl(team)
+                }
+                this.redoWidget()
+            })
+
+            lists.appendChild(el)
+        }
+
+        let teamsLabel = document.createElement("div")
+        teamsLabel.innerText = "Team List"
+        panel.appendChild(teamsLabel)
+
+        let teams = document.createElement("div")
+        teams.className = "graph-list-of"
+        panel.appendChild(teams)
+
+        let context = this
+        function addTeamEl(team) {
+            let teamEl = document.createElement("div")
+            teamEl.className = "graph-scope-team"
+            teamEl.innerText = team
+            teamEl.addEventListener("click", () => {
+                context.teams.splice(context.teams.indexOf(team), 1)
+                context.redoWidget()
+                context.list = null
+                if (activeList !== null) {
+                    activeList.classList.remove("selected")
+                    activeList = null
+                }
+                setTimeout(() => teamEl.remove(), 1)
+            })
+            teams.appendChild(teamEl)
+        }
+
+        for (let team of this.teams) {
+            addTeamEl(team)
+        }
+
+        let addButton = document.createElement("button")
+        addButton.innerText = "Add team"
+        addButton.addEventListener("click", () => {
+            // TODO better search
+            let x = prompt("What team number?")
+            if (typeof team_data[x] !== "undefined") {
+                this.teams.push(x)
+                addTeamEl(x)
+                this.redoWidget()
+                this.list = null
+                if (activeList !== null) {
+                    activeList.classList.remove("selected")
+                    activeList = null
+                }
+            }
+        })
+        panel.appendChild(addButton)
     }
 }
 

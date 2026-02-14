@@ -47,3 +47,52 @@
     font-size: 1rem;
     font-weight: bolder;
 }
+
+.graph-list-scope-edit {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 0.5rem;
+}
+.graph-list-scope-edit .list {
+    display: flex;
+    border: 1px solid var(--line);
+    gap: 0.2rem;
+    padding: 0.2rem;
+    flex-direction: row;
+    align-items: center;
+    border-radius: 0.5rem;
+    cursor: pointer;
+}
+.graph-list-scope-edit .list.selected {
+    display: flex;
+    border: 1px solid var(--line);
+    gap: 0.2rem;
+    padding: 0.2rem;
+    flex-direction: row;
+    align-items: center;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    background-color: var(--highlight);
+}
+.graph-list-of {
+    display: flex;
+    flex-direction: row;
+    gap: 0.2rem;
+    flex-wrap: wrap;
+    max-width: 400px;
+}
+
+.graph-scope-team {
+    display: flex;
+    border: 1px solid var(--line);
+    gap: 0.2rem;
+    padding: 0.2rem;
+    flex-direction: row;
+    align-items: center;
+    border-radius: 0.5rem;
+    cursor: pointer;
+}
+.graph-scope-team:hover {
+    text-decoration: line-through;
+}

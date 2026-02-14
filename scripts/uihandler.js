@@ -544,14 +544,6 @@ class WidgetTabGroup extends WidgetBase {
     }
 }
 
-const RefreshMode = Object.freeze({
-    NONE: "none",
-    REFRESH: "soft",
-    SOFT: "soft",
-    NORMAL: "normal",
-    HARD: "hard",
-})
-
 class Widget extends WidgetBase {
     constructor() {
         super()
@@ -769,10 +761,7 @@ class Widget extends WidgetBase {
         })
 
         this._header.dragger.insertAdjacentElement('afterend', el)
-        console.log(el)
     }
-
-    // TODO add setting validation with a addSettingValidation(setting, validityFunction) function where validityFunction returns true if the change is valid, false if not.
 
     get name() {
         return this._name
