@@ -174,8 +174,9 @@ class WidgetGroup extends WidgetBase {
 
             if (child.widget.type === "group" && child.widget.axis === this.axis) {
                 let index = this.indexOf(child.widget)
+                let indexOffset = 0
                 for (let grandchild of child.widget.children) {
-                    this.addChild(grandchild.widget, grandchild.size * child.size, index, false)
+                    this.addChild(grandchild.widget, grandchild.size * child.size, index + (++indexOffset), false)
                 }
                 this.removeChild(child.widget)
                 this.refresh()
