@@ -78,16 +78,7 @@ class Table extends Widget {
             let thisColumn = this.columns[this.columns.length - 1]
 
             for (let team of this.teams) {
-                let dataEl = document.createElement("div")
-                dataEl.className = "data"
-                dataEl.setAttribute("data-column", column.id)
-                dataEl.setAttribute("data-team", team)
-                dataEl.setAttribute("data-id", this.id)
-
-                let value = typeof column.data[team] === "object" ? column.data[team]["summarized"] : column.data[team]
-                if (typeof value === "number") dataEl.innerText = (Math.round(value * rounding) / rounding) + ""
-                else dataEl.innerText = value
-                document.querySelector(`.row[data-team="${team}"][data-id="${this.id}"]`).appendChild(dataEl)
+                document.querySelector(`.row[data-team="${team}"][data-id="${this.id}"]`).appendChild(this.createTableCell(team, column))
             }
 
             let headerEl = document.createElement("div")
@@ -296,16 +287,7 @@ class Table extends Widget {
             teamSettingsBlock.appendChild(tsChunk)
 
             for (let column of this.columns) {
-                let data = document.createElement("div")
-                data.className = "data"
-                data.setAttribute("data-column", column.columnId)
-                data.setAttribute("data-team", team)
-                data.setAttribute("data-id", this.id)
-
-                let value = typeof column.data[team] === "object" ? column.data[team]["summarized"] : column.data[team]
-                if (typeof value === "number") data.innerText = (Math.round(value * rounding) / rounding) + ""
-                else data.innerText = value
-                teamEl.appendChild(data)
+                teamEl.appendChild(this.createTableCell(team, column))
             }
 
             if (usingTBAMedia) {
@@ -430,6 +412,41 @@ class Table extends Widget {
             }
             while(el.scrollHeight > el.clientHeight)
         }
+    }
+    createTableCell(team, column) {
+        console.log(column)
+
+        let dataEl = document.createElement("div")
+        dataEl.className = "data"
+        dataEl.setAttribute("data-column", column.id ?? column.columnId)
+        dataEl.setAttribute("data-team", team)
+        dataEl.setAttribute("data-id", this.id)
+
+        if (column.mapping.type === "ratio" && (typeof column.mapping["summarize"] === "undefined" || column.mapping["summarize"] === "ratio")) {
+            dataEl.innerHTML = ""
+
+            let num = document.createElement("div")
+            num.className = "numerator"
+            num.innerText = (Math.round(column.data[team]["sum_num"] * rounding) / rounding) + ""
+            dataEl.appendChild(num)
+
+            let divider = document.createElement("div")
+            divider.className = "ratio-divider"
+            dataEl.appendChild(divider)
+
+            let den = document.createElement("div")
+            den.className = "numerator"
+            den.innerText = (Math.round(column.data[team]["sum_den"] * rounding) / rounding) + ""
+
+            dataEl.title = (Math.round(column.data[team]["summarized"] * rounding) / rounding)
+            dataEl.appendChild(den)
+        } else {
+            let value = typeof column.data[team] === "object" ? column.data[team]["summarized"] : column.data[team]
+            if (typeof value === "number") dataEl.innerText = (Math.round(value * rounding) / rounding) + ""
+            else dataEl.innerText = value
+        }
+
+        return dataEl
     }
 
     openScopeEditor() {
