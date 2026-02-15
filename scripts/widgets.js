@@ -33,6 +33,7 @@ class Table extends Widget {
         this.header.appendChild(teamSettingsBlock)
 
         this.addHeaderIcon("visibility", "Scope", this.scopePanel, this.openScopeEditor)
+        this.addHeaderIcon("view_column", "Columns", this.scopePanel, this.openColumnEditor, [0, 100])
 
         this.columnDragIndicator = document.createElement("div")
         this.columnDragIndicator.className = "data-drag-indicator"
@@ -65,7 +66,7 @@ class Table extends Widget {
 
             this.columns.push({
                 columnId: column.id,
-                name: column.name,
+                name: column.table,
                 mapping: column.mapping,
                 size: 110, // Pixels
                 data: column.data,
@@ -218,12 +219,11 @@ class Table extends Widget {
             document.querySelector(`[data-column-size="${column.columnId}"][data-id="${this.id}"]`).remove()
             document.querySelector(`[data-column="${column.columnId}"][data-id="${this.id}"]`).remove()
 
-            this.hardRefresh()
-
             if (this.activeColumn === column.columnId) {
                 this.activeColumn = "" // Stops the setActiveFunction function from trying to change the element
                 this.setActiveColumn(this.columns[0].columnId)
             }
+            this.hardRefresh()
         }
     }
     setColumns(...[columns]) {
@@ -414,6 +414,10 @@ class Table extends Widget {
         if (typeof column === "string") column = this.getColumnById(column)
         return this.columns.indexOf(column)
     }
+    includes(column) {
+        if (typeof column === "string") column = this.getColumnById(column)
+        return this.columns.includes(column)
+    }
     setTextSizes(col) {
         let elements = document.querySelectorAll(`[data-column="${col.columnId}"][data-id="${this.id}"]`)
 
@@ -515,6 +519,84 @@ class Table extends Widget {
         showAllLabel.for = "table-label-checkbox"
         showAllHolder.appendChild(showAllLabel)
     }
+    openColumnEditor() {
+        this.scopePanel.innerHTML = ""
+
+        let panel = document.createElement("div")
+        panel.className = "table-column-edit"
+        this.scopePanel.appendChild(panel)
+
+        let label = document.createElement("div")
+        label.innerText = "Add Columns"
+        panel.appendChild(label)
+
+        let columns = document.createElement("div")
+        panel.appendChild(columns)
+
+        function findColumns(context, schema, nameOverride) {
+            let group = document.createElement("div")
+            group.classList = "table-column-panel-group"
+
+            let open = false
+
+            let groupController = document.createElement("div")
+            groupController.className = "table-column-panel-group-controller"
+            let dropdownButton = document.createElement("div")
+            dropdownButton.className = "material-symbols-outlined"
+            dropdownButton.innerText = "arrow_drop_down"
+            groupController.appendChild(dropdownButton)
+            let groupName = document.createElement("div")
+            groupName.innerText = nameOverride ?? getColumnFromID(context).name
+            groupController.appendChild(groupName)
+            groupController.addEventListener("click", (e) => {
+                open = !open
+                dropdownButton.innerText = open ? "arrow_drop_up" : "arrow_drop_down"
+                groupColumns.classList.toggle("hidden")
+                e.preventDefault()
+                window.getSelection().removeAllRanges()
+            })
+            group.appendChild(groupController)
+
+            let groupColumns = document.createElement("div")
+            groupColumns.className = "table-column-panel-column-group-holder hidden"
+            group.appendChild(groupColumns)
+
+            for (let child of Object.keys(schema)) {
+                let id = context + "`" + child
+                if (typeof schema[child]["type"] === "undefined") {
+                    let cEl = findColumns.call(this,id, schema[child], undefined)
+                    if (cEl.children[1].children.length) groupColumns.appendChild(cEl)
+                }
+                else if (schema[child]["table"] && !this.includes(id)) {
+                    let el = document.createElement("div")
+                    el.className = "table-column-panel-column"
+                    el.innerText = "• " + getColumnFromID(id).table
+                    el.value = id
+
+                    el.addEventListener("click", () => {
+                        this.addColumn(id)
+                        setTimeout(() => {
+                            el.remove()
+                            let g = group
+                            while (g.children[1].children.length === 0) {
+                                let p = g.parentElement.parentElement
+                                g.remove()
+                                g = p
+                            }
+                        }, 1)
+                    })
+
+                    groupColumns.appendChild(el)
+                }
+            }
+            return group
+        }
+        for (let schema of Object.keys(mapping)) {
+            let el = findColumns.call(this, schema, mapping[schema].data, mapping[schema]["alias"] ?? schema)
+            if (el.children[1].children.length) columns.appendChild(el)
+        }
+        //findColumns(schema, mapping[schema].data, mapping[schema]["alias"] ?? schema)
+    }
 
     /**
      * Will refresh table values
@@ -607,7 +689,7 @@ class Graph extends Widget {
                 else if (schema[child]["graph"]) {
                     let el = document.createElement("option")
                     let id = context + "`" + child
-                    el.innerText = getColumnFromID(id).name
+                    el.innerText = getColumnFromID(id).graph
                     el.value = id
                     group.appendChild(el)
                 }
@@ -619,7 +701,7 @@ class Graph extends Widget {
         }
         graphDropdown.addEventListener("change", () => {
             this.column = getColumnFromID(graphDropdown.value)
-            this.name = "Graph - " + this.column.name
+            this.name = "Graph - " + this.column.graph
             this.redoWidget()
         })
     }

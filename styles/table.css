@@ -165,4 +165,28 @@
     gap: 0.5rem;
     padding: 0.5rem;
 }
+
 /* See lists.css */
+
+.table-column-edit {
+    padding: 0.5rem;
+}
+.table-column-panel-group {
+    display: flex;
+    flex-direction: column;
+}
+.table-column-panel-group-controller {
+    cursor: pointer;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    font-weight: bold;
+}
+.table-column-panel-column-group-holder {
+    padding-left: 0.75rem;
+}
+.table-column-panel-column {
+    cursor: pointer;
+    padding: 0.2rem;
+    user-select: none;
+}

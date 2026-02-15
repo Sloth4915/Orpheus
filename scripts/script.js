@@ -222,16 +222,24 @@ math.import({
 
 let internalMapping = {
     "number": {
-        "alias": "Team Number"
+        "alias": "Team Number",
+        "type": "",
+        "table": true
     },
     "name": {
-        "alias": "Team Name"
+        "alias": "Team Name",
+        "type": "",
+        "table": true
     },
     "matches_played": {
-        "alias": "Matches Played"
+        "alias": "Matches Played",
+        "type": "",
+        "table": true
     },
     "ranking": {
-        "alias": "Event Rank"
+        "alias": "Event Rank",
+        "type": "",
+        "table": true
     },
 }
 
@@ -384,8 +392,26 @@ function processData() {
                                     data[team]["summarized"] = Math.min(...Object.values(data[team]))
                                 } else if (summarize === "max") {
                                     data[team]["summarized"] = Math.max(...Object.values(data[team]))
+                                } else if (summarize === "sum") {
+                                    let val = 0
+                                    for (let match of Object.keys(data[team])) {
+                                        if (datumMapping[x]["type"] === "number") val += data[team][match]
+                                        if (datumMapping[x]["type"] === "ratio") val += data[team][match]["ratio"]
+                                        if (datumMapping[x]["type"] === "accuracy") val += Math.abs(data[team][match]["difference"])
+                                    }
+                                    data[team]["summarized"] = val
+                                } else if (summarize === "ratio") {
+                                    let num = 0
+                                    let den = 0
+                                    for (let match of Object.keys(data[team])) {
+                                        num += data[team][match]["numerator"]
+                                        den += data[team][match]["denominator"]
+                                    }
+                                    data[team]["summarized"] = num / den
+                                    data[team]["sum_num"] = num
+                                    data[team]["sum_den"] = den
                                 }
-                                // Todo geomean, median, mode, sum, ratio
+                                // Todo geomean, median, mode
                             }
                         }
                     } else { // Input type is team
@@ -679,6 +705,8 @@ function getColumnFromID(id) {
         name,
         id,
         "mapping": col,
+        "table": col["table"] === true ? name : (col["table"] ?? false),
+        "graph": col["graph"] === true ? name : (col["graph"] ?? false),
         data: dataCol
     }
 }

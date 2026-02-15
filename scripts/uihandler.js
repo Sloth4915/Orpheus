@@ -745,23 +745,23 @@ class Widget extends WidgetBase {
         this.el.appendChild(this.content)
     }
 
-    addHeaderIcon(icon, title, dialog, callback) {
+    addHeaderIcon(icon, title, dialog, callback, openOffset = [0,0]) {
         let el = document.createElement("div")
         el.className = "material-symbols-outlined widget-header-icon"
         el.innerText = icon
         el.title = title
 
         el.addEventListener("click", (e) => {
-            dialog.style.top = e.clientY + "px"
-            dialog.style.left = e.clientX + "px"
+            dialog.style.left = (e.clientX + openOffset[0]) + "px"
+            dialog.style.top = (e.clientY + openOffset[1]) + "px"
             dialog.show()
             callback.call(this)
         })
         document.addEventListener("click", (e) => {
-            if (!dialog.contains(e.target) && e.target !== el) dialog.close()
+            if (!dialog.contains(e.target) && !e.target.classList.contains("widget-header-icon")) dialog.close()
         })
 
-        this._header.dragger.insertAdjacentElement('afterend', el)
+        this._header.name.insertAdjacentElement('beforebegin', el)
     }
 
     get name() {
