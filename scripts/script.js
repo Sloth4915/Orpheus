@@ -774,7 +774,8 @@ class List {
         Events.emit(Events.LIST_CHANGE)
     }
     includes(team) {
-        return this.teams.includes(team)
+        for (let i of this.teams) if (i == team) return true
+        return false
     }
     indexOf(team) {
         return this.teams.indexOf(team)

@@ -1027,6 +1027,28 @@ class TeamInfo extends Widget {
             logo.className = "team-info-logo"
             imageAndBasicHolderHolder.appendChild(logo)
 
+            let listChunk = document.createElement("div")
+            listChunk.className = "team-info-list"
+            for (let list of Lists.lists) {
+                let listEl = document.createElement("div")
+                listEl.className = "table-setting material-symbols-outlined"
+                listEl.style.color = ""
+                listEl.innerText = list.icon
+                listEl.title = list.name
+                listEl.setAttribute("data-list", list.id)
+                listEl.setAttribute("data-team", team)
+                listEl.setAttribute("data-id", this.id)
+                if (list.includes(team)) {
+                    listEl.classList.add("filled")
+                    listEl.style.color = list.color.color
+                }
+                listEl.addEventListener("click", () => {
+                    list.toggle(team)
+                })
+                listChunk.appendChild(listEl)
+            }
+            imageAndBasicHolderHolder.appendChild(listChunk)
+
             let basicInfoHolder = document.createElement("div")
             basicInfoHolder.className = "team-info-basic-holder"
             imageAndBasicHolderHolder.appendChild(basicInfoHolder)
