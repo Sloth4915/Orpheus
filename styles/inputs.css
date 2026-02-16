@@ -36,3 +36,10 @@ button.icon-holder {
     height: fit-content;
     padding: 0;
 }
+
+select {
+    max-width: 150px;
+}
+select option {
+    max-width: 150px;
+}

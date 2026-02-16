@@ -510,12 +510,19 @@ function processData() {
         }
     }
 
-    // Temporary widget stuff for testing
-    table.addColumn(["orpheus`number", "orpheus`name", "orpheus`matches_played", "orpheus`ranking"])
-    table.addTeam(teams)
+    table = new Table()
+    tabGroup.addChild(table)
 
-    table2.addColumn(["orpheus`number", "orpheus`name", "match`Scoring`Coral Scored", "match`tba climb"])
-    table2.addTeam(teams)
+    table2 = new Table()
+    table2.name = "Table 2"
+    tabGroup.addChild(table2)
+
+    main.addChild(tabGroup)
+
+    // Temporary widget stuff for testing
+    table.addColumn(["orpheus`name", "orpheus`matches_played", "orpheus`ranking"])
+
+    table2.addColumn(["orpheus`name", "match`Scoring`Coral Scored", "match`tba climb"])
     table2.addColumn("pit`Drivetrain")
 
     graph = new Graph()
@@ -529,7 +536,7 @@ function processData() {
     media4915.setTeam(4915)
     tabGroup.addChild(media4915)
 
-    let media3876 = new TeamMedia() // has no media
+    media3876 = new TeamMedia() // has no media
     media3876.setTeam(3876)
     tabGroup.addChild(media3876)
 }
@@ -1407,7 +1414,6 @@ localforage.getItem(storageKeys.ENABLED_APIS, (err, apis) => {
         localforage.setItem(storageKeys.ENABLED_APIS, {tbaevent: true, tbamatch: true, tbamedia: true, tbarank: true, desmos: true, statbotics: true})
         apis = {tbaevent: true, tbamatch: true, tbamedia: true, tbarank: true, desmos: true, statbotics: true}
     }
-    console.log(apis)
 
     if (usingOffline) {
         apis = api_data.apis
@@ -1457,18 +1463,37 @@ for (let el of document.querySelectorAll(".tool-name"))
 for (let el of document.querySelectorAll(".version"))
     el.innerText = toolName + " v"+version
 
+// Add widgets
+for (let button of document.querySelectorAll("[for='top-control-widgets'] button")) {
+    let type = button.getAttribute("data-widget-type")
+    button.addEventListener("click", () => {
+        let widget
+        if (type === "table") {
+            widget = new Table()
+            main.addChild(widget)
+            widget.addColumn("orpheus`number")
+            widget.setTeams(Object.keys(team_data))
+            main.hardRefresh()
+        }
+        else if (type === "graph") {
+            widget = new Graph()
+            main.addChild(widget)
+        }
+        else if (type === "info") {
+            widget = new TeamInfo()
+            widget.redoList()
+            main.addChild(widget)
+        }
+        else if (type === "media") {
+            widget = new TeamMedia()
+            main.addChild(widget)
+        }
+    })
+}
+
 let tabGroup = new WidgetTabGroup()
 
-let table = new Table()
-tabGroup.addChild(table)
-
-let table2 = new Table()
-table2.name = "Table 2"
-tabGroup.addChild(table2)
-
-main.addChild(tabGroup)
-
-let graph, media4915, teamInfo
+let graph, media4915, teamInfo, media3876, table, table2
 
 function finishInit() {
     // Final Prep

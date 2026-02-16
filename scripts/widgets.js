@@ -5,9 +5,10 @@ class Table extends Widget {
         super();
         this.name = "Table"
 
-        this.columns = []
-        this.teams = []
         this.activeColumn = ""
+        this.columns = []
+        this.teams = Object.keys(team_data).map((a) => parseInt(a))
+        for (let team of this.teams) this.addTeamEl(team)
         this.sort = 1
 
         /**
@@ -44,7 +45,6 @@ class Table extends Widget {
             let logoPlaceholder = document.createElement("div")
             logoPlaceholder.className = "table-logo placeholder"
             this.header.appendChild(logoPlaceholder)
-            console.log(logoPlaceholder)
             this.hasAddedMedia = true
         }
 
@@ -360,7 +360,7 @@ class Table extends Widget {
         for (let col of this.columns) this.setTextSizes(col)
     }
     sortRows() {
-        if (this.teams.length === 0) return
+        if (this.teams.length === 0 || this.activeColumn === "") return
         this.content.scrollTop
         let teams = [...this.teams]
         let data = this.getColumnById(this.activeColumn).data
@@ -379,6 +379,7 @@ class Table extends Widget {
             let listSort = Lists.getSortAffectingTeam(teams[team], this.scope, this.showAll)
             let sortOffset = (listSort == List.Sort.SORT_ABOVE ? -1000 : (listSort == List.Sort.SORT_BELOW ? 1000 : 0))
             let row = document.querySelector(`[data-team="${teams[team]}"][data-id="${this.id}"]`)
+
             row.style.order = (parseInt(team) + sortOffset)
             if (listSort === List.Sort.HIDE) row.classList.add("hidden")
             else row.classList.remove("hidden")
@@ -414,8 +415,6 @@ class Table extends Widget {
         }
     }
     createTableCell(team, column) {
-        console.log(column)
-
         let dataEl = document.createElement("div")
         dataEl.className = "data"
         dataEl.setAttribute("data-column", column.id ?? column.columnId)
@@ -649,7 +648,7 @@ class Graph extends Widget {
         this.content.classList.add("no-scroll")
 
         this.column = getColumnFromID("match`Scoring`Coral Scored")
-        this.teams = [4915, 2046, 2910, 2907]
+        this.teams = []
         this.list = null
         this.selectedTeam = null
 
@@ -851,6 +850,7 @@ class Graph extends Widget {
 
             this.teamsEl.appendChild(teamEl)
         }
+        if (this.teams.length === 0) this.teamsEl.innerText = "No teams selected"
     }
     getTeamColor(i) {
         let ctx = new OffscreenCanvas(1,1).getContext("2d")
@@ -1221,9 +1221,24 @@ class TeamMedia extends Widget {
         })
 
         this.mediaOn = 0
-        this.team = null
+
+        this.teamDropdown = document.createElement("select")
+        this._header.name.insertAdjacentElement("beforebegin", this.teamDropdown)
+        for (let num of Object.keys(team_data)) {
+            let team = document.createElement("option")
+            team.value = num
+            team.innerText = num + " " + team_data[num].Name
+            this.teamDropdown.appendChild(team)
+        }
+        this.teamDropdown.addEventListener("change", () => {
+            this.setTeam(this.teamDropdown.value)
+        })
+
+        if (Object.keys(team_data).includes('4915')) this.setTeam('4915')
+        else this.setTeam(Object.keys(team_data)[0])
     }
     setTeam(team) {
+        if (this.activeMedia !== null) this.activeMedia.remove()
         this.activeMedia = null
         this.activeMediaType = ""
 
@@ -1242,6 +1257,7 @@ class TeamMedia extends Widget {
         this.setMedia()
 
         this.refresh()
+        this.teamDropdown.value = team
     }
     refresh() {
         super.refresh()
@@ -1278,6 +1294,7 @@ class TeamMedia extends Widget {
                 this.activeMediaType = "image"
                 this.content.appendChild(image)
             }
+            // TODO add youtube support
         }
     }
 }

@@ -29,12 +29,12 @@ dialog {
 .top-control-dropdown {
     background: var(--bg);
     backdrop-filter: blur(4px);
-    padding: 0;
+    padding: 0.2rem;
     outline: 0;
     border: 0;
     position: fixed;
     margin: 0;
-    filter: drop-shadow(-1px 1px 1px var(--shadow));
+    filter: drop-shadow(-0px 0px 2px var(--shadow));
     border-radius: .4rem;
 }
 .top-control-dropdown:focus {
