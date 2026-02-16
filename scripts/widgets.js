@@ -690,6 +690,7 @@ class Graph extends Widget {
                 this.redoWidget()
             }
         }, this)
+        Events.on(Events.GRAPH_SETTINGS, this.hardRefresh, this)
 
         let graphDropdown = document.createElement("select")
         graphDropdown.className = ""
@@ -1245,7 +1246,7 @@ class TeamMedia extends Widget {
         if (usingTBA) {
             this.name = team + " " + team_data[team].Name + " Media"
         } else {
-            this.name = this.name + ", " + team
+            this.name = this.name + ", " + team + " Media"
         }
 
         this.previous.disabled = team_data[team]["media"].length === 0
@@ -1296,6 +1297,96 @@ class TeamMedia extends Widget {
             }
             // TODO add youtube support
         }
+    }
+}
+
+class Comments extends Widget {
+    constructor() {
+        super()
+        this.minWidth = 100
+        this.minHeight = 70
+
+        this.teamDropdown = document.createElement("select")
+        this._header.name.insertAdjacentElement("beforebegin", this.teamDropdown)
+        for (let num of Object.keys(team_data)) {
+            let team = document.createElement("option")
+            team.value = num
+            team.innerText = num + " " + team_data[num].Name
+            this.teamDropdown.appendChild(team)
+        }
+        this.teamDropdown.addEventListener("change", () => {
+            this.setTeam(this.teamDropdown.value)
+        })
+
+        if (Object.keys(team_data).includes('4915')) this.setTeam('4915')
+        else this.setTeam(Object.keys(team_data)[0])
+    }
+    setTeam(team) {
+        this.content.innerHTML = ""
+
+        let content = this.content
+        function findComments(context, schema, nameOverride) {
+            let group = document.createElement("div")
+            group.label = nameOverride ?? getColumnFromID(context).name
+            for (let child of Object.keys(schema)) {
+                if (typeof schema[child]["type"] === "undefined") {
+                    findComments(context + "`" + child, schema[child], undefined)
+                }
+                else if (schema[child]["type"] === "comment") {
+                    let col = getColumnFromID(context + "`" + child)
+
+                    let el = document.createElement("div")
+
+                    let open = true
+
+                    let label = document.createElement("div")
+                    label.className = "comment-title"
+                    label.addEventListener("click", () => {
+                        open = !open
+                        opener.innerText = open ? "arrow_drop_up" : "arrow_drop_down"
+                        notes.classList.toggle("hidden")
+                    })
+                    el.appendChild(label)
+
+                    let opener = document.createElement("div")
+                    opener.className = "material-symbols-outlined"
+                    opener.innerText = "arrow_drop_up"
+                    label.appendChild(opener)
+
+                    let title = document.createElement("div")
+                    title.innerText = col.name
+                    title.className = "comment-title-text"
+                    label.appendChild(title)
+
+                    let notes = document.createElement("div")
+                    notes.className = ""
+                    el.appendChild(notes)
+
+                    let text = ""
+                    for (let x of Object.values(col.data[team])) {
+                        text += x + "\n\n"
+                    }
+                    notes.innerText = text.trim()
+                    content.appendChild(el)
+                }
+            }
+        }
+        for (let schema of Object.keys(mapping)) {
+            findComments(schema, mapping[schema].data, mapping[schema]["alias"] ?? schema)
+        }
+
+        if (usingTBA) {
+            this.name = team + " " + team_data[team].Name + " Comments"
+        } else {
+            this.name = this.name + ", " + team + " Comments"
+        }
+        this.teamDropdown.value = team
+    }
+    refresh() {
+        super.refresh()
+    }
+    hardRefresh() {
+        super.hardRefresh();
     }
 }
 

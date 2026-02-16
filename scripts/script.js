@@ -306,14 +306,22 @@ function processData() {
                         for (let match of uploadedData[schema]) {
                             let team = getTeam(schema, match[mapping[schema]["team_key"]])
                             let matchNum = match[mapping[schema]["match_key"]]
-                            comments[team][matchNum] = {
-                                "comment": match[datumMapping[x]["key"]]
-                            }
-                            if (datumMapping[x]["scouter_key"])
-                                comments[team][matchNum]["scouter"] = match[datumMapping[x]["scouter_key"]]
+                            let suffix
+                            if (!((match[datumMapping[x]["key"]]+"").trim())) continue
+                            if (datumMapping[x]["scouter_key"] && match[datumMapping[x]["scouter_key"]]) suffix = " (Match " + matchNum + ", " + match[datumMapping[x]["scouter_key"]] + ")"
+                            else suffix = " (Match " + matchNum + ")"
+                            comments[team][matchNum] = match[datumMapping[x]["key"]] + suffix
                         }
                     }
-                    // todo team comment processing
+                    else {
+                        for (let entry of uploadedData[schema]) {
+                            let team = getTeam(schema, entry[mapping[schema]["team_key"]])
+                            let suffix = ""
+                            if (!((entry[datumMapping[x]["key"]]+"").trim())) continue
+                            if (datumMapping[x]["scouter_key"] && entry[datumMapping[x]["scouter_key"]]) suffix = " (" + entry[datumMapping[x]["scouter_key"]] + ")"
+                            comments[team][0] = entry[datumMapping[x]["key"]] + suffix
+                        }
+                    }
 
                     out[x] = comments
                 }
@@ -1065,6 +1073,7 @@ const Events = {
 
     // List of Events
     LIST_CHANGE: 1,
+    GRAPH_SETTINGS: 2,
 }
 
 //#endregion
@@ -1120,7 +1129,7 @@ document.querySelector("#top-graph-display").addEventListener("click", () => {
     } else document.querySelector("#top-graph-display").innerText = "Graphs: Only lines of best fit"
 
     saveGeneralSettings()
-    main.hardRefresh()
+    Events.emit(Events.GRAPH_SETTINGS)
 })
 //#endregion
 
@@ -1463,7 +1472,7 @@ for (let el of document.querySelectorAll(".tool-name"))
 for (let el of document.querySelectorAll(".version"))
     el.innerText = toolName + " v"+version
 
-// Add widgets
+// Add widgets buttons
 for (let button of document.querySelectorAll("[for='top-control-widgets'] button")) {
     let type = button.getAttribute("data-widget-type")
     button.addEventListener("click", () => {
@@ -1486,6 +1495,10 @@ for (let button of document.querySelectorAll("[for='top-control-widgets'] button
         }
         else if (type === "media") {
             widget = new TeamMedia()
+            main.addChild(widget)
+        }
+        else if (type === "comments") {
+            widget = new Comments()
             main.addChild(widget)
         }
     })
