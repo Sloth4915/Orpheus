@@ -1,0 +1,56 @@
+.matches-holder {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.match {
+    display: flex;
+    flex-direction: row;
+    padding: 0.25rem;
+    border-radius: 0.5rem;
+    border: 1px solid var(--line);
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.match-alliance-holder {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    border-radius: 0.5rem;
+    overflow: hidden;
+}
+.match-alliance {
+    display: flex;
+    width: 100%;
+}
+.match-alliance.red .match-alliance-team {
+    background-color: var(--red);
+}
+.match-alliance.blue .match-alliance-team {
+    background-color: var(--blue);
+}
+.match-alliance-team {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    width: calc(100% / 3);
+}
+
+.match-num {
+    width: 2rem;
+}
+
+.match-score-holder {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    width: 2.5rem;
+}
+
+.matches-upcoming {
+    margin-top: 0.75rem;
+}

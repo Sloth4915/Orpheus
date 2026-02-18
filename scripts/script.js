@@ -25,6 +25,7 @@ let uploadedData = {}
 let team_data = {}
 let api_data = {}
 let tba_match_data = {}
+let matches = {}
 
 let mapping
 let gameMapping
@@ -177,6 +178,21 @@ function loadEvent() {
                 for (let m of data) {
                     if (m["comp_level"] === "qm") {
                         tba_match_data[m["match_number"]] = m
+
+                        let red = []
+                        let blue = []
+                        for (let x of m["alliances"]["red"]["team_keys"]) red.push(x.substring(3))
+                        for (let x of m["alliances"]["blue"]["team_keys"]) blue.push(x.substring(3))
+
+                        matches[m["match_number"]] = {
+                            red: red,
+                            blue: blue,
+                            teams: red.concat(blue),
+                            redScore: m["score_breakdown"]["red"]["totalPoints"],
+                            blueScore: m["score_breakdown"]["blue"]["totalPoints"],
+                            winner: m["winning_alliance"],
+                            videos: m["videos"]
+                        }
                     }
                 }
             })
@@ -234,13 +250,13 @@ let internalMapping = {
     "matches_played": {
         "alias": "Matches Played",
         "type": "",
-        "table": true
+        "table": usingTBAMatches
     },
     "ranking": {
         "alias": "Event Rank",
         "type": "",
         "table": true
-    },
+    }
 }
 
 function findMatchData(schema, team, match) {
@@ -282,6 +298,8 @@ function processData() {
             team_data[t]["TBA"]["matches"] = matches
         }
     }
+
+    // TODO: offline matches. see loadEvent and Matches widget
 
     let dataOut = {}
     let teamMedia = {}
@@ -543,10 +561,6 @@ function processData() {
     media4915 = new TeamMedia()
     media4915.setTeam(4915)
     tabGroup.addChild(media4915)
-
-    media3876 = new TeamMedia() // has no media
-    media3876.setTeam(3876)
-    tabGroup.addChild(media3876)
 }
 
 function evaluate(expression, schema, context) {
@@ -1258,7 +1272,7 @@ function setEnabledAPIS() {
 document.addEventListener("contextmenu", (e) => {
     let contextMenu = document.querySelector(".context-menu")
 
-    if (contextMenu.contains(e.target) || controlPressed) { // If right clicking on context menu, open browser context menu
+    if (contextMenu.contains(e.target) || controlPressed || e.target.tagName === 'A') { // If right clicking on context menu, open browser context menu
         closeContextMenu()
         controlPressed = false // Opening context menu means the keyup event never happens so this fixes that
         return
@@ -1502,12 +1516,16 @@ for (let button of document.querySelectorAll("[for='top-control-widgets'] button
             widget = new Comments()
             main.addChild(widget)
         }
+        else if (type === "matches") {
+            widget = new Matches()
+            main.addChild(widget)
+        }
     })
 }
 
 let tabGroup = new WidgetTabGroup()
 
-let graph, media4915, teamInfo, media3876, table, table2
+let graph, media4915, teamInfo, table, table2
 
 function finishInit() {
     // Final Prep

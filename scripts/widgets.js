@@ -1404,26 +1404,142 @@ class Comments extends Widget {
         }
         this.teamDropdown.value = team
     }
-    refresh() {
-        super.refresh()
-    }
-    hardRefresh() {
-        super.hardRefresh();
-    }
 }
 
-/**
- * Widget to display a list of teams
- */
-class ListWidget extends Widget {
+class Matches extends Widget {
     constructor() {
-        super();
-    }
-    refresh() {
-        super.refresh();
-    }
+        super()
+        this.minWidth = 250
+        this.minHeight = 70
 
-    hardRefresh() {
-        super.hardRefresh();
+        this.teamDropdown = document.createElement("select")
+        this._header.name.insertAdjacentElement("beforebegin", this.teamDropdown)
+        for (let num of Object.keys(team_data)) {
+            let team = document.createElement("option")
+            team.value = num
+            team.innerText = num + " " + team_data[num].Name
+            this.teamDropdown.appendChild(team)
+        }
+        this.teamDropdown.addEventListener("change", () => {
+            this.setTeam(this.teamDropdown.value)
+        })
+
+        if (Object.keys(team_data).includes('4915')) this.setTeam('4915')
+        else this.setTeam(Object.keys(team_data)[0])
+    }
+    setTeam(team) {
+        this.content.innerHTML = ""
+
+        let matchHolder = document.createElement("div")
+        matchHolder.className = "match-holder"
+        this.content.appendChild(matchHolder)
+
+        if (usingTBA) {
+            this.name = team + " " + team_data[team].Name + " Matches"
+
+            let upcoming = false
+            for (let num of Object.keys(matches).sort((a,b) => a - b)) {
+                let match = matches[num]
+                if (match.teams.includes(team)) {
+                    // Upcoming Check
+                    if (match["blueScore"] === -1 && !upcoming) {
+                        upcoming = true
+                        let upcomingWarning = document.createElement("div")
+                        upcomingWarning.className = "matches-upcoming"
+                        upcomingWarning.innerText = "Upcoming Matches"
+                        matchHolder.appendChild(upcomingWarning)
+                    }
+
+                    let matchEl = document.createElement("div")
+                    matchEl.className = "match"
+
+                    let includeAlliance = "blue"
+
+                    // TODO add way to watch video in-app
+
+                    let numHolder = document.createElement("div")
+                    numHolder.className = "match-score-holder"
+                    matchEl.appendChild(numHolder)
+
+                    let matchNum = document.createElement("a")
+                    matchNum.className = "match-number"
+                    matchNum.innerText = num
+                    matchNum.href = "https://www.thebluealliance.com/match/" + eventKey + "_qm" + num
+                    matchNum.target = "_blank"
+                    matchNum.rel = "noopener noreferrer"
+                    numHolder.appendChild(matchNum)
+
+                    let allianceHolder = document.createElement("div")
+                    allianceHolder.className = "match-alliance-holder"
+                    matchEl.appendChild(allianceHolder)
+
+                    let redAlliance = document.createElement("div")
+                    redAlliance.className = "match-alliance red"
+                    for (let t of match.red) {
+                        let tEl = document.createElement("div")
+                        tEl.className = "match-alliance-team"
+                        tEl.innerText = t
+                        if (t == team) {
+                            includeAlliance = "red"
+                            tEl.style.order = "-1"
+                        }
+                        if (match["winner"] === "red") tEl.style.fontWeight = "bold"
+                        redAlliance.appendChild(tEl)
+                    }
+
+                    let blueAlliance = document.createElement("div")
+                    blueAlliance.className = "match-alliance blue"
+                    for (let t of match.blue) {
+                        let tEl = document.createElement("div")
+                        tEl.className = "match-alliance-team"
+                        tEl.innerText = t
+                        if (t == team) {
+                            tEl.style.order = "-1"
+                        }
+                        if ("blue" === match["winner"]) tEl.style.fontWeight = "bold"
+                        blueAlliance.appendChild(tEl)
+                    }
+
+                    if (!upcoming) {
+                        let scoreHolder = document.createElement("div")
+                        scoreHolder.className = "match-score-holder"
+                        matchEl.appendChild(scoreHolder)
+
+                        let redScore = document.createElement("div")
+                        redScore.className = "match-score"
+                        redScore.innerText = match["redScore"]
+                        scoreHolder.appendChild(redScore)
+
+                        let blueScore = document.createElement("div")
+                        blueScore.className = "match-score"
+                        blueScore.innerText = match["blueScore"]
+                        scoreHolder.appendChild(blueScore)
+
+                        ;(includeAlliance === "blue" ? blueScore : redScore).style.order = "-1"
+                    }
+
+                    ;(includeAlliance === "blue" ? blueAlliance : redAlliance).style.order = "-1"
+
+                    let statusIcon = document.createElement("div")
+                    statusIcon.className = "match-status-icon"
+
+                    if (includeAlliance === match["winner"]) {
+                        statusIcon.innerText = "trophy"
+                    } else if (match["winner"] === "") {
+                        statusIcon.innerText = "balance"
+                    } else {
+                        statusIcon.innerText = "skull"
+                    }
+
+                    allianceHolder.appendChild(redAlliance)
+                    allianceHolder.appendChild(blueAlliance)
+
+                    matchHolder.appendChild(matchEl)
+                }
+            }
+        } else {
+            this.name = this.name + ", " + team + " Matches"
+        }
+        this.teamDropdown.value = team
     }
 }
