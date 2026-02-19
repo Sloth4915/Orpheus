@@ -10,8 +10,9 @@ const storageKeys = {
     THEME: "scouting_4915_theme",
     ENABLED_APIS: "scouting_4915_apis",
     SETTINGS: "scouting_4915_settings_general",
-    TEAM_SAVES: "scouting_4915_settings_starignore",
     SAVED_API_DATA: "scouting_4915_api_saved",
+    LISTS: "scouting_4915_lists",
+    WIDGETS: "scouting_4915_widgets"
 }
 
 const MISSING_LOGO = "https://frc-cdn.firstinspires.org/eventweb_frc/ProgramLogos/FIRSTicon_RGB_withTM.png"
@@ -767,14 +768,17 @@ document.querySelector("#top-clear-files").addEventListener("click", () => {
 
 //#region Lists
 class List {
-    constructor(name, icon, color, sort = List.Sort.NO_CHANGE, teams = [], editable = true) {
+    constructor(name, icon, color, sort = List.Sort.NO_CHANGE, teams = [], id = null) {
         this.name = name
         this.icon = icon
         this.sort = sort
         this.color = color
         this.teams = teams
-        this.editable = editable
-        this.id = Widget.generateId()
+        if (id === null) this.id = Widget.generateId()
+        else {
+            this.id = id
+            uniqueIds.push(id)
+        }
     }
 
     add(team) {
@@ -872,27 +876,28 @@ class List {
         LIST_DEFAULT: 4,
     })
 
-    static ALL = new List("All", "", "", List.Sort.NO_CHANGE, [], false)
+    static ALL = new List("All", "", "", List.Sort.NO_CHANGE, [])
+
+    static from(object) {
+        let list = new List(object.name, object.icon, object.color, object.sort, object.teams, object.id)
+        list.id = object.id
+        uniqueIds.push(this.id)
+    }
 }
-let hs = new List("High Scoring", "star", List.Colors.GOLD, List.Sort.SORT_ABOVE, [4915, 2910, 2412, 2046, 1318])
-// chosen only for being the lowest 3 team numbers at 2025waahs
-let ignore = new List("Ignore", "cancel", List.Colors.WATERMELON, List.Sort.SORT_BELOW, [360, 488, 1294], false)
 const Lists = {
     /**
      * List priority goes from 0 to length where 0 is highest priority.
      */
-    lists: [
-        hs,
-        new List("Picklist", "bookmark_heart", List.Colors.EMERALD, List.Sort.SORT_ABOVE, [4915]),
-        ignore
-    ],
+    lists: [],
     add(list) {
         this.lists.push(list)
         main.hardRefresh()
+        Events.emit(Events.LIST_CHANGE)
     },
     remove(list) {
         this.lists.splice(this.lists.indexOf(list), 1)
         main.hardRefresh()
+        Events.emit(Events.LIST_CHANGE)
     },
     indexOf(list) {
         if (typeof list === "string") {
@@ -905,6 +910,7 @@ const Lists = {
         let listIndex = this.indexOf(list)
         ;[this.lists[index], this.lists[listIndex]] = [this.lists[listIndex], this.lists[index]]
         main.hardRefresh()
+        Events.emit(Events.LIST_CHANGE)
     },
     getLists(team) {
         let lists = []
@@ -962,6 +968,7 @@ const Lists = {
                     list.color = color
                     icon.style.color = color.color
                     main.hardRefresh()
+                    Events.emit(Events.LIST_CHANGE)
                 })
                 listColors.appendChild(colorEl)
             }
@@ -978,6 +985,7 @@ const Lists = {
                     list.icon = iconI
                     icon.innerText = iconI
                     main.hardRefresh()
+                    Events.emit(Events.LIST_CHANGE)
                 })
                 listIcons.appendChild(iconEl)
             }
@@ -1001,6 +1009,7 @@ const Lists = {
                 name.innerText = x
                 list.name = x
                 main.hardRefresh()
+                Events.emit(Events.LIST_CHANGE)
             })
             el.appendChild(nameEditButton)
 
@@ -1021,6 +1030,7 @@ const Lists = {
             dropdown.addEventListener("change", () => {
                 list.sort = parseInt(dropdown.value)
                 main.hardRefresh()
+                Events.emit(Events.LIST_CHANGE)
             })
             el.appendChild(dropdown)
 
@@ -1041,7 +1051,10 @@ const Lists = {
         let addList = document.createElement("button")
         addList.innerText = "New List"
         addList.addEventListener("click", () => {
-            Lists.add(new List("New List", "check_box", List.Colors.RED))
+            Lists.add(new List("New List",
+                List.ICONS[Math.floor(Math.random() * List.ICONS.length)],
+                List.Colors[Object.keys(List.Colors)[Math.floor(Math.random() * Object.keys(List.Colors).length)]]
+            ))
             this.setListEditPanel()
         })
         panel.appendChild(addList)
@@ -1061,7 +1074,14 @@ const Lists = {
         }
         if (showAll) return List.Sort.NO_CHANGE
         else return List.Sort.HIDE
-    }
+    },
+
+    /**
+     * Saves to browser storage for later :)
+     */
+    save() {
+        localforage.setItem(storageKeys.LISTS, JSON.stringify(this.lists))
+    },
 }
 Lists.setListEditPanel()
 document.querySelector("#top-control-lists").addEventListener("click", () => {
@@ -1360,7 +1380,7 @@ document.querySelector("#top-reset-preferences").addEventListener("click", () =>
 //#endregion
 
 //#region Init
-let initLoading = 7
+let initLoading = 8
 
 localforage.getItem(storageKeys.THEME, (err, val) => {
     if (val === null) theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"
@@ -1480,6 +1500,20 @@ localforage.getItem(storageKeys.EVENT, (err, val) => {
     if (val != null) eventKey = val
     if (!--initLoading) finishInit()
 })
+
+localforage.getItem(storageKeys.LISTS, (err, val) => {
+    if (val != null) {
+        for (let list of JSON.parse(val)) {
+            Lists.add(new List(list.name, list.icon, list.color, list.sort, list.teams, list.id))
+        }
+    } else {
+        let hs = new List("High Scoring", "star", List.Colors.GOLD, List.Sort.SORT_ABOVE, [])
+        let ignore = new List("Ignore", "cancel", List.Colors.WATERMELON, List.Sort.SORT_BELOW, [])
+        Lists.add(hs, ignore)
+    }
+    if (!--initLoading) finishInit()
+})
+Events.on(Events.LIST_CHANGE, () => Lists.save())
 
 // Version and Title
 for (let el of document.querySelectorAll(".tool-name"))

@@ -91,7 +91,7 @@ class WidgetBase {
 
         let ascii = 65
         while (uniqueIds.includes(id + String.fromCharCode(ascii))) {
-            if (++ascii == 122) id = id + Math.round(Math.random() * 26) + 65
+            if (++ascii == 90) id = id + Math.round(Math.random() * 26) + 65
         }
         id = "" + (id + String.fromCharCode(ascii))
 
