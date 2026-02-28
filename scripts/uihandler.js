@@ -1,5 +1,15 @@
 'use strict';
 
+/*
+This is probably one of the more confusing parts of this codebase and its one of the parts that breaks most.
+The general idea is that everything is a "widget" and extends WidgetBase
+WidgetGroups are widgets that contain other widgets. They have an axis (x/y) and each child has a size which is a percentage of the parent group's size on the specified axis.
+WidgetTabGroups are widgets that contain other widgets, but only widget is visible at a time.
+Widgets extend WidgetBase and are what most widgets should extend. See widgets.js for those.
+The idea is that this is mostly standalone and could be moved into other projects with minimal changes.
+ */
+
+
 /**
  * Clamps a value to a minimum and maximum
  * @param value The value to be clamped
@@ -25,13 +35,6 @@ class WidgetBase {
         this.parent = null
 
         this.id = WidgetBase.generateId()
-    }
-    set scope(to) {
-        this._scope = to
-        this.refresh()
-    }
-    get scope() {
-        return this._scope
     }
 
     set width(to) {
@@ -102,6 +105,23 @@ class WidgetBase {
     toString() {
         return this.name
     }
+
+    out(a = {}) {
+        return Object.assign({
+            name: this.name,
+            type: this.type,
+        }, a)
+    }
+    in(a) {
+        for (let field of Object.keys(a)) {
+            this[field] = a[field]
+        }
+        this.hardRefresh()
+    }
+
+    static WidgetTypes = {
+
+    }
 }
 
 class WidgetGroup extends WidgetBase {
@@ -124,6 +144,8 @@ class WidgetGroup extends WidgetBase {
 
         let tooSmall = []
         let shrinkRequired = 0
+
+        if (this.width <= 0 || this.height <= 0) return
 
         // If no non-group children, and all children are a different axis, swap to their axis, and merge them into this
         if (this.children.length === 1 && this.children[0].widget.type === "group" && this.children[0].widget.axis !== this.axis) {
@@ -206,6 +228,14 @@ class WidgetGroup extends WidgetBase {
             if (this.axis === "x") biggestChild.widget.setSize(biggestChild.size * (this.width - resizerSize), this.height)
             if (this.axis === "y") biggestChild.widget.setSize(this.width, biggestChild.size * (this.height - resizerSize))
         }
+        if (totalSize < 0.98 && this.h !== 0 && this.children.length) {
+            for (let child of this.children) {
+                console.log(child.size, child.size / totalSize)
+                child.size /= totalSize
+                if (this.axis === "x") child.widget.setSize(child.size * (this.width - resizerSize), this.height)
+                if (this.axis === "y") child.widget.setSize(this.width, child.size * (this.height - resizerSize))
+            }
+        }
     }
     hardRefresh() {
         super.hardRefresh();
@@ -226,6 +256,7 @@ class WidgetGroup extends WidgetBase {
         let totalSize = 0
         for (let x of this.children)
             totalSize += x.size
+        console.log("adding child " + child.type + " with size " + size, "total size now " + (totalSize + size))
 
         if (totalSize >= 1) {
             if (size === "unset") size = 0.3
@@ -386,6 +417,26 @@ class WidgetGroup extends WidgetBase {
         if (to === "y") this.el.classList.add("y")
         this.refresh()
     }
+
+    out() {
+        let children = []
+        for (let child of this.children) children.push({
+            size: child.size,
+            widget: child.widget.out()
+        })
+        return super.out({children, "axis": this.axis})
+    }
+    in(a) {
+        let children = a["children"]
+        for (let child of children) {
+            let childWidget = new WidgetBase.WidgetTypes[child.widget.type]()
+            childWidget.in(child.widget)
+            console.log(child.widget.type, child.size)
+            this.addChild(childWidget, child.size, undefined, false)
+        }
+        delete a["children"]
+        super.in(a)
+    }
 }
 
 class WidgetTabGroup extends WidgetBase {
@@ -542,6 +593,22 @@ class WidgetTabGroup extends WidgetBase {
             this.minHeight = Math.max(this.minHeight, child.minHeight)
         }
         if (this.parent) this.parent.refresh()
+    }
+
+    out() {
+        let children = []
+        for (let child of this.children) children.push(child.out())
+        return super.out({children, activeChild: this.activeChild})
+    }
+    in(a) {
+        let children = a["children"]
+        for (let child of children) {
+            let childWidget = new WidgetBase.WidgetTypes[child.type]()
+            childWidget.in(child)
+            this.addChild(childWidget)
+        }
+        delete a["children"]
+        super.in(a)
     }
 }
 
@@ -785,19 +852,6 @@ class Widget extends WidgetBase {
     }
 }
 
-// Todo add popup widget holder for things like notebook
-
-class Color extends Widget {
-    constructor(c) {
-        super()
-        this.name = c
-        this.content.style.backgroundColor = c
-    }
-    refresh() {
-        super.refresh();
-    }
-}
-
 /**
  * @param rem
  * @returns {number} Pixel rem size
@@ -824,30 +878,14 @@ window.addEventListener("resize", () => {
 main.width = window.innerWidth
 main.height = window.innerHeight - document.querySelector(".sticky-header").offsetHeight - document.querySelector("footer").offsetHeight
 
-/**
-let red = new Color("darkred")
-main.addChild(red, 0.25)
-
-let sub = new WidgetGroup()
-sub.axis = "y"
-sub.name = "sub"
-main.addChild(sub)
-
-sub.addChild(new Color("rebeccapurple"), 0.5)
-sub.addChild(new Color("lightgreen"), 0.5)
-
-let sub3 = new WidgetGroup()
-sub.addChild(sub3)
-sub3.addChild(new Color("var(--bg)"), 0.5)
-sub3.addChild(new Color("plum"), 0.5)
-
-let sub2 = new WidgetTabGroup()
-sub.addChild(sub2)
-
-sub2.addChildren(new Color("darkblue"), new Color("cadetblue"))
-sub2.addChild(new Color("olivedrab"))
-let mpurp = new Color("mediumpurple")
-sub2.addChild(mpurp, 0)
-
-main.addChild(new Color("gold"))
- */
+setTimeout(() => {
+    WidgetBase.WidgetTypes["base"] = WidgetBase
+    WidgetBase.WidgetTypes["group"] = WidgetGroup
+    WidgetBase.WidgetTypes["tabs"] = WidgetTabGroup
+    WidgetBase.WidgetTypes["table"] = Table
+    WidgetBase.WidgetTypes["graph"] = Graph
+    WidgetBase.WidgetTypes["info"] = TeamInfo
+    WidgetBase.WidgetTypes["media"] = TeamMedia
+    WidgetBase.WidgetTypes["comments"] = Comments
+    WidgetBase.WidgetTypes["matches"] = Matches
+}, 0)

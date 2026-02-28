@@ -1,5 +1,10 @@
 'use strict';
 
+/*
+This script has most of the stuff that other widgets interact with.
+It has global variables, data processing stuff, and a lot of random other things
+ */
+
 //#region Variables
 let headerControlsShowing = false
 
@@ -537,31 +542,37 @@ function processData() {
         }
     }
 
-    table = new Table()
-    tabGroup.addChild(table)
+    if (false) {
+        table = new Table()
+        main.addChild(table)
+        table.addColumn(["orpheus`name", "orpheus`matches_played", "orpheus`ranking"])
+    } else {
+        table = new Table()
+        tabGroup.addChild(table)
 
-    table2 = new Table()
-    table2.name = "Table 2"
-    tabGroup.addChild(table2)
+        table2 = new Table()
+        table2.name = "Table 2"
+        tabGroup.addChild(table2)
 
-    main.addChild(tabGroup)
+        main.addChild(tabGroup)
 
-    // Temporary widget stuff for testing
-    table.addColumn(["orpheus`name", "orpheus`matches_played", "orpheus`ranking"])
+        // Temporary widget stuff for testing
+        table.addColumn(["orpheus`name", "orpheus`matches_played", "orpheus`ranking"])
 
-    table2.addColumn(["orpheus`name", "match`Scoring`Coral Scored", "match`tba climb"])
-    table2.addColumn("pit`Drivetrain")
+        table2.addColumn(["orpheus`name", "match`Scoring`Coral Scored", "match`tba climb"])
+        table2.addColumn("pit`Drivetrain")
 
-    graph = new Graph()
-    tabGroup.addChild(graph)
+        graph = new Graph()
+        tabGroup.addChild(graph)
 
-    teamInfo = new TeamInfo()
-    teamInfo.redoList(Object.keys(team_data))
-    tabGroup.addChild(teamInfo)
+        teamInfo = new TeamInfo()
+        teamInfo.redoList(Object.keys(team_data))
+        tabGroup.addChild(teamInfo)
 
-    media4915 = new TeamMedia()
-    media4915.setTeam(4915)
-    tabGroup.addChild(media4915)
+        media4915 = new TeamMedia()
+        media4915.setTeam(4915)
+        tabGroup.addChild(media4915)
+    }
 }
 
 function evaluate(expression, schema, context) {
@@ -876,7 +887,7 @@ class List {
         LIST_DEFAULT: 4,
     })
 
-    static ALL = new List("All", "", "", List.Sort.NO_CHANGE, [])
+    static ALL = new List("All", "", "", List.Sort.NO_CHANGE, [], "LIST_ALL")
 
     static from(object) {
         let list = new List(object.name, object.icon, object.color, object.sort, object.teams, object.id)
@@ -1082,6 +1093,16 @@ const Lists = {
     save() {
         localforage.setItem(storageKeys.LISTS, JSON.stringify(this.lists))
     },
+
+    equal(a, b) {
+        if (a === null || b === null) return false
+        return a.id === b.id
+    },
+    getFromId(id) {
+        if (id === "LIST_ALL") return List.ALL
+        for (let l of this.lists) if (l.id === id) return l
+        return null
+    }
 }
 Lists.setListEditPanel()
 document.querySelector("#top-control-lists").addEventListener("click", () => {
@@ -1501,6 +1522,7 @@ localforage.getItem(storageKeys.EVENT, (err, val) => {
     if (!--initLoading) finishInit()
 })
 
+// Save Lists
 localforage.getItem(storageKeys.LISTS, (err, val) => {
     if (val != null) {
         for (let list of JSON.parse(val)) {
@@ -1514,6 +1536,17 @@ localforage.getItem(storageKeys.LISTS, (err, val) => {
     if (!--initLoading) finishInit()
 })
 Events.on(Events.LIST_CHANGE, () => Lists.save())
+
+// Save/load Layout
+document.querySelector(".top-save-layout").addEventListener("click", () => {
+    localforage.setItem(storageKeys.WIDGETS, main.out())
+})
+document.querySelector(".top-load-layout").addEventListener("click", () => {
+    localforage.getItem(storageKeys.WIDGETS, (err, val) => {
+        for (let child of main.children) main.removeChild(child.widget)
+        main.in(val)
+    })
+})
 
 // Version and Title
 for (let el of document.querySelectorAll(".tool-name"))

@@ -1,9 +1,18 @@
 'use strict';
 
+/*
+This file contains all the widgets that the user interacts with and displays data.
+ */
+
 class Table extends Widget {
     constructor() {
         super();
         this.name = "Table"
+        this.type = "table"
+
+        this.elements = {}
+        this.teamElements = {}
+        this.columnResizers = {}
 
         this.activeColumn = ""
         this.columns = []
@@ -56,35 +65,40 @@ class Table extends Widget {
         this.belowDivider.className = "divider-below hidden"
         this.content.appendChild(this.belowDivider)
 
-        this.minWidth = 400
-        this.minHeight = 280
+        this.minWidth = 220
+        this.minHeight = 165
     }
     addColumn(...[columns]) {
-        if (typeof columns !== "object") columns = [columns]
+        if (typeof columns !== "object" || typeof columns[0] == "undefined") columns = [columns]
         for (let id of columns) {
-            let column = getColumnFromID(id)
+            let column
+            if (typeof id === "object") {
+                column = id
+            } else column = getColumnFromID(id)
 
             this.columns.push({
-                columnId: column.id,
+                columnId: column.id ?? column.columnId,
                 name: column.table,
+                table: column.table,
                 mapping: column.mapping,
-                size: 110, // Pixels
+                size: column["size"] ?? 110, // Pixels
                 data: column.data,
-                order: this.columns.length, // Left to right
-                toString() {
-                    return "Column with id " + this.columnId
-                }
+                order: column["order"] ?? this.columns.length, // Left to right
             })
             let thisColumn = this.columns[this.columns.length - 1]
 
+            column.id = column.id ?? column.columnId
+
+            this.elements[thisColumn.columnId] = {}
+
             for (let team of this.teams) {
-                document.querySelector(`.row[data-team="${team}"][data-id="${this.id}"]`).appendChild(this.createTableCell(team, column))
+                this.teamElements[team].appendChild(this.createTableCell(team, column))
             }
 
             let headerEl = document.createElement("div")
             headerEl.className = "data header"
             headerEl.setAttribute("data-column", column.id)
-            headerEl.setAttribute("data-id", this.id)
+            this.elements[thisColumn.columnId]["header"] = headerEl
             headerEl.innerText = column.name
             headerEl.addEventListener("click", () => {
                 this.setActiveColumn(column.id)
@@ -94,8 +108,7 @@ class Table extends Widget {
             //#region Resizing
             let colResizer = document.createElement("div")
             colResizer.className = "data-resizer"
-            colResizer.setAttribute("data-column-size", column.id)
-            colResizer.setAttribute("data-id", this.id)
+            this.columnResizers[column.id] = colResizer
             let resizing = false
             let index
             colResizer.addEventListener("mousedown", () => {
@@ -207,8 +220,10 @@ class Table extends Widget {
 
             this.columns.splice(this.indexOfColumn(column), 1)
 
-            document.querySelector(`[data-column-size="${column.columnId}"][data-id="${this.id}"]`).remove()
-            document.querySelector(`[data-column="${column.columnId}"][data-id="${this.id}"]`).remove()
+            this.elements[column.columnId]["header"].remove()
+            this.columnResizers[column.columnId].remove()
+            delete this.elements[column.columnId]["header"]
+            delete this.columnResizers[column.columnId]
 
             if (this.activeColumn === column.columnId) {
                 this.activeColumn = "" // Stops the setActiveFunction function from trying to change the element
@@ -240,13 +255,14 @@ class Table extends Widget {
     addTeamEl(...[teams]) {
         if (typeof teams !== "object") teams = [teams]
         for (let team of teams) {
-            let existingEl = document.querySelector('.row[data-id="' + this.id + '"][data-team="'+ team + '"]')
-            if (existingEl != null) existingEl.remove()
+            if (typeof this.teamElements[team] !== "undefined" && this.teamElements[team] != null) {
+                this.teamElements[team].remove()
+                delete this.teamElements[team]
+            }
 
             let teamEl = document.createElement("div")
             teamEl.className = "row"
-            teamEl.setAttribute("data-team", team)
-            teamEl.setAttribute("data-id", this.id)
+            this.teamElements[team] = teamEl
 
             let teamSettingsBlock = document.createElement("div")
             teamSettingsBlock.className = "table-settings-block"
@@ -309,7 +325,8 @@ class Table extends Widget {
     removeTeam(...[teams]) {
         if (typeof teams !== "object") teams = [teams]
         for (let team of teams) {
-            document.querySelector(`.row[data-team="${team}"][data-id="${this.id}"]`).remove()
+            this.teamElements[team].remove()
+            delete this.teamElements[team]
             this.teams.splice(this.teams.indexOf(team), 1)
         }
     }
@@ -318,16 +335,16 @@ class Table extends Widget {
         this.removeTeam(this.teams.slice()) // Sliced to clone array because there was some funky stuff happening
         this.addTeam(teams)
     }
-    setActiveColumn(id) {
+    setActiveColumn(id, specificSort = null) {
         if (this.activeColumn === id) { // Change Sort
             this.sort *= -1
         } else { // Change Column
-            if (this.activeColumn !== "") document.querySelector(`.header[data-column="${this.activeColumn}"][data-id="${this.id}"]`).classList.remove("selected")
+            if (this.activeColumn !== "") this.elements[this.activeColumn]["header"].classList.remove("selected")
             this.activeColumn = id
-            let headerEl = document.querySelector(`.header[data-column="${id}"][data-id="${this.id}"]`)
-            headerEl.classList.add("selected")
+            this.elements[this.activeColumn]["header"].classList.add("selected")
             this.sort = 1
         }
+        if (specificSort !== null) this.sort = specificSort
 
         this.sortRows()
     }
@@ -335,11 +352,11 @@ class Table extends Widget {
         super.refresh()
 
         for (let col of this.columns) {
-            let elements = document.querySelectorAll(`[data-column="${col.columnId}"][data-id="${this.id}"]`)
-            for (let el of elements) {
+            for (let el of Object.values(this.elements[col.columnId])) {
                 el.style.width = col.size + 'px'
                 el.style.order = ((col.order * 2) + 100)
-                document.querySelector(`[data-column-size="${col.columnId}"][data-id="${this.id}"]`).style.order = ((col.order * 2) + 101)
+
+                this.columnResizers[col.columnId].style.order = ((col.order * 2) + 101)
             }
         }
         for (let team of this.teams) {
@@ -360,7 +377,7 @@ class Table extends Widget {
         for (let col of this.columns) this.setTextSizes(col)
     }
     sortRows() {
-        if (this.teams.length === 0 || this.activeColumn === "") return
+        if (this.teams.length === 0 || this.activeColumn === "" || this.parent === null) return
         this.content.scrollTop
         let teams = [...this.teams]
         let data = this.getColumnById(this.activeColumn).data
@@ -375,10 +392,12 @@ class Table extends Widget {
 
         let hasAbove = false
         let hasBelow = false
+
         for (let team in teams) {
             let listSort = Lists.getSortAffectingTeam(teams[team], this.scope, this.showAll)
             let sortOffset = (listSort == List.Sort.SORT_ABOVE ? -1000 : (listSort == List.Sort.SORT_BELOW ? 1000 : 0))
-            let row = document.querySelector(`[data-team="${teams[team]}"][data-id="${this.id}"]`)
+            let row = this.teamElements[teams[team]]
+            if (row === null) break
 
             row.style.order = (parseInt(team) + sortOffset)
             if (listSort === List.Sort.HIDE) row.classList.add("hidden")
@@ -402,9 +421,7 @@ class Table extends Widget {
         return this.columns.includes(column)
     }
     setTextSizes(col) {
-        let elements = document.querySelectorAll(`[data-column="${col.columnId}"][data-id="${this.id}"]`)
-
-        for (let el of elements) {
+        for (let el of Object.values(this.elements[col.columnId])) {
             let fontSize = 1.06
             do {
                 fontSize -= Math.max(el.scrollHeight - el.clientHeight, (el.scrollHeight - el.clientHeight) < 1 ? 0 : 20) / 200
@@ -417,9 +434,7 @@ class Table extends Widget {
     createTableCell(team, column) {
         let dataEl = document.createElement("div")
         dataEl.className = "data"
-        dataEl.setAttribute("data-column", column.id ?? column.columnId)
-        dataEl.setAttribute("data-team", team)
-        dataEl.setAttribute("data-id", this.id)
+        this.elements[column.id ?? column.columnId][team] = dataEl
 
         if (column.mapping.type === "ratio" && (typeof column.mapping["summarize"] === "undefined" || column.mapping["summarize"] === "ratio")) {
             dataEl.innerHTML = ""
@@ -639,11 +654,42 @@ class Table extends Widget {
         this.addTeamEl(this.teams)
         this.sortRows()
     }
+
+    out() {
+        return super.out({
+            activeColumn: this.activeColumn,
+            showAll: this.showAll,
+            scope: this.scope,
+            columns: this.columns,
+            teams: this.teams,
+            sort: this.sort,
+        })
+    }
+    in(a) {
+        console.log(JSON.parse(JSON.stringify(a)))
+        let teams = a["teams"]
+        for (let team of teams) {
+            this.addTeam(team)
+        }
+        for (let team of a["columns"]) {
+            this.addColumn(team)
+        }
+        delete a["teams"]
+        delete a["columns"]
+        let active = a["activeColumn"]
+        delete a["activeColumn"]
+        super.in(a)
+        this.setActiveColumn(active, a["sort"])
+    }
 }
 
 class Graph extends Widget {
     constructor() {
         super();
+
+        this.type = "graph"
+        this.minWidth = 200
+        this.minHeight = 200
 
         this.content.classList.add("no-scroll")
 
@@ -681,11 +727,9 @@ class Graph extends Widget {
 
         this.createTeamList()
 
-        this.minWidth = 200
-        this.minHeight = 200
-
         Events.on(Events.LIST_CHANGE, () => {
             if (this.list !== null) {
+                this.list = Lists.getFromId(this.list.id)
                 this.teams = JSON.parse(JSON.stringify(this.list.teams))
                 this.redoWidget()
             }
@@ -929,7 +973,7 @@ class Graph extends Widget {
                 this.redoWidget()
             })
 
-            if (list == this.list) {
+            if (Lists.equal(list, this.list)) {
                 el.classList.add("selected")
                 activeList = el
             }
@@ -985,12 +1029,21 @@ class Graph extends Widget {
         })
         panel.appendChild(addButton)
     }
+
+    out() {
+        return super.out({
+            teams: this.teams,
+            list: this.list,
+            column: this.column,
+        })
+    }
 }
 
 class TeamInfo extends Widget {
     constructor() {
         super();
 
+        this.type = "info"
         this.minWidth = 170
         this.minHeight = 100
 
@@ -1003,95 +1056,92 @@ class TeamInfo extends Widget {
         this.scopePanel.className = "table-scope-holder"
         this._header.holder.appendChild(this.scopePanel)
         this.addHeaderIcon("visibility", "Scope", this.scopePanel, this.openScopeEditor)
-        Events.on(Events.LIST_CHANGE, () => {
-            if (this.list !== null) {
-                this.teams = JSON.parse(JSON.stringify(this.list.teams))
-                if (this.list == List.ALL) this.teams = Object.keys(team_data)
-                this.redoList()
-            }
-        }, this)
+        Events.on(Events.LIST_CHANGE, () => this.onListChange(), this)
     }
     redoList() {
         this.content.innerHTML = ""
 
-        this.name = ""
+        if (this.teams.length > 0) {
+            let name = ""
+            for (let team of this.teams) {
+                let imageAndBasicHolderHolder = document.createElement("div")
+                imageAndBasicHolderHolder.className = "team-info-flex-horizontal"
+                this.content.appendChild(imageAndBasicHolderHolder)
 
-        for (let team of this.teams) {
-            let imageAndBasicHolderHolder = document.createElement("div")
-            imageAndBasicHolderHolder.className = "team-info-flex-horizontal"
-            this.content.appendChild(imageAndBasicHolderHolder)
+                let logo = document.createElement("img")
+                logo.setAttribute("data-team-logo", team)
+                logo.setAttribute("data-id", this.id)
+                logo.className = "team-info-logo"
+                imageAndBasicHolderHolder.appendChild(logo)
 
-            let logo = document.createElement("img")
-            logo.setAttribute("data-team-logo", team)
-            logo.setAttribute("data-id", this.id)
-            logo.className = "team-info-logo"
-            imageAndBasicHolderHolder.appendChild(logo)
-
-            let listChunk = document.createElement("div")
-            listChunk.className = "team-info-list"
-            for (let list of Lists.lists) {
-                let listEl = document.createElement("div")
-                listEl.className = "table-setting material-symbols-outlined"
-                listEl.style.color = ""
-                listEl.innerText = list.icon
-                listEl.title = list.name
-                listEl.setAttribute("data-list", list.id)
-                listEl.setAttribute("data-team", team)
-                listEl.setAttribute("data-id", this.id)
-                if (list.includes(team)) {
-                    listEl.classList.add("filled")
-                    listEl.style.color = list.color.color
+                let listChunk = document.createElement("div")
+                listChunk.className = "team-info-list"
+                for (let list of Lists.lists) {
+                    let listEl = document.createElement("div")
+                    listEl.className = "table-setting material-symbols-outlined"
+                    listEl.style.color = ""
+                    listEl.innerText = list.icon
+                    listEl.title = list.name
+                    listEl.setAttribute("data-list", list.id)
+                    listEl.setAttribute("data-team", team)
+                    listEl.setAttribute("data-id", this.id)
+                    if (list.includes(team)) {
+                        listEl.classList.add("filled")
+                        listEl.style.color = list.color.color
+                    }
+                    listEl.addEventListener("click", () => {
+                        list.toggle(team)
+                    })
+                    listChunk.appendChild(listEl)
                 }
-                listEl.addEventListener("click", () => {
-                    list.toggle(team)
-                })
-                listChunk.appendChild(listEl)
+                imageAndBasicHolderHolder.appendChild(listChunk)
+
+                let basicInfoHolder = document.createElement("div")
+                basicInfoHolder.className = "team-info-basic-holder"
+                imageAndBasicHolderHolder.appendChild(basicInfoHolder)
+
+                let nameEl = document.createElement("div")
+                nameEl.className = "team-info-name"
+                basicInfoHolder.appendChild(nameEl)
+
+                let location = document.createElement("div")
+                location.className = "team-info-basic-text"
+                basicInfoHolder.appendChild(location)
+
+                let rookieYear = document.createElement("div")
+                rookieYear.className = "team-info-basic-text"
+                basicInfoHolder.appendChild(rookieYear)
+
+                let eventRank = document.createElement("div")
+                eventRank.className = "team-info-basic-text"
+                basicInfoHolder.appendChild(eventRank)
+
+                if (usingTBA) {
+                    if (this.teams.length > 1) name = name + ", " + team
+                    else name = name + ", " + team + " " + team_data[team].Name
+
+                    nameEl.innerText = team + " " + team_data[team].Name
+                    location.innerText = team_data[team].TBA["school_name"]
+                    location.title = team_data[team].TBA["city"] + ", " + team_data[team].TBA["state_prov"] + " (" + team_data[team].TBA["country"] + ")"
+                    rookieYear.innerText = "Rookie Year: " + team_data[team].TBA["rookie_year"]
+
+                    if (usingTBAMedia) {
+                        if (typeof team_data[team] !== "undefined" && typeof team_data[team].Icon !== "undefined") logo.src = team_data[team].Icon
+                        else logo.src = MISSING_LOGO
+                    }
+                    if (usingTBARank) {
+                        eventRank.innerText = "Rank " + processedData.orpheus.data["ranking"][team] + " of " + Object.keys(team_data).length
+                    }
+                } else {
+                    name = name + ", " + team
+                    logo.remove()
+                }
             }
-            imageAndBasicHolderHolder.appendChild(listChunk)
-
-            let basicInfoHolder = document.createElement("div")
-            basicInfoHolder.className = "team-info-basic-holder"
-            imageAndBasicHolderHolder.appendChild(basicInfoHolder)
-
-            let nameEl = document.createElement("div")
-            nameEl.className = "team-info-name"
-            basicInfoHolder.appendChild(nameEl)
-
-            let location = document.createElement("div")
-            location.className = "team-info-basic-text"
-            basicInfoHolder.appendChild(location)
-
-            let rookieYear = document.createElement("div")
-            rookieYear.className = "team-info-basic-text"
-            basicInfoHolder.appendChild(rookieYear)
-
-            let eventRank = document.createElement("div")
-            eventRank.className = "team-info-basic-text"
-            basicInfoHolder.appendChild(eventRank)
-
-            if (usingTBA) {
-                if (this.teams.length > 1) this.name = this.name + ", " + team
-                else this.name = this.name + ", " + team + " " + team_data[team].Name
-
-                nameEl.innerText = team + " " + team_data[team].Name
-                location.innerText = team_data[team].TBA["school_name"]
-                location.title = team_data[team].TBA["city"] + ", " + team_data[team].TBA["state_prov"] + " (" + team_data[team].TBA["country"] + ")"
-                rookieYear.innerText = "Rookie Year: " + team_data[team].TBA["rookie_year"]
-
-                if (usingTBAMedia) {
-                    if (typeof team_data[team] !== "undefined" && typeof team_data[team].Icon !== "undefined") logo.src = team_data[team].Icon
-                    else logo.src = MISSING_LOGO
-                }
-                if (usingTBARank) {
-                    eventRank.innerText = "Rank " + processedData.orpheus.data["ranking"][team] + " of " + Object.keys(team_data).length
-                }
-            } else {
-                this.name = this.name + ", " + team
-                logo.remove()
-            }
+            this.name = name.substring(2)
+        } else {
+            this.content.innerText = "Select teams or a list of teams to view info about them"
+            this.name = "Team Info"
         }
-
-        this.name = this.name.substring(2)
     }
     openScopeEditor() {
         this.scopePanel.innerHTML = ""
@@ -1139,7 +1189,7 @@ class TeamInfo extends Widget {
                 this.redoList()
             })
 
-            if (list == this.list) {
+            if (Lists.equal(list, this.list)) {
                 el.classList.add("selected")
                 activeList = el
             }
@@ -1195,11 +1245,33 @@ class TeamInfo extends Widget {
         })
         panel.appendChild(addButton)
     }
+    onListChange() {
+        if (this.list !== null) {
+            this.list = Lists.getFromId(this.list.id)
+            this.teams = JSON.parse(JSON.stringify(this.list.teams))
+            if (Lists.equal(this.list, List.ALL)) this.teams = Object.keys(team_data)
+            this.redoList()
+        }
+    }
+
+    out() {
+        return super.out({
+            list: this.list,
+            teams: this.teams,
+        })
+    }
+    in(a) {
+        super.in(a)
+        this.onListChange()
+        this.redoList()
+    }
 }
 
 class TeamMedia extends Widget {
     constructor() {
         super()
+
+        this.type = "media"
         this.minWidth = 200
         this.minHeight = 70
 
@@ -1320,11 +1392,20 @@ class TeamMedia extends Widget {
             // TODO add youtube support
         }
     }
+
+    out() {
+        return super.out({
+            team: this.team,
+            mediaOn: this.team,
+        })
+    }
 }
 
 class Comments extends Widget {
     constructor() {
         super()
+
+        this.type = "comments"
         this.minWidth = 100
         this.minHeight = 70
 
@@ -1404,11 +1485,26 @@ class Comments extends Widget {
         }
         this.teamDropdown.value = team
     }
+
+    out() {
+        return super.out({
+            team: this.teamDropdown.value
+        })
+    }
+    in(a) {
+        let team = a["team"]
+        delete a["team"]
+        super.in(a)
+        this.setTeam(team)
+    }
+
 }
 
 class Matches extends Widget {
     constructor() {
         super()
+
+        this.type = "matches"
         this.minWidth = 250
         this.minHeight = 70
 
@@ -1541,5 +1637,17 @@ class Matches extends Widget {
             this.name = this.name + ", " + team + " Matches"
         }
         this.teamDropdown.value = team
+    }
+
+    out() {
+        return super.out({
+            team: this.teamDropdown.value
+        })
+    }
+    in(a) {
+        let team = a["team"]
+        delete a["team"]
+        super.in(a)
+        this.setTeam(team)
     }
 }
