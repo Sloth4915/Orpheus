@@ -824,7 +824,7 @@ class Widget extends WidgetBase {
             dialog.show()
             callback.call(this)
         })
-        document.addEventListener("click", (e) => {
+        document.addEventListener("mousedown", (e) => {
             if (!dialog.contains(e.target) && !e.target.classList.contains("widget-header-icon")) dialog.close()
         })
 
@@ -873,10 +873,10 @@ document.querySelector(".content").appendChild(main.el)
 
 window.addEventListener("resize", () => {
     main.width = window.innerWidth
-    main.height = window.innerHeight - document.querySelector(".sticky-header").offsetHeight - document.querySelector("footer").offsetHeight
+    main.height = window.innerHeight - document.querySelector(".sticky-header").offsetHeight - document.querySelector("footer").offsetHeight - 4
 })
 main.width = window.innerWidth
-main.height = window.innerHeight - document.querySelector(".sticky-header").offsetHeight - document.querySelector("footer").offsetHeight
+main.height = window.innerHeight - document.querySelector(".sticky-header").offsetHeight - document.querySelector("footer").offsetHeight - 4
 
 setTimeout(() => {
     WidgetBase.WidgetTypes["base"] = WidgetBase

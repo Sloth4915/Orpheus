@@ -43,7 +43,7 @@ class Table extends Widget {
         this.header.appendChild(teamSettingsBlock)
 
         this.addHeaderIcon("visibility", "Scope", this.scopePanel, this.openScopeEditor)
-        this.addHeaderIcon("view_column", "Columns", this.scopePanel, this.openColumnEditor, [0, 100])
+        this.addHeaderIcon("view_column", "Columns", this.scopePanel, this.openColumnEditor, [0, 60])
 
         this.columnDragIndicator = document.createElement("div")
         this.columnDragIndicator.className = "data-drag-indicator"
@@ -342,7 +342,7 @@ class Table extends Widget {
             if (this.activeColumn !== "") this.elements[this.activeColumn]["header"].classList.remove("selected")
             this.activeColumn = id
             this.elements[this.activeColumn]["header"].classList.add("selected")
-            this.sort = 1
+            this.sort = -1
         }
         if (specificSort !== null) this.sort = specificSort
 
@@ -558,10 +558,12 @@ class Table extends Widget {
         this.scopePanel.appendChild(panel)
 
         let label = document.createElement("div")
+        label.className = "add-columns-title"
         label.innerText = "Add Columns"
         panel.appendChild(label)
 
         let columns = document.createElement("div")
+        columns.className = "add-columns"
         panel.appendChild(columns)
 
         function findColumns(context, schema, nameOverride) {
@@ -589,19 +591,27 @@ class Table extends Widget {
             group.appendChild(groupController)
 
             let groupColumns = document.createElement("div")
-            groupColumns.className = "table-column-panel-column-group-holder hidden"
+            groupColumns.className = "table-column-panel-columns-holder hidden"
             group.appendChild(groupColumns)
+
+            let childHolder = document.createElement("div")
+            childHolder.className = "child-holder"
+            groupColumns.appendChild(childHolder)
+
+            let grandchildHolder = document.createElement("div")
+            grandchildHolder.className = "grandchild-holder"
+            groupColumns.appendChild(grandchildHolder)
 
             for (let child of Object.keys(schema)) {
                 let id = context + "`" + child
                 if (typeof schema[child]["type"] === "undefined") {
                     let cEl = findColumns.call(this,id, schema[child], undefined)
-                    if (cEl.children[1].children.length) groupColumns.appendChild(cEl)
+                    if (cEl.children[1].children.length) grandchildHolder.appendChild(cEl)
                 }
                 else if (schema[child]["table"] && !this.includes(id)) {
                     let el = document.createElement("div")
                     el.className = "table-column-panel-column"
-                    el.innerText = "• " + getColumnFromID(id).table
+                    el.innerText = getColumnFromID(id).table
                     el.value = id
 
                     el.addEventListener("click", () => {
@@ -617,15 +627,19 @@ class Table extends Widget {
                         }, 1)
                     })
 
-                    groupColumns.appendChild(el)
+                    childHolder.appendChild(el)
                 }
             }
             return group
         }
-        for (let schema of Object.keys(mapping)) {
-            let el = findColumns.call(this, schema, mapping[schema].data, mapping[schema]["alias"] ?? schema)
-            if (el.children[1].children.length) columns.appendChild(el)
+        if (typeof mapping !== "undefined") {
+            for (let schema of Object.keys(mapping)) {
+                let el = findColumns.call(this, schema, mapping[schema].data, mapping[schema]["alias"] ?? schema)
+                if (el.children[1].children.length) columns.appendChild(el)
+            }
         }
+        let el = findColumns.call(this, "orpheus", internalMapping, "Orpheus")
+        if (el.children[1].children.length) columns.appendChild(el)
         //findColumns(schema, mapping[schema].data, mapping[schema]["alias"] ?? schema)
     }
 
@@ -1129,7 +1143,7 @@ class TeamInfo extends Widget {
                         if (typeof team_data[team] !== "undefined" && typeof team_data[team].Icon !== "undefined") logo.src = team_data[team].Icon
                         else logo.src = MISSING_LOGO
                     }
-                    if (usingTBARank) {
+                    if (usingTBAMatches) {
                         eventRank.innerText = "Rank " + processedData.orpheus.data["ranking"][team] + " of " + Object.keys(team_data).length
                     }
                 } else {
@@ -1538,7 +1552,7 @@ class Matches extends Widget {
                 let match = matches[num]
                 if (match.teams.includes(team)) {
                     // Upcoming Check
-                    if (match["blueScore"] === -1 && !upcoming) {
+                    if (!match["done"] && !upcoming) {
                         upcoming = true
                         let upcomingWarning = document.createElement("div")
                         upcomingWarning.className = "matches-upcoming"

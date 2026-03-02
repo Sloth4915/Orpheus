@@ -34,7 +34,11 @@ let tba_match_data = {}
 let matches = {}
 
 let mapping
-let gameMapping
+let gameMapping = {
+    "year": new Date().getFullYear(),
+    "win": 3,
+    "tie": 1
+}
 
 let theme
 
@@ -54,7 +58,6 @@ const TBA_KEY = "bmeU7Z99M2lCyuStu4sKU7NuLvsZAE3UoxBgxR5J3fcK6hDoZx92FcURLEHyHgT
 let usingTBA
 let usingTBAMatches
 let usingTBAMedia
-let usingTBARank
 let usingDesmos
 let usingStatbotics
 
@@ -69,6 +72,7 @@ let processedData = {
             "name": {},
             "ranking": {},
             "matches_played": {},
+            "Statbotics": {}
         }
     }
 }
@@ -139,6 +143,10 @@ document.querySelector("#top-load-event").onclick = function() {
 
 }
 function loadEvent() {
+    if (usingStatbotics) {
+        internalMapping["Statbotics"] = {}
+    }
+
     if (usingTBA) {
         load("event/" + eventKey + "/teams", function (data) {
             event_data = data
@@ -152,6 +160,7 @@ function loadEvent() {
                 team_data[teamNum].TBA["matches"] = {}
                 team_data[teamNum].media = []
                 processedData["orpheus"]["data"]["name"][teamNum] = team["nickname"]
+                processedData["orpheus"]["data"]["number"][teamNum] = teamNum
                 main.hardRefresh()
                 if (usingTBAMedia) {
                     load("team/frc" + teamNum + "/media/" + gameMapping.year, function (data) {
@@ -169,11 +178,23 @@ function loadEvent() {
                 }
                 if (usingStatbotics) {
                     loadOther("https://api.statbotics.io/v3/team_event/" + teamNum + "/" + eventKey, function(data) {
-                        team_data[teamNum]["statbotics"] = data
-                        team_data[teamNum]["EPA"] = data["epa"]["total_points"]["mean"]
-                        team_data[teamNum]["Auto EPA"] = data["epa"]["breakdown"]["auto_points"]
-                        team_data[teamNum]["Teleop EPA"] = data["epa"]["breakdown"]["teleop_points"]
-                        team_data[teamNum]["Endgame EPA"] = data["epa"]["breakdown"]["endgame_points"]
+                        console.log(data)
+
+                        for (let key of Object.keys(data["epa"]["breakdown"])) {
+                            let realName = ""
+                            for (let x of key.split("_")) realName = realName + " " + x.slice(0,1).toUpperCase() + x.slice(1)
+                            realName = realName.trim()
+
+                            if (typeof processedData["orpheus"]["data"]["Statbotics"][realName] === "undefined") {
+                                processedData["orpheus"]["data"]["Statbotics"][realName] = {}
+                                internalMapping["Statbotics"][realName] = {
+                                    "alias": realName,
+                                    "type": "",
+                                    "table": true
+                                }
+                            }
+                            processedData["orpheus"]["data"]["Statbotics"][realName][teamNum] = data["epa"]["breakdown"][key]
+                        }
                     })
                 }
             }
@@ -190,23 +211,52 @@ function loadEvent() {
                         for (let x of m["alliances"]["red"]["team_keys"]) red.push(x.substring(3))
                         for (let x of m["alliances"]["blue"]["team_keys"]) blue.push(x.substring(3))
 
-                        matches[m["match_number"]] = {
-                            red: red,
-                            blue: blue,
-                            teams: red.concat(blue),
-                            redScore: m["score_breakdown"]["red"]["totalPoints"],
-                            blueScore: m["score_breakdown"]["blue"]["totalPoints"],
-                            winner: m["winning_alliance"],
-                            videos: m["videos"]
+                        if (m["score_breakdown"] !== null) {
+                            matches[m["match_number"]] = {
+                                red: red,
+                                blue: blue,
+                                teams: red.concat(blue),
+                                redScore: m["score_breakdown"]["red"]["totalPoints"],
+                                blueScore: m["score_breakdown"]["blue"]["totalPoints"],
+                                winner: m["winning_alliance"],
+                                videos: m["videos"],
+                                done: true
+                            }
+                        } else {
+                            matches[m["match_number"]] = {
+                                red: red,
+                                blue: blue,
+                                teams: red.concat(blue),
+                                done: false
+                            }
                         }
+
                     }
                 }
             })
-        }
-        if (usingTBARank) {
+            load("event/" + eventKey + "/oprs", function (data) {
+                internalMapping["TBA Insights"] = {}
+                processedData["orpheus"]["data"]["TBA Insights"] = {}
+                processedData["orpheus"]["data"]["TBA Insights"]["OPR"] = {}
+                internalMapping["TBA Insights"]["OPR"] = {
+                    "alias": "OPR",
+                    "type": "",
+                    "table": true,
+                }
+                for (let team of Object.keys(data["oprs"])) {
+                    processedData["orpheus"]["data"]["TBA Insights"]["OPR"][parseInt(team.substring(3))] = data["oprs"][team]
+                }
+            })
+            load("event/" + eventKey + "/insights", function (data) {
+                console.log(data)
+            })
             load("event/" + eventKey + "/rankings", function (data) {
                 for (let extra in data["extra_stats_info"]) {
-                    internalMapping[data["extra_stats_info"][extra]["name"]] = {"alias": data["extra_stats_info"][extra]["name"]}
+                    internalMapping[data["extra_stats_info"][extra]["name"]] = {
+                        "alias": data["extra_stats_info"][extra]["name"],
+                        "type": "",
+                        "table": true,
+                    }
                     processedData["orpheus"]["data"][data["extra_stats_info"][extra]["name"]] = {}
                 }
 
@@ -261,7 +311,7 @@ let internalMapping = {
     "ranking": {
         "alias": "Event Rank",
         "type": "",
-        "table": true
+        "table": usingTBAMatches
     }
 }
 
@@ -650,24 +700,26 @@ function dataButtons() {
         })
     }
 
-    for (let schema of Object.keys(mapping)) {
-        if (!uploadedData[schema]) uploadedData[schema] = {}
+    if (typeof mapping !== "undefined") {
+        for (let schema of Object.keys(mapping)) {
+            if (!uploadedData[schema]) uploadedData[schema] = {}
 
-        let uploadButton = document.createElement("button")
-        uploadButton.innerText = "Upload " + (mapping[schema]["alias"] ? mapping[schema]["alias"] : schema)
-        uploadButton.addEventListener("click", () => uploadData(schema))
-        data.appendChild(uploadButton)
+            let uploadButton = document.createElement("button")
+            uploadButton.innerText = "Upload " + (mapping[schema]["alias"] ? mapping[schema]["alias"] : schema)
+            uploadButton.addEventListener("click", () => uploadData(schema))
+            data.appendChild(uploadButton)
 
-        let downloadButton = document.createElement("button")
-        downloadButton.innerText = "Download saved " + (mapping[schema]["alias"] ? mapping[schema]["alias"] : schema)
-        downloadButton.id = "top-download-" + schema
-        downloadButton.disabled = Object.keys(uploadedData[schema]) === undefined
-        downloadButton.addEventListener("click", () => download((mapping[schema]["alias"] ? mapping[schema]["alias"] : schema) + ".json", JSON.stringify(uploadedData[schema])))
-        data.appendChild(downloadButton)
+            let downloadButton = document.createElement("button")
+            downloadButton.innerText = "Download saved " + (mapping[schema]["alias"] ? mapping[schema]["alias"] : schema)
+            downloadButton.id = "top-download-" + schema
+            downloadButton.disabled = Object.keys(uploadedData[schema]).length === 0
+            downloadButton.addEventListener("click", () => download((mapping[schema]["alias"] ? mapping[schema]["alias"] : schema) + ".json", JSON.stringify(uploadedData[schema])))
+            data.appendChild(downloadButton)
 
-        let dropdownPause = document.createElement("div")
-        dropdownPause.className = "#dropdown-pause"
-        data.appendChild(dropdownPause)
+            let dropdownPause = document.createElement("div")
+            dropdownPause.className = "#dropdown-pause"
+            data.appendChild(dropdownPause)
+        }
     }
 }
 
@@ -1208,12 +1260,19 @@ async function load(sub, onload) {
     return loadOther(`https://www.thebluealliance.com/api/v3/${sub}?X-TBA-Auth-Key=${TBA_KEY}`, onload)
 }
 async function loadOther(url, onload) {
+    loading++
+    setLoadingIndicator()
+
     if (usingOffline) {
         onload(api_data[url])
-        return api_data[url]
+        // 100ms pause to prevent race condition given nonexistant load times
+        setTimeout(() => {
+            loading--
+            checkLoading()
+        }, 100)
+        return
     }
 
-    loading++
     await fetch(url).then(response => {
         if (!response.ok) {
             throw new Error('Network response was not ok')
@@ -1232,11 +1291,12 @@ function checkLoading() {
         document.querySelector("#loading").className = "hidden"
         if (mapping !== undefined)
             setTimeout(() => processData(), 1)
-    } else {
-        document.querySelector("#loading").className = ""
-        document.querySelector("#loading-text").innerText = "Loading".padEnd(10 - (loading % 4), ".")
-        document.querySelector("#loading-status").innerText = "Waiting on " + loading + " requests"
-    }
+    } else setLoadingIndicator()
+}
+function setLoadingIndicator() {
+    document.querySelector("#loading").className = ""
+    document.querySelector("#loading-text").innerText = "Loading".padEnd(10 - (loading % 4), ".")
+    document.querySelector("#loading-status").innerText = "Waiting on " + loading + " requests"
 }
 function loadFile(accept, listener) {
     let fileInput = document.createElement("input")
@@ -1262,11 +1322,11 @@ function download(filename, text) {
 }
 
 document.querySelector("#top-toggle-use-allapi").addEventListener("click", () => {
-    usingTBAMedia = usingTBAMatches = usingTBA = usingTBARank = usingDesmos = usingStatbotics = true
+    usingTBAMedia = usingTBAMatches = usingTBA = usingDesmos = usingStatbotics = true
     setEnabledAPIS()
 })
 document.querySelector("#top-toggle-use-noneapi").addEventListener("click", () => {
-    usingTBAMedia = usingTBAMatches = usingTBA = usingTBARank = usingDesmos = usingStatbotics = false
+    usingTBAMedia = usingTBAMatches = usingTBA = usingDesmos = usingStatbotics = false
     setEnabledAPIS()
 })
 document.querySelector("#top-toggle-use-tbaevent").addEventListener("click", () => {
@@ -1279,10 +1339,6 @@ document.querySelector("#top-toggle-use-tbamatch").addEventListener("click", () 
 })
 document.querySelector("#top-toggle-use-tbamedia").addEventListener("click", () => {
     usingTBAMedia = !usingTBAMedia
-    setEnabledAPIS()
-})
-document.querySelector("#top-toggle-use-tbarank").addEventListener("click", () => {
-    usingTBARank = !usingTBARank
     setEnabledAPIS()
 })
 document.querySelector("#top-toggle-use-desmos").addEventListener("click", () => {
@@ -1300,7 +1356,6 @@ function setEnabledAPIS() {
         tbaevent: usingTBA,
         tbamatch: usingTBAMatches,
         tbamedia: usingTBAMedia,
-        tbarank: usingTBARank,
         desmos: usingDesmos,
         statbotics: usingStatbotics
     }, () => {
@@ -1365,7 +1420,6 @@ function saveAPIData() {
         tbaevent: usingTBA,
         tbamatch: usingTBAMatches,
         tbamedia: usingTBAMedia,
-        tbarank: usingTBARank,
         desmos: false,
         statbotics: usingStatbotics
     }
@@ -1460,7 +1514,7 @@ localforage.getItem(storageKeys.MAPPING, (err, val) => {
 localforage.getItem(storageKeys.SAVED_API_DATA, (err, val) => {
     api_data = val
     if (api_data === null) api_data = {}
-    if (!navigator.onLine) {
+    if (!navigator.onLine || true) {
         document.querySelector(":root").classList.add("offline")
         console.log("No Internet")
         usingOffline = true
@@ -1470,14 +1524,11 @@ localforage.getItem(storageKeys.SAVED_API_DATA, (err, val) => {
     }
     if (!--initLoading) finishInit()
 })
-if (!usingOffline) {
-    saveAPIData()
-}
 
 localforage.getItem(storageKeys.ENABLED_APIS, (err, apis) => {
     if (apis === null) {
-        localforage.setItem(storageKeys.ENABLED_APIS, {tbaevent: true, tbamatch: true, tbamedia: true, tbarank: true, desmos: true, statbotics: true})
-        apis = {tbaevent: true, tbamatch: true, tbamedia: true, tbarank: true, desmos: true, statbotics: true}
+        localforage.setItem(storageKeys.ENABLED_APIS, {tbaevent: true, tbamatch: true, tbamedia: true, desmos: true, statbotics: true})
+        apis = {tbaevent: true, tbamatch: true, tbamedia: true, desmos: true, statbotics: true}
     }
 
     if (usingOffline) {
@@ -1497,13 +1548,9 @@ localforage.getItem(storageKeys.ENABLED_APIS, (err, apis) => {
     showTeamIcons = showTeamIcons ? (usingTBA && usingTBAMedia) : false
     saveGeneralSettings()
 
-    usingTBARank = apis.tbarank && usingTBA
-    document.querySelector("#top-toggle-use-tbarank").innerText = "TBA API (Event Ranking): " + (usingTBARank ? "Enabled" : "Disabled")
-
     if (!usingTBA) {
         document.querySelector("#top-toggle-use-tbamatch").disabled = true
         document.querySelector("#top-toggle-use-tbamedia").disabled = true
-        document.querySelector("#top-toggle-use-tbarank").disabled = true
     }
 
     showTeamIcons = showTeamIcons && usingTBA && usingTBAMedia
@@ -1518,7 +1565,10 @@ localforage.getItem(storageKeys.ENABLED_APIS, (err, apis) => {
     if (!--initLoading) finishInit()
 })
 localforage.getItem(storageKeys.EVENT, (err, val) => {
-    if (val != null) eventKey = val
+    if (val != null) {
+        eventKey = val
+        document.querySelector("#top-load-event").innerText = val
+    }
     if (!--initLoading) finishInit()
 })
 
@@ -1596,7 +1646,7 @@ let graph, media4915, teamInfo, table, table2
 
 function finishInit() {
     // Final Prep
-    if (eventKey) document.querySelector("#top-load-event").innerText = eventKey
+    setLoadingIndicator()
     loadEvent()
 }
 

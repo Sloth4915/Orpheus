@@ -3,7 +3,7 @@
 .table {
     display: flex;
     flex-direction: column;
-    overflow-x: auto;
+    width: max-content;
 }
 .row {
     height: 70px;
@@ -13,7 +13,8 @@
     flex-shrink: 0;
     background: var(--bg);
     align-items: center;
-    overflow-x: visible;
+    width: max-content;
+    min-width: 100%;
 }
 .row.header {
     position: sticky;
@@ -32,6 +33,7 @@
     text-align: center;
     overflow: clip;
     flex-direction: column;
+    flex-shrink: 0;
 }
 .data.header.selected {
     background-color: var(--highlight);
@@ -171,10 +173,23 @@
 
 .table-column-edit {
     padding: 0.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+.add-columns-title {
+    font-size: 1.2rem;
+}
+.table-column-edit .add-columns {
+    gap: 0.5rem;
+    display: flex;
+    flex-direction: column;
 }
 .table-column-panel-group {
     display: flex;
     flex-direction: column;
+    border: 1px solid var(--line);
+    order: -1;
 }
 .table-column-panel-group-controller {
     cursor: pointer;
@@ -183,13 +198,32 @@
     align-items: center;
     font-weight: bold;
 }
-.table-column-panel-column-group-holder {
+.table-column-panel-columns-holder .grandchild-holder {
+    order: -1;
+}
+.table-column-panel-columns-holder .child-holder {
+    order: 1;
+    display: flex;
+    flex-direction: row;
+    max-width: 26rem;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    max-height: 10rem;
+    overflow-y: auto;
+}
+.table-column-panel-columns-holder {
     padding-left: 0.75rem;
+    max-width: 20rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
 }
 .table-column-panel-column {
     cursor: pointer;
     padding: 0.2rem;
     user-select: none;
+    order: 15;
+    border: 1px solid var(--line);
 }
 
 .data .ratio-divider {
