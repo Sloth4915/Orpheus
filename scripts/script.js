@@ -178,8 +178,6 @@ function loadEvent() {
                 }
                 if (usingStatbotics) {
                     loadOther("https://api.statbotics.io/v3/team_event/" + teamNum + "/" + eventKey, function(data) {
-                        console.log(data)
-
                         for (let key of Object.keys(data["epa"]["breakdown"])) {
                             let realName = ""
                             for (let x of key.split("_")) realName = realName + " " + x.slice(0,1).toUpperCase() + x.slice(1)
@@ -246,9 +244,6 @@ function loadEvent() {
                 for (let team of Object.keys(data["oprs"])) {
                     processedData["orpheus"]["data"]["TBA Insights"]["OPR"][parseInt(team.substring(3))] = data["oprs"][team]
                 }
-            })
-            load("event/" + eventKey + "/insights", function (data) {
-                console.log(data)
             })
             load("event/" + eventKey + "/rankings", function (data) {
                 for (let extra in data["extra_stats_info"]) {
@@ -1514,7 +1509,7 @@ localforage.getItem(storageKeys.MAPPING, (err, val) => {
 localforage.getItem(storageKeys.SAVED_API_DATA, (err, val) => {
     api_data = val
     if (api_data === null) api_data = {}
-    if (!navigator.onLine || true) {
+    if (!navigator.onLine) {
         document.querySelector(":root").classList.add("offline")
         console.log("No Internet")
         usingOffline = true
