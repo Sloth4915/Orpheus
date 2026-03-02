@@ -39,6 +39,9 @@ button.icon-holder {
 
 select {
     max-width: 150px;
+    color: var(--font);
+    background: var(--bg);
+    border: 1px solid var(--line);
 }
 select option {
     max-width: 150px;

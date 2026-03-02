@@ -105,6 +105,10 @@ class Table extends Widget {
             })
             this.header.appendChild(headerEl)
 
+            let controls = document.createElement("div")
+            controls.className = "data-controls"
+            headerEl.appendChild(controls)
+
             //#region Resizing
             let colResizer = document.createElement("div")
             colResizer.className = "data-resizer"
@@ -129,7 +133,6 @@ class Table extends Widget {
             //#endregion
 
             //#region Dragging
-            //FIXME Cannot drag column to be the first one when widget does not occupy whole width and is on the left side of screen
             let colDragger = document.createElement("div")
             colDragger.className = "data-dragger material-symbols-outlined"
             colDragger.setAttribute("data-column-drag", column.id)
@@ -205,7 +208,16 @@ class Table extends Widget {
             })
             //#endregion
 
-            headerEl.appendChild(colDragger)
+            let removeButton = document.createElement("div")
+            removeButton.innerText = "cancel_presentation"
+            removeButton.addEventListener("click", (e) => {
+                e.stopPropagation()
+                this.removeColumn(thisColumn.columnId)
+            })
+            removeButton.className = "column-header-button material-symbols-outlined"
+
+            controls.appendChild(colDragger)
+            controls.appendChild(removeButton)
         }
 
         if (this.activeColumn === "") this.setActiveColumn(this.columns[0].columnId)
@@ -667,6 +679,8 @@ class Table extends Widget {
 
         this.addTeamEl(this.teams)
         this.sortRows()
+        
+        this.refresh()
     }
 
     out() {

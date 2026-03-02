@@ -39,17 +39,25 @@
     background-color: var(--highlight);
 }
 
-.data-resizer {
-    width: 5px;
-    height: 100%;
-    background-color: var(--line);
-    cursor: col-resize;
-    border-left: 2px solid var(--bg);
-    border-right: 2px solid var(--bg);
-    position: relative;
-    box-sizing: border-box;
-    margin-left: -3px;
-    margin-right: -2px;
+.data-controls {
+    display: flex;
+    flex-direction: row;
+    position: absolute;
+    top: 0;
+}
+.data-controls div {
+    cursor: pointer;
+    color: var(--line);
+}
+.data-controls div:hover {
+    color: var(--font);
+}
+.data-dragger {
+    cursor: grab;
+    writing-mode: vertical-rl;
+}
+.data-dragger:active {
+    cursor: grabbing;
 }
 
 .data-drag-indicator {
@@ -64,19 +72,17 @@
     margin-right: -4px;
     z-index: 10000;
 }
-
-.data-dragger {
-    position: absolute;
-    top: 0;
-    color: var(--line);
-    cursor: grab;
-    writing-mode: vertical-rl;
-}
-.data-dragger:hover {
-    color: var(--font);
-}
-.data-dragger:active {
-    cursor: grabbing;
+.data-resizer {
+    width: 5px;
+    height: 100%;
+    background-color: var(--line);
+    cursor: col-resize;
+    border-left: 2px solid var(--bg);
+    border-right: 2px solid var(--bg);
+    position: relative;
+    box-sizing: border-box;
+    margin-left: -3px;
+    margin-right: -2px;
 }
 
 .table-logo {

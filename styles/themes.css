@@ -30,7 +30,7 @@
 }
 :root.dark, .force-dark {
     --bg: rgb(29, 30, 31);
-    --line: rgb(122, 122, 122);
+    --line: rgb(87, 87, 87);
     --font: rgb(220,220,220);
     --highlight: rgb(134, 81, 159);
     --icon_bg: var(--bg);
