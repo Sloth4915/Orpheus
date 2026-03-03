@@ -856,7 +856,10 @@ class Graph extends Widget {
                     }
                     minY = Math.min(minY, this.column.data[team][m])
                     maxY = Math.max(maxY, this.column.data[team][m])
-                    values.push(this.column.data[team][m])
+
+                    if (this.column.type === "accuracy") values.push(this.column.data[team][m]["difference"])
+                    else if (this.column.type === "ratio") values.push(this.column.data[team][m]["ratio"])
+                    else values.push(this.column.data[team][m])
                 }
             }
 

@@ -795,7 +795,8 @@ function getColumnFromID(id) {
         "mapping": col,
         "table": col["table"] === true ? name : (col["table"] ?? false),
         "graph": col["graph"] === true ? name : (col["graph"] ?? false),
-        data: dataCol
+        data: dataCol,
+        type: col["type"]
     }
 }
 
