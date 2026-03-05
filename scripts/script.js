@@ -276,7 +276,6 @@ document.querySelector("#top-mapping").onclick = function() {
     loadFile(".json", (result) => {
         mapping = JSON.parse(result)
         localforage.setItem(storageKeys.MAPPING, mapping)
-        //columns = JSON.parse(JSON.stringify(availableColumns))
         location.reload()
     })
 }
@@ -358,6 +357,7 @@ function processData() {
     // Get a list of teams
     let teams = new Set()
     for (let schema of Object.keys(mapping)) {
+        console.log(schema, uploadedData[schema])
         for (let datum of uploadedData[schema]) {
             teams.add(getTeam(schema, datum[mapping[schema]["team_key"]]))
         }
@@ -533,15 +533,18 @@ function processData() {
                         if (typeof teamMedia[team] === "undefined") teamMedia[team] = []
                     }
                     for (let i of uploadedData[schema]) {
+                        console.log(datumMapping)
                         let team = getTeam(schema, i[mapping[schema]["team_key"]])
                         if (typeof datumMapping[x]["key"] === "string") {
                             if (i[datumMapping[x]["key"]].trim() !== "")
                                 teamMedia[team].push(i[datumMapping[x]["key"]])
                         }
                         else {
-                            for (let key of datumMapping[x]["key"])
+                            for (let key of datumMapping[x]["key"]) {
+                                console.log(key, i)
                                 if (i[key].trim() !== "")
                                     teamMedia[team].push(i[key])
+                            }
                         }
                     }
                 }
@@ -587,37 +590,7 @@ function processData() {
         }
     }
 
-    if (false) {
-        table = new Table()
-        main.addChild(table)
-        table.addColumn(["orpheus`name", "orpheus`matches_played", "orpheus`ranking"])
-    } else {
-        table = new Table()
-        tabGroup.addChild(table)
-
-        table2 = new Table()
-        table2.name = "Table 2"
-        tabGroup.addChild(table2)
-
-        main.addChild(tabGroup)
-
-        // Temporary widget stuff for testing
-        table.addColumn(["orpheus`name", "orpheus`matches_played", "orpheus`ranking"])
-
-        table2.addColumn(["orpheus`name", "match`Scoring`Coral Scored", "match`tba climb"])
-        table2.addColumn("pit`Drivetrain")
-
-        graph = new Graph()
-        tabGroup.addChild(graph)
-
-        teamInfo = new TeamInfo()
-        teamInfo.redoList(Object.keys(team_data))
-        tabGroup.addChild(teamInfo)
-
-        media4915 = new TeamMedia()
-        media4915.setTeam(4915)
-        tabGroup.addChild(media4915)
-    }
+    Events.emit(Events.DATA_PROCESSED)
 }
 
 function evaluate(expression, schema, context) {
@@ -677,7 +650,7 @@ function evaluate(expression, schema, context) {
 function dataButtons() {
     let data = document.querySelector("#top-data-buttons")
 
-    if (uploadedData == undefined) uploadedData = {}
+    if (typeof uploadedData == "undefined") uploadedData = {}
 
     function uploadData(schema) {
         loadFile(".csv,.json", (result, filetype) => {
@@ -691,14 +664,12 @@ function dataButtons() {
             localforage.setItem(storageKeys.DATA, uploadedData)
             document.querySelector("#top-download-" + schema).disabled = false
             saveGeneralSettings()
-            if (mapping !== undefined) processData()
+            window.location.reload()
         })
     }
 
     if (typeof mapping !== "undefined") {
         for (let schema of Object.keys(mapping)) {
-            if (!uploadedData[schema]) uploadedData[schema] = {}
-
             let uploadButton = document.createElement("button")
             uploadButton.innerText = "Upload " + (mapping[schema]["alias"] ? mapping[schema]["alias"] : schema)
             uploadButton.addEventListener("click", () => uploadData(schema))
@@ -707,7 +678,8 @@ function dataButtons() {
             let downloadButton = document.createElement("button")
             downloadButton.innerText = "Download saved " + (mapping[schema]["alias"] ? mapping[schema]["alias"] : schema)
             downloadButton.id = "top-download-" + schema
-            downloadButton.disabled = Object.keys(uploadedData[schema]).length === 0
+
+            downloadButton.disabled = (typeof uploadedData[schema] === "undefined") || !(uploadedData[schema].length)
             downloadButton.addEventListener("click", () => download((mapping[schema]["alias"] ? mapping[schema]["alias"] : schema) + ".json", JSON.stringify(uploadedData[schema])))
             data.appendChild(downloadButton)
 
@@ -800,6 +772,12 @@ function getColumnFromID(id) {
     }
 }
 
+function isDataUploaded() {
+    if (typeof mapping === "undefined") return false
+    for (let key of Object.keys(mapping)) if (typeof uploadedData[key] === "undefined") return false
+    return true
+}
+
 // Mapping Download
 document.querySelector("#top-mapping-download").onclick = () => download("mapping.json", JSON.stringify(mapping))
 
@@ -818,9 +796,9 @@ function setRoundingEl() {
 }
 
 document.querySelector("#top-clear-files").addEventListener("click", () => {
-    localforage.removeItem(storageKeys.DATA)
-    localforage.removeItem(storageKeys.MAPPING)
-    window.location.reload()
+    localforage.clear(() => {
+        window.location.reload()
+    })
 })
 
 //#endregion
@@ -1178,6 +1156,7 @@ const Events = {
     // List of Events
     LIST_CHANGE: 1,
     GRAPH_SETTINGS: 2,
+    DATA_PROCESSED: 3,
 }
 
 //#endregion
@@ -1504,7 +1483,6 @@ localforage.getItem(storageKeys.MAPPING, (err, val) => {
         gameMapping = val["game"]
     }
 
-    dataButtons()
     if (!--initLoading) finishInit()
 })
 localforage.getItem(storageKeys.SAVED_API_DATA, (err, val) => {
@@ -1575,9 +1553,10 @@ localforage.getItem(storageKeys.LISTS, (err, val) => {
             Lists.add(new List(list.name, list.icon, list.color, list.sort, list.teams, list.id))
         }
     } else {
-        let hs = new List("High Scoring", "star", List.Colors.GOLD, List.Sort.SORT_ABOVE, [])
+        let hs = new List("Favorite", "star", List.Colors.GOLD, List.Sort.SORT_ABOVE, [])
         let ignore = new List("Ignore", "cancel", List.Colors.WATERMELON, List.Sort.SORT_BELOW, [])
-        Lists.add(hs, ignore)
+        Lists.add(hs)
+        Lists.add(ignore)
     }
     if (!--initLoading) finishInit()
 })
@@ -1636,14 +1615,23 @@ for (let button of document.querySelectorAll("[for='top-control-widgets'] button
     })
 }
 
-let tabGroup = new WidgetTabGroup()
-
-let graph, media4915, teamInfo, table, table2
-
 function finishInit() {
     // Final Prep
+    dataButtons()
     setLoadingIndicator()
-    loadEvent()
+    if (typeof eventKey !== "undefined" && typeof mapping !== "undefined" && isDataUploaded()) {
+        loadEvent()
+
+        Events.on(Events.DATA_PROCESSED, () => {
+            let table = new Table()
+            main.addChild(table)
+            table.addColumn(["orpheus`number"])
+            if (usingTBA) table.addColumn(["orpheus`name"])
+        })
+    } else {
+        document.querySelector("#loading").className = "hidden"
+        main.addChild(new Welcome())
+    }
 }
 
 //#endregion

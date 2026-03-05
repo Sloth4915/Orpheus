@@ -128,3 +128,14 @@ footer a {
     display: flex;
     align-items: center;
 }
+
+.orpheus-welcome {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+.orpheus-welcome * {
+    max-width: max(15rem, 20vw);
+}
+
+

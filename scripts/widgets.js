@@ -7,6 +7,7 @@ This file contains all the widgets that the user interacts with and displays dat
 class Table extends Widget {
     constructor() {
         super();
+
         this.name = "Table"
         this.type = "table"
 
@@ -721,7 +722,7 @@ class Graph extends Widget {
 
         this.content.classList.add("no-scroll")
 
-        this.column = getColumnFromID("match`Scoring`Coral Scored")
+        this.column = null
         this.teams = []
         this.list = null
         this.selectedTeam = null
@@ -737,7 +738,7 @@ class Graph extends Widget {
             this.createExpressions(true)
         })
 
-        this.name = "Graph - " + this.column.name
+        this.name = "Select a column to graph"
 
         this.calcEl = document.createElement("div")
         this.calcEl.className = "graph"
@@ -766,6 +767,7 @@ class Graph extends Widget {
 
         let graphDropdown = document.createElement("select")
         graphDropdown.className = ""
+        this.graphDropdown = graphDropdown
         this._header.name.insertAdjacentElement("beforebegin", graphDropdown)
 
         function findGraphs(context, schema, nameOverride) {
@@ -821,6 +823,9 @@ class Graph extends Widget {
             this.calculator.getExpressions().forEach((expression) => {
                 this.calculator.removeExpression(expression)
             })
+        }
+        if (this.column == null) {
+            return
         }
         this.calculator.updateSettings({xAxisLabel: graphSettings.x === "absolute" ? "Event Match #" : "Team Match #", yAxisLabel: this.column.name})
 
@@ -1680,5 +1685,105 @@ class Matches extends Widget {
         delete a["team"]
         super.in(a)
         this.setTeam(team)
+    }
+}
+
+class Welcome extends Widget {
+    constructor() {
+        super()
+
+        this.name = "Orpheus Welcome"
+
+        this.content.classList.add("orpheus-welcome")
+
+        let title = document.createElement("h1")
+        title.innerText = "Welcome to Orpheus!"
+        this.content.appendChild(title)
+
+        let description = document.createElement("div")
+        description.innerText = "Orpheus is 4915's scouting data analysis tool"
+        this.content.appendChild(description)
+
+        let help = document.createElement("a")
+        help.innerText = "Orpheus Guide / User Manual"
+        help.setAttribute("target", "_blank")
+        help.setAttribute("rel", "noopener noreferrer")
+        help.href = "https://github.com/Sloth4915/Orpheus/blob/main/README.md"
+        this.content.appendChild(help)
+
+        let demo = document.createElement("button")
+        demo.innerText = "Load Demo"
+        demo.addEventListener("click", () => {
+            Events.on(Events.DATA_PROCESSED, () => {
+                let tabGroup = new WidgetTabGroup()
+
+                let table1 = new Table()
+                for (let list of Lists.lists) {
+                    table1.scope[list.id] = list.sort
+                }
+                table1.addColumn(["orpheus`number", "orpheus`name", "match`Coral`L1", "match`Coral`L4", "match`Coral`Auto", "match`Coral`Total", "match`Climb Points", "pit`Drivetrain"])
+                table1.hardRefresh()
+
+                let teamInfo = new TeamInfo()
+                teamInfo.onListChange()
+                tabGroup.addChild(teamInfo)
+
+                let teamMedia = new TeamMedia()
+                tabGroup.addChild(teamMedia)
+
+                let matches = new Matches()
+                tabGroup.addChild(matches)
+
+                tabGroup.addChild(table1, 0)
+
+                let graph = new Graph()
+                graph.teams = [4915]
+                graph.name = "Graph - " + "Total Coral"
+                graph.graphDropdown.value = "match`Coral`Total"
+                graph.column = getColumnFromID("match`Coral`Total")
+                graph.hardRefresh()
+
+                main.addChild(tabGroup)
+                main.addChild(graph, 0.4)
+            })
+
+            mapping = demoMapping
+            uploadedData["pit"] = demoPit
+            uploadedData["match"] = demoData
+            eventKey = demoEvent
+            gameMapping = {
+                "year": 2025
+            }
+            loadEvent()
+
+            this.parent.removeChild(this)
+        })
+        this.content.appendChild(demo)
+
+        let setupChecklist = document.createElement("div")
+        setupChecklist.className = "setup-checklist"
+        this.content.appendChild(setupChecklist)
+
+        let checklistTitle = document.createElement("b")
+        checklistTitle.innerText = "Setup Checklist"
+        setupChecklist.appendChild(checklistTitle)
+
+        let item0 = document.createElement("div")
+        item0.className = "setup-list"
+        if (typeof eventKey !== "undefined") item0.classList.add("strike")
+        item0.innerText = "Set your event key"
+        setupChecklist.appendChild(item0)
+
+        let item1 = document.createElement("div")
+        item1.className = "setup-list"
+        if (typeof mapping !== "undefined") item1.classList.add("strike")
+        item1.innerText = "Upload a mapping"
+        setupChecklist.appendChild(item1)
+
+        let item2 = document.createElement("div")
+        item2.className = "setup-list"
+        if (isDataUploaded()) item2.classList.add("strike")
+        item2.innerText = "Upload your data"
+        setupChecklist.appendChild(item2)
     }
 }

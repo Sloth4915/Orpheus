@@ -1,4 +1,4 @@
-button, input {
+button, input, a.link-button {
     height: 1.2rem;
     padding: 0 1rem 0 1rem;
     font-size: .8rem;
@@ -9,14 +9,15 @@ button, input {
     border: 1px solid var(--font);
     border-radius: .25rem;
     transition: 200ms;
+    text-decoration: none;
 }
-button {
+button, a.link-button {
     cursor: pointer;
 }
-button.nomargin, input.nomargin {
+button.nomargin, input.nomargin, a.link-button.nomargin {
     margin: 0;
 }
-button:hover, input:hover, input:focus {
+button:hover, input:hover, input:focus, a.link-button:hover {
     background-color: var(--highlight);
     border-radius: .4rem;
 }

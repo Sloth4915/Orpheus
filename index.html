@@ -31,6 +31,7 @@
     onerror="
         desmosReady = false;
     "></script>
+    <script src="scripts/demo.js"></script>
     <script src="scripts/uihandler.js" defer></script>
     <script src="scripts/widgets.js" defer></script>
     <script src="scripts/script.js" defer></script>
@@ -51,7 +52,7 @@
                 <div class="dropdown-pause"></div>
                 <button id="top-load-event">Set Event</button>
                 <div class="dropdown-pause"></div>
-                <button id="top-clear-files">Delete Data & Mappings</button>
+                <button id="top-clear-files">Factory Reset</button>
             </dialog>
 
             <button id="top-control-api" class="dropdown-button">APIs</button>
@@ -107,9 +108,14 @@
 
             <div style="flex-grow: 1"></div>
 
-            <button id="top-documentation" disabled>Documentation</button>
-            <button id="top-patch-notes" disabled>Patch Notes</button>
-            <button id="top-credits" disabled>Credits</button>
+            <a class="link-button" id="top-documentation"
+               href="https://github.com/Sloth4915/Orpheus/blob/main/README.md"
+               rel="noopener noreferrer" target="_blank"
+            >
+                User Guide
+            </a>
+            <button id="top-patch-notes" disabled title="Coming soon">Patch Notes</button>
+            <button id="top-credits" disabled title="Coming soon">Credits</button>
         </div>
 
         <h1 class="tool-name">Orpheus</h1>
