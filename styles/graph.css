@@ -1,0 +1,98 @@
+/* Graph Widget */
+
+.graph {
+    box-sizing: border-box;
+}
+
+.graph-teams {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    justify-content: space-evenly;
+    align-items: center;
+}
+
+.graph-team {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+}
+
+.graph-team-name {
+    font-size: 1.3rem;
+    font-weight: bolder;
+}
+
+.graph-logo {
+    width: 40px;
+    height: 40px;
+    border-radius: 0.5rem;
+    border: 1px solid var(--line);
+    object-fit: contain;
+}
+
+.small .graph-teams {
+    gap: 0.25rem;
+}
+.small .graph-team {
+    gap: 0.25rem;
+}
+.small .graph-logo {
+    width: 30px;
+    height: 30px;
+}
+.small .graph-team-name {
+    font-size: 1rem;
+    font-weight: bolder;
+}
+
+.graph-list-scope-edit {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 0.5rem;
+}
+.graph-list-scope-edit .list {
+    display: flex;
+    border: 1px solid var(--line);
+    gap: 0.2rem;
+    padding: 0.2rem;
+    flex-direction: row;
+    align-items: center;
+    border-radius: 0.5rem;
+    cursor: pointer;
+}
+.graph-list-scope-edit .list.selected {
+    display: flex;
+    border: 1px solid var(--line);
+    gap: 0.2rem;
+    padding: 0.2rem;
+    flex-direction: row;
+    align-items: center;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    background-color: var(--highlight);
+}
+.graph-list-of {
+    display: flex;
+    flex-direction: row;
+    gap: 0.2rem;
+    flex-wrap: wrap;
+    max-width: 400px;
+}
+
+.graph-scope-team {
+    display: flex;
+    border: 1px solid var(--line);
+    gap: 0.2rem;
+    padding: 0.2rem;
+    flex-direction: row;
+    align-items: center;
+    border-radius: 0.5rem;
+    cursor: pointer;
+}
+.graph-scope-team:hover {
+    text-decoration: line-through;
+}

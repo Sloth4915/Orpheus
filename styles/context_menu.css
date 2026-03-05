@@ -2,7 +2,7 @@
     position: absolute;
     background-color: var(--bg);
     border: 1px solid var(--font);
-    border-radius: 0 4px 4px 4px;
+    border-radius: 4px;
     overflow: hidden;
     display: flex;
     align-items: center;
@@ -32,11 +32,18 @@
     justify-content: center;
     align-items: center;
     margin: 0;
+    overflow: hidden;
+    font-size: 1.2rem;
 }
 
 .context-theme img {
     width: 2rem;
     height: 2rem;
+    transition: 200ms filter;
+}
+
+.context-theme:hover img {
+    filter: brightness(110%);
 }
 
 .context-menu-options {

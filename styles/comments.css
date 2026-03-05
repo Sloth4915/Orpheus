@@ -1,0 +1,14 @@
+.comment-title {
+    font-size: 1.1rem;
+    font-weight: bold;
+    cursor: pointer;
+    user-select: none;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: start;
+}
+
+.comment-title-text {
+    text-decoration: underline;
+}

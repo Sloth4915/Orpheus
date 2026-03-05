@@ -1,0 +1,134 @@
+.content {
+    display: flex;
+}
+
+.widget-holder {
+    display: flex;
+}
+
+.widget-holder.y {
+    flex-direction: column;
+}
+
+.resizer {
+    z-index: 1000;
+}
+
+.x > .resizer {
+    width: 4px;
+    min-width: 4px;
+    height: 100%;
+    background-color: var(--line);
+    cursor: col-resize;
+}
+
+.y > .resizer {
+    height: 4px;
+    min-height: 4px;
+    width: 100%;
+    background-color: var(--line);
+    cursor: row-resize;
+}
+
+.widget {
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.widget:has(.widget-drag.dragging) {
+    opacity: 0.5;
+}
+
+.widget.inactive-tab {
+    display: none;
+}
+
+.widget-content {
+    min-width: 100%;
+    min-height: 100%;
+    overflow-x: auto;
+    overflow-y: auto;
+}
+
+.widget-content-real {
+    min-width: 100%;
+    overflow-x: auto;
+    overflow-y: auto;
+}
+
+.widget-header {
+    background-color: var(--bg);
+    border-bottom: 1px solid var(--line);
+    display: flex;
+    font-size: .8rem;
+    align-items: center;
+    height: 22px;
+    min-height: 22px;
+    flex-direction: row;
+    gap: 4px;
+    padding-left: 4px;
+    padding-right: 4px;
+    overflow-x: scroll;
+}
+.widget-header::-webkit-scrollbar {
+    display: none;
+}
+.widget-header.tabs {
+    align-items: end;
+    padding-bottom: 0;
+    overflow-x: scroll;
+}
+
+.widget-tab {
+    border: 1px solid var(--line);
+    border-bottom: 0;
+    cursor: pointer;
+    padding: 2px;
+    border-top-left-radius: 2px;
+    border-top-right-radius: 2px;
+    white-space: nowrap;
+}
+.widget-tab.selected {
+    background-color: var(--highlight);
+    font-weight: bolder;
+}
+
+.widget-drag {
+    cursor: grab;
+}
+.widget-drag:active {
+    cursor: grabbing;
+}
+.widget-drag.dragging {
+    position: absolute;
+    font-size: 5rem;
+    opacity: 0;
+}
+
+.widget-remove {
+    cursor: pointer;
+}
+
+.widget-settings-toggle {
+    cursor: pointer;
+}
+
+.widget-drag-preview {
+    background-color: color-mix(in srgb, var(--highlight), transparent 50%);
+    backdrop-filter: blur(4px);
+    border: 4px solid var(--highlight);
+    border-radius: 8px;
+    position: absolute;
+    z-index: 100000000000;
+    box-sizing: border-box;
+}
+
+.no-scroll {
+    overflow-x: hidden;
+    overflow-y: hidden;
+}
+
+.widget-header-icon {
+    cursor: pointer;
+}

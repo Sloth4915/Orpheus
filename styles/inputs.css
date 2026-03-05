@@ -1,4 +1,4 @@
-button, input {
+button, input, a.link-button {
     height: 1.2rem;
     padding: 0 1rem 0 1rem;
     font-size: .8rem;
@@ -9,11 +9,15 @@ button, input {
     border: 1px solid var(--font);
     border-radius: .25rem;
     transition: 200ms;
+    text-decoration: none;
 }
-button.nomargin, input.nomargin {
+button, a.link-button {
+    cursor: pointer;
+}
+button.nomargin, input.nomargin, a.link-button.nomargin {
     margin: 0;
 }
-button:hover, input:hover, input:focus {
+button:hover, input:hover, input:focus, a.link-button:hover {
     background-color: var(--highlight);
     border-radius: .4rem;
 }
@@ -21,6 +25,7 @@ button:disabled, input:disabled {
     background-color: var(--line);
     border-radius: 4px;
     color: var(--disabled);
+    cursor: not-allowed;
 }
 input::placeholder {
     color: var(--placeholder)
@@ -31,4 +36,14 @@ button.icon-holder {
     width: fit-content;
     height: fit-content;
     padding: 0;
+}
+
+select {
+    max-width: 150px;
+    color: var(--font);
+    background: var(--bg);
+    border: 1px solid var(--line);
+}
+select option {
+    max-width: 150px;
 }

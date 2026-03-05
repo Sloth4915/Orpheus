@@ -3,6 +3,11 @@ body {
     font-family: Lato, sans-serif;
     margin-top: 0;
     max-width: 100vw;
+    margin-left: 0;
+}
+
+body {
+    overflow: hidden;
 }
 
 dialog {
@@ -17,15 +22,19 @@ dialog {
     display: none;
 }
 
+.dropdown-button {
+    display: flex;
+    justify-content: space-evenly;
+}
 .top-control-dropdown {
     background: var(--bg);
     backdrop-filter: blur(4px);
-    padding: 0;
+    padding: 0.2rem;
     outline: 0;
     border: 0;
     position: fixed;
     margin: 0;
-    filter: drop-shadow(-1px 1px 1px var(--shadow));
+    filter: drop-shadow(-0px 0px 2px var(--shadow));
     border-radius: .4rem;
 }
 .top-control-dropdown:focus {
@@ -47,6 +56,23 @@ dialog {
     color: var(--font);
     font-size: 4rem;
     font-weight: bold;
+    backdrop-filter: blur(4px);
+    border-radius: 4px;
+    position: fixed;
+    left: 50%;
+    top: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    transform: translateX(-50%) translateY(-50%);
+    padding: 1rem;
+    width: max-content;
+    height: max-content;
+}
+#loading-status {
+    font-size: 1.6rem;
+    font-weight: normal;
 }
 #loading.hidden {display: none;}
 
@@ -55,6 +81,11 @@ dialog {
     background-color: var(--bg);
     top: 0;
     z-index: 9999;
+}
+
+h1 {
+    padding: 0;
+    margin: 0;
 }
 
 footer {
@@ -97,3 +128,14 @@ footer a {
     display: flex;
     align-items: center;
 }
+
+.orpheus-welcome {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+.orpheus-welcome * {
+    max-width: max(15rem, 20vw);
+}
+
+

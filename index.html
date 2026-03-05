@@ -2,55 +2,61 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title class="tool-name"></title>
+    <title class="tool-name">Orpheus</title>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"/>
+    <!-- Orpheus Primary Stylesheets -->
+    <link rel="stylesheet" href="styles/themes.css"/>
     <link rel="stylesheet" href="styles/global.css"/>
     <link rel="stylesheet" href="styles/main.css"/>
     <link rel="stylesheet" href="styles/inputs.css"/>
-    <link rel="stylesheet" href="styles/table.css"/>
-    <link rel="stylesheet" href="styles/team_showcase.css"/>
     <link rel="stylesheet" href="styles/context_menu.css"/>
-    <link rel="stylesheet" href="styles/projector.css" title="projector" id="projector-styles" disabled/>
-    <link rel="stylesheet" href="styles/credits.css"/>
-    <link rel="stylesheet" href="styles/notes.css"/>
-    <link rel="stylesheet" href="styles/view_robots.css"/>
+    <link rel="stylesheet" href="styles/widgets.css"/>
+    <link rel="stylesheet" href="styles/lists.css"/>
+    <!-- Widget Stylesheets -->
+    <link rel="stylesheet" href="styles/table.css"/>
+    <link rel="stylesheet" href="styles/graph.css"/>
+    <link rel="stylesheet" href="styles/team-info.css"/>
+    <link rel="stylesheet" href="styles/comments.css"/>
+    <link rel="stylesheet" href="styles/match.css"/>
+    <!-- Overrides -->
     <link rel="stylesheet" href="styles/overrides.css"/>
-    <script src="scripts/yearConstants.js"></script>
-    <script src="scripts/evaluate.js"></script>
+    <!-- Scripts -->
+    <script src="deps/localForage/dist/localforage.js"></script>
+    <script src="deps/mathjs/math.js"></script>
+    <!-- This API key is only allowed for use on Orpheus. If you'd like to add Desmos to your fork of Orpheus or for use in your own project, please visit www.desmos.com/my-api or reach out to the Desmos Studio team at partnerships@desmos.com -->
+    <script src="https://www.desmos.com/api/v1.11/calculator.js?apiKey=14470c380841448eae58c1b5f832477f" onload="
+        // This way, we can check if desmos successfully loaded. If it loaded late (maybe due to slow internet or something), it can call the functions to initialize the things that require it.
+        desmosReady = true;
+        if (typeof onDesmosLoad !== 'undefined') {for (f of onDesmosLoad) f();}"
+    onerror="
+        desmosReady = false;
+    "></script>
+    <script src="scripts/demo.js"></script>
+    <script src="scripts/uihandler.js" defer></script>
+    <script src="scripts/widgets.js" defer></script>
     <script src="scripts/script.js" defer></script>
     <link rel="icon" type="image/x-icon" href="images/favicon.ico">
 </head>
 <body>
     <div class="sticky-header">
         <div class="horizontal-scroll" id="top-controls">
-            <button id="top-control-file" class="dropdown-button">File</button>
-            <dialog class="top-control-dropdown" for="top-control-file">
-                <button id="top-data">Import Data</button>
-                <button id="top-data-download" disabled>Download saved data</button>
-                <div class="dropdown-pause"></div>
-                <button id="top-pit">Import Pit Scouting Data</button>
-                <button id="top-pit-download" disabled>Download pit scouting data</button>
-                <div class="dropdown-pause"></div>
-                <button id="top-mapping">Import mapping</button>
-                <button id="top-mapping-download" disabled>Download saved mapping</button>
-                <div class="dropdown-pause"></div>
-                <button id="top-import-settings">Import Settings</button>
-                <button id="top-export-settings">Export Settings</button>
-                <div class="dropdown-pause"></div>
-                <button id="top-clear-files">Delete Data & Mappings</button>
-            </dialog>
+            <button id="top-control-data" class="dropdown-button">Data</button>
+            <dialog class="top-control-dropdown" for="top-control-data">
+                <div id="top-data-buttons">
 
-            <button id="top-control-event" class="dropdown-button">Event</button>
-            <dialog class="top-control-dropdown" for="top-control-event">
+                </div>
+
+                <button id="top-mapping">Import mapping</button>
+                <button id="top-mapping-download">Download saved mapping</button>
+                <div class="dropdown-pause"></div>
+                <div class="dropdown-pause"></div>
                 <button id="top-load-event">Set Event</button>
-                <button id="top-year">Set Year</button>
-                <button id="top-clear-event">Clear Event Preferences</button>
+                <div class="dropdown-pause"></div>
+                <button id="top-clear-files">Factory Reset</button>
             </dialog>
 
             <button id="top-control-api" class="dropdown-button">APIs</button>
             <dialog class="top-control-dropdown" for="top-control-api">
-                <button id="top-setapi">Set TBA API Key</button>
-                <div class="dropdown-pause"></div>
                 <button id="top-toggle-use-tbaevent">TheBlueAlliance Event API: </button>
                 <button id="top-toggle-use-tbamatch">TheBlueAlliance Match API: </button>
                 <button id="top-toggle-use-tbamedia">TheBlueAlliance Media API: </button>
@@ -65,113 +71,68 @@
             <button id="top-control-preferences" class="dropdown-button">Preferences</button>
             <dialog class="top-control-dropdown" for="top-control-preferences">
                 <button id="top-theme">Toggle Theme</button>
-                <button id="top-keyboard">Keyboard Controls: Enabled</button>
                 <button id="top-projector">Projector Mode: Disabled</button>
-                <button id="top-show-hide-comment-names">Names in Comments: Shown</button>
-                <button id="top-show-hide-ignored">Ignored Teams: Hidden</button>
                 <button id="top-rounding">Rounding: 3 Digits</button>
                 <div class="dropdown-pause"></div>
                 <button id="top-graph-x">Graphs: Relative/Absolute</button>
                 <button id="top-graph-display">Graphs: Points and Lines</button>
                 <div class="dropdown-pause"></div>
-                <button id="top-reset-preferences">Reset to defaults</button>
+                <button id="top-reset-preferences">Reset all to defaults</button>
+                <button id="top-import-settings" disabled>Import State</button>
+                <button id="top-export-settings" disabled>Export Current State</button>
             </dialog>
 
-            <button id="top-control-data" class="dropdown-button">Table</button>
-            <dialog class="top-control-dropdown" for="top-control-data">
-                <button id="top-columns">Edit Table Columns</button>
-                <button id="top-column-reset">Reset Table Columns</button>
+            <button id="top-control-lists" class="dropdown-button">Lists</button>
+            <dialog class="top-control-dropdown" for="top-control-lists">
+                <div class="list-edit"></div>
             </dialog>
 
-            <button id="top-control-notes" class="dropdown-button">Notes</button>
-            <dialog class="top-control-dropdown" for="top-control-notes">
-                <button id="top-notebook">Open Notebook</button>
-                <button id="top-stars">Open team list</button>
-                <button id="top-notebook-clear">Clear Notes</button>
+            <button id="top-control-widgets" class="dropdown-button">Widgets</button>
+            <dialog class="top-control-dropdown" for="top-control-widgets">
+                Bulk Data
+                <button data-widget-type="table">Table</button>
+                <button data-widget-type="graph">Graph</button>
+                <button data-widget-type="info">Team Info</button>
+                <div class="dropdown-pause"></div>
+                Team Info
+                <button data-widget-type="media">Team Media</button>
+                <button data-widget-type="comments">Team Comments</button>
+                <button data-widget-type="matches">Team Matches</button>
             </dialog>
 
-            <button id="top-pictures" disabled>View Robots</button>
+            <button id="top-control-layout" class="dropdown-button">Layout</button>
+            <dialog class="top-control-dropdown" for="top-control-layout">
+                <button class="top-save-layout">Save Layout</button>
+                <button class="top-load-layout">Load Layout</button>
+            </dialog>
 
             <div style="flex-grow: 1"></div>
 
-            <button id="top-credits">Credits</button>
-        </div>
-        <div class="search-controls">
-            <input id="search-4915" autocomplete="off" class="nomargin" placeholder="Search for team">
-            <div id="search-4915-result"></div>
-            <button id="search-open" hidden>Open team page (Enter)</button>
-            <button id="search-star" hidden></button>
-            <button id="search-ignore" hidden></button>
-        </div>
-
-        <h1 class="tool-name"></h1>
-
-        <div id="loading"></div>
-
-        <div class="centered">
-            <div class="welcome" hidden>
-                <h1 id="setup-checklist-title">Setup Checklist</h1>
-                <a href="" id="welcome-help">Tutorial (Coming eventually)</a> <!-- TODO: make this link go to a useful help page instead of nowhere -->
-                <button id="welcome-hide">Hide</button>
-            </div>
+            <a class="link-button" id="top-documentation"
+               href="https://github.com/Sloth4915/Orpheus/blob/main/README.md"
+               rel="noopener noreferrer" target="_blank"
+            >
+                User Guide
+            </a>
+            <button id="top-patch-notes" disabled title="Coming soon">Patch Notes</button>
+            <button id="top-credits" disabled title="Coming soon">Credits</button>
         </div>
 
-        <div class="row table-head main-table b">
-            <div class="icon" title="Icon Placeholder"></div>
-        </div>
+        <h1 class="tool-name">Orpheus</h1>
     </div>
 
-    <div class="table main-table"></div>
+    <div class="content">
 
-    <div class="team-page hidden"></div>
-
-    <div class="credits hidden">
-        <div class="credits-section">
-            <img class="spartronics-logo" src="images/spartronics.jpg">
-            <div class="credits-spartronics-section">
-                <h1>Spartronics</h1>
-                <div>
-                    <span class="tool-name"></span> is created by FRC team 4915.
-                    <br/>
-                    <a href="https://spartronics4915.com/">Team Website</a>
-                    <br/>
-                    <a href="https://spartronics4915.com/donate/">Donate here</a>
-                </div>
-            </div>
-        </div>
-        <div class="credits-section">
-            <a class="big" href="https://www.thebluealliance.com/">Powered by The Blue Alliance</a> <br/>
-            The Blue Alliance has been providing FRC data since 2006 and is an immensely valuable resource.
-            Thank you to TBA for providing an API that provides a plethora of information about every team, event, and match.
-        </div>
-        <div class="credits-section">
-            <a class="big" href="https://www.desmos.com/">Created with the Desmos API, used with permission from Desmos Studio PBC.</a> <br/>
-            Desmos is a really great company, providing free, fantastic math tools including a graphing calculator, scientific calculator, and more, all without advertisements.
-            Thank you to Desmos for providing an easy-to-use API for their amazing graphing calculator.
-        </div>
-        <div class="credits-section">
-            <a class="big" href="https://www.statbotics.io/">Statbotics</a> <br/>
-            Statbotics is a very cool website that calculates a bunch of statistics such as Expected Points Added (EPA).
-        </div>
-        <div class="credits-section horizontal">
-            <h2><u>Open Source</u></h2>
-            This project is open source and can be found on Github <a href="https://github.com/FinnSpartronics/Orpheus">here.</a> Feel free to contribute or make your own version :) <br/>
-            <a href="LICENSE">License</a>
-        </div>
-
-        <button class="big" id="close-credits">Return</button>
     </div>
-    <div class="robot-view hidden"></div>
 
     <footer>
         <span class="version"></span>
         <div style="flex-grow: 1"></div>
-        <a href="https://www.thebluealliance.com/">Powered by The Blue Alliance</a>
+        <a href="https://www.thebluealliance.com/donate">Powered by The Blue Alliance</a>
         <div style="width: 1rem"></div>
         <a href="https://www.desmos.com/">Created with the Desmos API, used with permission from Desmos Studio PBC.</a>
         <div style="width: 1rem"></div>
         <a href="https://www.statbotics.io/">Thanks to Statbotics</a>
-
     </footer>
 
     <div class="edit-columns hidden">
@@ -183,9 +144,9 @@
 
         </div>
         <div class="context-menu-themes">
-            <button class="context-theme" onclick="changeThemeTo(0)"><span class="material-symbols-outlined">light_mode</span></button>
-            <button class="context-theme" onclick="changeThemeTo(1)"><span class="material-symbols-outlined">dark_mode</span></button>
-            <button class="context-theme" onclick="changeThemeTo(2)"><img src="https://mtssdhosting.s3.amazonaws.com/spartronics4915.com/wp-content/uploads/20151121091749/favicon.ico"></button>
+            <button class="context-theme" onclick="changeThemeTo('light')"><span class="material-symbols-outlined">light_mode</span></button>
+            <button class="context-theme" onclick="changeThemeTo('dark')"><span class="material-symbols-outlined">dark_mode</span></button>
+            <button class="context-theme" onclick="changeThemeTo('4915')"><img src="images/spartronics.jpg" alt="Spartronics Mode"></button>
         </div>
     </div>
 
@@ -193,6 +154,9 @@
 
     </div>
 
-    <!-- The Desmos API key is only allowed for use on Orpheus. If you'd like to add Desmos to your fork of Orpheus or for use in your own project, please visit www.desmos.com/my-api or reach out to the Desmos Studio team at partnerships@desmos.com -->
+    <div id="loading">
+        <div id="loading-text">Loading...</div>
+        <div id="loading-status"></div>
+    </div>
 </body>
 </html>

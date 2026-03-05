@@ -8,79 +8,26 @@
             'opsz' 48;
     cursor: default;
     user-select: none;
+    font-size: inherit;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: min-content;
+    height: min-content;
 }
-.offline .material-symbols-outlined {
-    font-size: 1.5rem;
-}
+
 .filled {
     font-variation-settings:
             'FILL' 1,
             'wght' 400,
             'GRAD' 0,
             'opsz' 48;
-    color: var(--star);
-    -webkit-text-stroke-width: 1px;
-    -webkit-text-stroke-color: var(--font);
-}
-.ignore.filled {
-    font-variation-settings:
-            'FILL' 1,
-            'wght' 1600,
-            'GRAD' 0,
-            'opsz' 48;
-    color: var(--red);
     -webkit-text-stroke-width: 1px;
     -webkit-text-stroke-color: var(--font);
 }
 
 html, body {
     overscroll-behavior-x: none;
-}
-
-:root, .force-light {
-    --bg: rgb(247, 247, 247);
-    --line: rgb(214, 214, 214);
-    --font: rgb(31,31,31);
-    --highlight: rgb(222, 237, 250);
-    --star: rgb(244, 228, 0);
-    --icon_bg: white;
-    --disabled: rgb(162,162,162);
-    --shadow: rgba(0, 0, 0, .6);
-    --red: rgb(241, 181, 181);
-    --blue: rgb(190, 204, 233);
-    --green: rgb(146, 212, 162);
-    --yellow: rgb(245, 214, 153);
-    --placeholder: rgb(133, 133, 133);
-}
-:root.dark, .force-dark {
-    --bg: rgb(29, 30, 31);
-    --line: rgb(122, 122, 122);
-    --font: rgb(220,220,220);
-    --highlight: rgb(134, 81, 159);
-    --star: var(--font);
-    --icon_bg: var(--bg);
-    --disabled: rgb(70,70,70);
-    --shadow: rgba(255, 255, 255, .6);
-    --red: rgb(140, 36, 36);
-    --blue: rgb(36, 65, 140);
-    --green: rgb(34, 129, 31);
-    --yellow: rgb(159, 92, 10);
-    --placeholder: rgb(152, 152, 152);
-}
-:root.spartronics_theme, .force-spartronics {
-    --bg: rgb(0, 103, 185);
-    --line: rgb(122, 122, 122);
-    --font: rgb(244, 228, 0);
-    --highlight: rgba(0,0,0, .3);
-    --star: var(--font);
-    --icon_bg: var(--bg);
-    --disabled: rgb(70,70,70);
-    --shadow: rgba(244, 228, 0, .6);
-    --red: rgb(140, 36, 36);
-    --blue: rgb(36, 65, 140);
-    --green: rgb(34, 129, 31);
-    --yellow: rgb(159, 92, 10);
-    --placeholder: rgb(171, 159, 0);
 }
 
 * {

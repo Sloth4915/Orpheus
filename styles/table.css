@@ -1,209 +1,239 @@
+/* Table Widget */
+
 .table {
-    overflow-x: scroll;
-    width: 100%;
-    white-space: nowrap;
-    display:flex;
+    display: flex;
     flex-direction: column;
+    width: max-content;
 }
-
-.table.main-table {
-    min-width: 95vw;
-}
-
-.table.team-table {
-    width: 100%;
-    overflow-x: scroll;
-}
-.table-head.main-table {
-    order: -1000000;
-}
-.table-head.team-table {
-    width: 100%;
-    overflow-x: hidden;
-}
-
-.sticky-header .row.table-head.main-table.b {
-    max-width: 100vw;
-    overflow-x: hidden;
-}
-
 .row {
+    height: 70px;
     display: flex;
-    height: 4rem;
-    align-items: center;
-    width: 100%;
-}
-.row.b {
+    flex-direction: row;
     border-bottom: 1px solid var(--line);
-    border-top: 1px solid var(--line);
-}
-.row.selected-row {
-    background: var(--highlight)
-}
-.row-controls {
-    display: flex;
-    flex-direction: column;
-    border-radius: 0;
-    border-bottom: 1px solid var(--line);
-    height: 100%;
-    justify-content: center;
+    flex-shrink: 0;
+    background: var(--bg);
     align-items: center;
-    box-sizing: border-box;
+    width: max-content;
+    min-width: 100%;
 }
-.row.ignoredlist {
-    justify-content: center;
-    gap: 1rem;
+.row.header {
     position: sticky;
-    left: 0;
+    top:0;
+    order: -10000;
 }
-.row.divider {
-    height: 0;
-    border: 1px solid var(--font)
-}
-
-.icon {
-    width: 3.5rem;
-    height: 3.5rem;
-    border: 1px solid var(--line);
-    border-radius: 4px;
-    padding: 0;
-    aspect-ratio: 1;
-    background-color: var(--icon_bg);
-    margin: 0 4px 0 0;
-}
-div.icon {
-    min-width: 3.5rem;
-    max-width: 3.5rem;
-    background-color: transparent;
-    border: 1px solid transparent;
-}
-
-button.icon-holder {
-    border-radius: 0;
-    border-bottom: 1px solid var(--line);
-    height: 100%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    margin: 0;
-}
-
 .data {
-    font-weight: 900;
-    font-style: normal;
-    color: var(--font);
-    width: 120px;
-    min-width: 80px;
+    padding: 0.25rem;
     display: flex;
     justify-content: center;
     align-items: center;
-    height: 4rem;
-
-    text-align: center;
-
-    padding: 4px;
-
-    text-overflow: ellipsis;
-    word-wrap: break-word;
-    overflow-wrap: break-word;
-    white-space: normal;
-    overflow: hidden;
-
-    user-select: none;
     box-sizing: border-box;
+    height: 100%;
+    font-size: 1.05rem;
+    font-weight: 500;
+    text-align: center;
+    overflow: clip;
+    flex-direction: column;
+    flex-shrink: 0;
+}
+.data.header.selected {
+    background-color: var(--highlight);
+}
 
-    border-radius: 0;
-    border-bottom: 1px solid var(--line);
-}
-.data.tiny {
-    width: 81px;
-    min-width: 54px;
-}
-.data.large {
-    width: 210px;
-    min-width: 140px;
-}
-.data.massive {
-    width: 300px;
-    min-width: 200px;
-}
-.data.header {
-    font-size: .8rem;
-    font-weight: 700;
-    border: 0;
-    border-radius: 8px;
-}
-.data.highlighted {
-    background: var(--highlight);
-}
-.data.header.highlighted {
-    font-weight: 1000;
-}
-.data.top {
-    padding-top: 4px;
-    align-items: start;
-}
-.data.bottom {
-    padding-bottom: 4px;
-    align-items: end;
-}
-.data.dragging {
+.data-controls {
+    display: flex;
+    flex-direction: row;
     position: absolute;
+    top: 0;
+}
+.data-controls div {
+    cursor: pointer;
+    color: var(--line);
+}
+.data-controls div:hover {
+    color: var(--font);
+}
+.data-dragger {
+    cursor: grab;
+    writing-mode: vertical-rl;
+}
+.data-dragger:active {
+    cursor: grabbing;
 }
 
-h1 {
+.data-drag-indicator {
+    width: 4px;
+    height: 100%;
+    background-color: var(--font);
+    border-left: 4px solid var(--bg);
+    border-right: 4px solid var(--bg);
+    position: relative;
+    box-sizing: content-box;
+    margin-left: -9px;
+    margin-right: -4px;
+    z-index: 10000;
+}
+.data-resizer {
+    width: 5px;
+    height: 100%;
+    background-color: var(--line);
+    cursor: col-resize;
+    border-left: 2px solid var(--bg);
+    border-right: 2px solid var(--bg);
+    position: relative;
+    box-sizing: border-box;
+    margin-left: -3px;
+    margin-right: -2px;
+}
+
+.table-logo {
+    width: calc(70px - 0.5rem);
+    height: calc(70px - 0.5rem);
+    margin-right: 0.25rem;
+    border-radius: 0.5rem;
+    border: 1px solid var(--line);
+    object-fit: contain;
+    flex-shrink: 0;
+}
+
+.table-column-drag-remove {
+    background-color: rgba(255, 0, 0, 0.2);
+    position: absolute;
+    width: 4rem;
+    height: 4rem;
+    border-radius: 4px;
+    font-size: 2rem;
+    backdrop-filter: blur(1px);
+    transition: 200ms;
+}
+.table-column-drag-remove:hover {
+    background-color: rgba(255, 0, 0, 0.3);
+    border-radius: 12px;
+    backdrop-filter: blur(4px);
+}
+
+.table-settings-block {
+    width: 2.6rem;
+    display: flex;
+    justify-content: space-evenly;
+    align-items: flex-start;
+    height: 70px;
+    order: 0;
+    overflow-y: scroll;
+}
+.header .table-settings-block {
+    flex-direction: column;
+    justify-content: space-evenly;
+    align-items: center;
+}
+.table-settings-block::-webkit-scrollbar {
+    display: none;
+}
+
+.table-settings-chunk {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-evenly;
+    align-items: center;
+    height: 70px;
+}
+
+.table-setting {
+    border: 0;
+    padding: 0;
+    font-size: 1.05rem;
+    cursor: pointer;
+}
+
+.divider-above, .divider-below {
+    width: 100%;
+    min-height: 2px;
+    background-color: var(--font);
+}
+.divider-above {
+    order: -1;
+}
+.divider-below {
+    order: 999;
+}
+
+.table-scope-holder {
+    background: var(--bg);
+    backdrop-filter: blur(4px);
+    outline: 0;
+    position: fixed;
     margin: 0;
+    filter: drop-shadow(-1px 1px 1px var(--shadow));
+    border-radius: .4rem;
+    border: 1px solid var(--line);
     padding: 0;
 }
 
-.fg {
-    flex-grow: 1;
-}
-.ar {
-    justify-self: end;
+.table-list-scope-edit {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 0.5rem;
 }
 
-.star-ignore-holder {
+/* See lists.css */
+
+.table-column-edit {
+    padding: 0.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+.add-columns-title {
+    font-size: 1.2rem;
+}
+.table-column-edit .add-columns {
+    gap: 0.5rem;
     display: flex;
     flex-direction: column;
 }
-
-.edit-columns {
-    position: fixed;
-    z-index: 10000000;
-    padding: 8px;
-    border: 2px solid var(--font);
-    border-radius: 6px;
-    background-color: var(--bg);
-    width: 60%;
-    min-height: 300px;
+.table-column-panel-group {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    border: 1px solid var(--line);
+    order: -1;
 }
-.edit-columns-list {
+.table-column-panel-group-controller {
+    cursor: pointer;
     display: flex;
+    flex-direction: row;
+    align-items: center;
+    font-weight: bold;
+}
+.table-column-panel-columns-holder .grandchild-holder {
+    order: -1;
+}
+.table-column-panel-columns-holder .child-holder {
+    order: 1;
+    display: flex;
+    flex-direction: row;
+    max-width: 26rem;
     flex-wrap: wrap;
-    min-height: 40px;
-    border: 1px solid var(--line);
-    padding: 4px;
-    border-radius: 4px;
-    gap: 4px;
+    gap: 0.5rem;
+    max-height: 10rem;
+    overflow-y: auto;
 }
-.edit-column {
-    padding: 4px;
-    border: 1px solid var(--line);
-    border-radius: 4px;
-    cursor: grab;
-    user-select: none;
-    background-color: var(--bg);
-    height: min-content;
-}
-.edit-column.dragging {
-    cursor: grabbing;
-    opacity: 50%;
-}
-.edit-column-buttons {
+.table-column-panel-columns-holder {
+    padding-left: 0.75rem;
+    max-width: 20rem;
     display: flex;
-    gap: 4px;
+    flex-direction: column;
+    gap: 0.2rem;
+}
+.table-column-panel-column {
+    cursor: pointer;
+    padding: 0.2rem;
+    user-select: none;
+    order: 15;
+    border: 1px solid var(--line);
+}
+
+.data .ratio-divider {
+    width: 65%;
+    height: 1px;
+    background-color: var(--font);
 }

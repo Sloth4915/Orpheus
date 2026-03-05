@@ -1,3 +1,12 @@
 .hidden {
-    display: none;
+    display: none !important;
+}
+
+/* Projector Mode */
+:root.projector {
+    font-size: 1.5rem;
+}
+
+.strike {
+    text-decoration: line-through;
 }

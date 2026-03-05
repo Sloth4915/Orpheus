@@ -1,0 +1,93 @@
+/* Team Info Widget */
+.team-info-widget {
+    gap: 0.5rem;
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: space-between;
+}
+
+.team-info-logo {
+    width: 5.5rem;
+    height: 5.5rem;
+    border: 2px solid black;
+    border-radius: 0.5rem;
+    box-sizing: border-box;
+}
+
+.team-info-flex-horizontal {
+    display: flex;
+    gap: 0.2rem;
+    max-width: 360px;
+    width: 100%;
+    align-items: center;
+}
+
+.team-info-basic-holder {
+    display: flex;
+    flex-direction: column;
+}
+
+.team-info-name {
+    font-size: 1.5rem;
+    font-weight: bolder;
+}
+
+/* Team Media Widget */
+.team-media-widget {
+    overflow: hidden;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 1.25rem;
+}
+
+.team-media-widget img {
+    object-fit: contain;
+    max-width: 100%;
+    max-height: 100%;
+}
+
+.team-media-controls {
+    display: flex;
+    gap: 1rem;
+    background-color: rgba(0,0,0,0.5);
+    border-radius: 1.5rem 1.5rem 0 0;
+    padding: 0.5rem;
+    backdrop-filter: blur(3px);
+    color: var(--font-light);
+    opacity: 0;
+    transition: 200ms opacity;
+    position: absolute;
+    justify-content: space-evenly;
+    align-items: center;
+}
+.team-media-controls.shown {
+    opacity: 1;
+}
+
+.team-media-controls div {
+    color: var(--font-light);
+    font-size: 1.5rem;
+}
+
+.team-media-controls button {
+    font-size: 2rem;
+    background-color: transparent;
+    border: 1px solid var(--font-light);
+    color: var(--font-light);
+    height: 2rem;
+}
+
+.team-media-controls button:hover {
+    backdrop-filter: brightness(110%);
+}
+
+/* Reuses scope editor from graph */
+
+.team-info-list {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-evenly;
+}

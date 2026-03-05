@@ -1,0 +1,62 @@
+:root, .force-light {
+    --bg: rgb(247, 247, 247);
+    --line: rgb(214, 214, 214);
+    --font: rgb(31,31,31);
+    --highlight: rgb(222, 237, 250);
+    --icon_bg: white;
+    --disabled: rgb(162,162,162);
+    --shadow: rgba(0, 0, 0, .6);
+    --red: rgb(241, 181, 181);
+    --blue: rgb(190, 204, 233);
+    --green: rgb(146, 212, 162);
+    --yellow: rgb(245, 214, 153);
+    --placeholder: rgb(133, 133, 133);
+
+    --list-red: rgb(255, 55, 55);
+    --list-watermelon: rgb(255, 137, 137);
+    --list-orange: rgb(245, 147, 0);
+    --list-gold: rgb(255, 210, 0);
+    --list-lime: rgb(138, 241, 153);
+    --list-emerald: rgb(103, 168, 115);
+    --list-turquoise: rgb(105, 182, 192);
+    --list-sky: rgb(116, 216, 227);
+    --list-blue: rgb(36, 96, 227);
+    --list-purple: rgb(119, 24, 225);
+    --list-purple-pastel: rgb(189, 150, 231);
+    --list-magenta: rgb(255, 74, 246);
+    --list-brown: rgb(121, 88, 67);
+
+    --font-light: var(--bg);
+}
+:root.dark, .force-dark {
+    --bg: rgb(29, 30, 31);
+    --line: rgb(87, 87, 87);
+    --font: rgb(220,220,220);
+    --highlight: rgb(134, 81, 159);
+    --icon_bg: var(--bg);
+    --disabled: rgb(70,70,70);
+    --shadow: rgba(255, 255, 255, .6);
+    --red: rgb(140, 36, 36);
+    --blue: rgb(36, 65, 140);
+    --green: rgb(34, 129, 31);
+    --yellow: rgb(159, 92, 10);
+    --placeholder: rgb(152, 152, 152);
+
+    --font-light: var(--font);
+}
+:root.spartronics_theme, .force-spartronics {
+    --bg: rgb(0, 103, 185);
+    --line: rgb(122, 122, 122);
+    --font: rgb(244, 228, 0);
+    --highlight: rgba(0,0,0, .3);
+    --icon_bg: var(--bg);
+    --disabled: rgb(70,70,70);
+    --shadow: rgba(244, 228, 0, .6);
+    --red: rgb(140, 36, 36);
+    --blue: rgb(36, 65, 140);
+    --green: rgb(34, 129, 31);
+    --yellow: rgb(159, 92, 10);
+    --placeholder: rgb(171, 159, 0);
+
+    --font-light: var(--font);
+}
