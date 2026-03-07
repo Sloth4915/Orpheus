@@ -51,6 +51,11 @@ dialog {
 .top-control-dropdown div button {
     margin: 0;
 }
+.top-button-cluster {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+}
 
 #loading {
     color: var(--font);

@@ -37,6 +37,9 @@ button.icon-holder {
     height: fit-content;
     padding: 0;
 }
+button.selected {
+    background-color: var(--highlight);
+}
 
 select {
     max-width: 150px;

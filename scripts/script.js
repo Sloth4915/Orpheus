@@ -28,6 +28,7 @@ const version = 0.1
 let eventKey
 let event_data
 let uploadedData = {}
+let dataStatus = {}
 let team_data = {}
 let api_data = {}
 let tba_match_data = {}
@@ -270,7 +271,7 @@ function loadEvent() {
 }
 //#endregion
 
-//#region Data and Mappings
+//#region Data Processing, Mappings, Data Uploads
 // Import mapping button
 document.querySelector("#top-mapping").onclick = function() {
     loadFile(".json", (result) => {
@@ -647,49 +648,6 @@ function evaluate(expression, schema, context) {
     return math.evaluate(replaceConstants(expression), functions)
 }
 
-function dataButtons() {
-    let data = document.querySelector("#top-data-buttons")
-
-    if (typeof uploadedData == "undefined") uploadedData = {}
-
-    function uploadData(schema) {
-        loadFile(".csv,.json", (result, filetype) => {
-            let data
-            filetype = filetype == "csv" || filetype == "json" ? filetype : prompt("What is the filetype? (csv/json)").toLowerCase().trim()
-            if (filetype === "csv") data = csvToJson(result) // Converts CSV to JSON
-            else if (filetype === "json") data = JSON.parse(result) // Parses json
-            else return
-            console.log(data)
-            uploadedData[schema] = data
-            localforage.setItem(storageKeys.DATA, uploadedData)
-            document.querySelector("#top-download-" + schema).disabled = false
-            saveGeneralSettings()
-            window.location.reload()
-        })
-    }
-
-    if (typeof mapping !== "undefined") {
-        for (let schema of Object.keys(mapping)) {
-            let uploadButton = document.createElement("button")
-            uploadButton.innerText = "Upload " + (mapping[schema]["alias"] ? mapping[schema]["alias"] : schema)
-            uploadButton.addEventListener("click", () => uploadData(schema))
-            data.appendChild(uploadButton)
-
-            let downloadButton = document.createElement("button")
-            downloadButton.innerText = "Download saved " + (mapping[schema]["alias"] ? mapping[schema]["alias"] : schema)
-            downloadButton.id = "top-download-" + schema
-
-            downloadButton.disabled = (typeof uploadedData[schema] === "undefined") || !(uploadedData[schema].length)
-            downloadButton.addEventListener("click", () => download((mapping[schema]["alias"] ? mapping[schema]["alias"] : schema) + ".json", JSON.stringify(uploadedData[schema])))
-            data.appendChild(downloadButton)
-
-            let dropdownPause = document.createElement("div")
-            dropdownPause.className = "#dropdown-pause"
-            data.appendChild(dropdownPause)
-        }
-    }
-}
-
 function csvToJson(csv) {
     let rawFields = csv.split("\n")[0]
 
@@ -776,6 +734,72 @@ function isDataUploaded() {
     if (typeof mapping === "undefined") return false
     for (let key of Object.keys(mapping)) if (typeof uploadedData[key] === "undefined") return false
     return true
+}
+
+function dataButtons() {
+    let data = document.querySelector("#top-data-buttons")
+
+    if (typeof uploadedData == "undefined") uploadedData = {}
+
+    if (typeof mapping !== "undefined") {
+        for (let schema of Object.keys(mapping)) {
+            let label = document.createElement("div")
+            label.innerText = mapping[schema]["alias"] ??  schema
+            data.appendChild(label)
+
+            let dataInButtons = document.createElement("div")
+            dataInButtons.className = "top-button-cluster"
+            data.appendChild(dataInButtons)
+
+            let uploadButton = document.createElement("button")
+            uploadButton.innerText = "Upload"
+            uploadButton.title = "Upload data. You'll need to keep redoing this for updates."
+            uploadButton.addEventListener("click", () => {
+                loadFile(".csv,.json", (result, filetype) => {
+                    let data
+                    filetype = filetype == "csv" || filetype == "json" ? filetype : prompt("What is the filetype? (csv/json)").toLowerCase().trim()
+                    if (filetype === "csv") data = csvToJson(result) // Converts CSV to JSON
+                    else if (filetype === "json") data = JSON.parse(result) // Parses json
+                    else return
+                    console.log(data)
+                    uploadedData[schema] = data
+                    localforage.setItem(storageKeys.DATA, uploadedData)
+                    downloadButton.disabled = false
+                    saveGeneralSettings()
+                    window.location.reload()
+                })
+            })
+            if (dataStatus[schema] === "uploaded") uploadButton.classList.add("selected")
+            dataInButtons.appendChild(uploadButton)
+
+            let apiButton = document.createElement("button")
+            apiButton.innerText = "Load from URL"
+            apiButton.title = "Load your scouting data from a URL. Requires internet connectivity for updates"
+            if (dataStatus[schema] === "api") apiButton.classList.add("selected")
+            apiButton.addEventListener("click", () => {
+                let url = prompt("What is the URL for this data? It must return a JSON array or a JSON object where the 'data' key is an array.")
+                if (url === null) return
+                uploadedData[schema] = url
+                localforage.setItem(storageKeys.DATA, uploadedData)
+                downloadButton.disabled = false
+                saveGeneralSettings()
+                window.location.reload()
+            })
+            dataInButtons.appendChild(apiButton)
+
+            let downloadButton = document.createElement("button")
+            downloadButton.innerText = "Download"
+            downloadButton.id = "top-download-" + schema
+
+            downloadButton.disabled = (typeof uploadedData[schema] === "undefined") || !(uploadedData[schema].length)
+            downloadButton.addEventListener("click", () => download((mapping[schema]["alias"] ? mapping[schema]["alias"] : schema) + ".json", JSON.stringify(uploadedData[schema])))
+            data.appendChild(downloadButton)
+
+            let dropdownPause = document.createElement("div")
+            dropdownPause.className = "#dropdown-pause"
+            data.appendChild(dropdownPause)
+        }
+    }
 }
 
 // Mapping Download
@@ -1473,6 +1497,22 @@ localforage.getItem(storageKeys.SETTINGS, (err, settings) => {
 })
 localforage.getItem(storageKeys.DATA, (err, val) => {
     uploadedData = val == null ? undefined : val
+    if (uploadedData !== null && typeof uploadedData !== "undefined") {
+        for (let schema of Object.keys(uploadedData)) {
+            if (typeof uploadedData[schema] === "string") {
+                console.log("api time", schema)
+                loadOther(uploadedData[schema], (data) => {
+                    console.log('loaded ' + schema + " data")
+                    if (Array.isArray(data)) uploadedData[schema] = data
+                    else uploadedData[schema] = data["data"]
+                })
+                dataStatus[schema] = "api"
+            } else {
+                console.log("uploaded", schema)
+                dataStatus[schema] = "uploaded"
+            }
+        }
+    }
     if (!--initLoading) finishInit()
 })
 localforage.getItem(storageKeys.MAPPING, (err, val) => {

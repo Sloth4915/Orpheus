@@ -126,6 +126,8 @@ Inside of each, there are a few things you will have:
 }
 ```
 
+Schemas may not be called `orpheus`
+
 ### 3.5 Columns and Data
 
 The data key for each schema contains various columns/datapoints that you'll be able to view in Orpheus. You can also further organize this section a folder-like structure, as shown below.
