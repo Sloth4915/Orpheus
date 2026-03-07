@@ -23,7 +23,7 @@ const storageKeys = {
 const MISSING_LOGO = "https://frc-cdn.firstinspires.org/eventweb_frc/ProgramLogos/FIRSTicon_RGB_withTM.png"
 
 const toolName = "Orpheus"
-const version = 0.1
+const version = "2.1"
 
 let eventKey
 let event_data
@@ -1365,6 +1365,7 @@ function setEnabledAPIS() {
 
 //#region Context menu (right click menu)
 document.addEventListener("contextmenu", (e) => {
+    return
     let contextMenu = document.querySelector(".context-menu")
 
     if (contextMenu.contains(e.target) || controlPressed || e.target.tagName === 'A') { // If right clicking on context menu, open browser context menu

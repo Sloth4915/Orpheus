@@ -26,6 +26,9 @@ class Table extends Widget {
          */
         this.showAll = true
         this.scope = {}
+        for (let list of Lists.lists) {
+            this.scope[list.id] = list.sort
+        }
         this.scopePanel = document.createElement("dialog")
         this.scopePanel.className = "table-scope-holder"
         this.content.appendChild(this.scopePanel)
@@ -1718,9 +1721,6 @@ class Welcome extends Widget {
                 let tabGroup = new WidgetTabGroup()
 
                 let table1 = new Table()
-                for (let list of Lists.lists) {
-                    table1.scope[list.id] = list.sort
-                }
                 table1.addColumn(["orpheus`number", "orpheus`name", "match`Coral`L1", "match`Coral`L4", "match`Coral`Auto", "match`Coral`Total", "match`Climb Points", "pit`Drivetrain"])
                 table1.hardRefresh()
 

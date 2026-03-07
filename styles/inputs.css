@@ -1,5 +1,5 @@
 button, input, a.link-button {
-    height: 1.2rem;
+    max-height: 1.3rem;
     padding: 0 1rem 0 1rem;
     font-size: .8rem;
     font-family: "Lato", sans-serif;
