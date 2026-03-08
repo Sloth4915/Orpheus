@@ -1112,7 +1112,6 @@ class Graph extends Widget {
     }
 
     out() {
-        delete this.allianceMode
         return super.out({
             teams: this.teams,
             list: this.list,
@@ -1352,7 +1351,6 @@ class TeamInfo extends Widget {
     }
 
     out() {
-        delete this.allianceMode
         return super.out({
             list: this.list,
             teams: this.teams,

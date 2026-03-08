@@ -835,7 +835,7 @@ class List {
         this.sort = sort
         this.color = color
         this.teams = teams
-        this.enabled = true
+        this.hidden = false
         if (id === null) this.id = Widget.generateId()
         else {
             this.id = id
@@ -1131,6 +1131,7 @@ const Lists = {
             ))
             this.setListEditPanel()
         })
+        if (List.red !== null) addList.className = "hidden"
         panel.appendChild(addList)
 
         if (usingTBAMatches) {
@@ -1159,6 +1160,10 @@ const Lists = {
                 List.blue = new List("Blue Alliance", "circle", List.Colors.BLUE, List.Sort.SORT_BELOW, blueTeams)
                 Lists.add(List.blue)
 
+                for (let list of this.lists) list.hidden = true
+                List.red.hidden = false
+                List.blue.hidden = false
+
                 setMatchNum.classList.remove("hidden")
                 Events.emit(Events.SET_LISTS_MODE)
             }
@@ -1169,7 +1174,7 @@ const Lists = {
             setMatchNum.addEventListener("click", () => {
                 let x = parseInt(prompt("What qualification match number?"))
                 if (isNaN(x)) return
-                setMatch(x)
+                setMatch.call(this, x)
             })
             panel.appendChild(setMatchNum)
 
@@ -1178,9 +1183,7 @@ const Lists = {
                     let x = parseInt(prompt("What qualification match number?"))
                     if (isNaN(x)) return
 
-                    for (let list of this.lists) list.hidden = true
-
-                    setMatch(x)
+                    setMatch.call(this, x)
                 } else {
                     for (let list of this.lists) list.hidden = false
                     Lists.remove(List.red)
