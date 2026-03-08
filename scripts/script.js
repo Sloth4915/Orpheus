@@ -835,6 +835,7 @@ class List {
         this.sort = sort
         this.color = color
         this.teams = teams
+        this.enabled = true
         if (id === null) this.id = Widget.generateId()
         else {
             this.id = id
@@ -893,7 +894,6 @@ class List {
         //"editor_choice",
         "diamond_shine",
         "bookmark",
-        "bookmark_heart",
         "bookmark_flag",
         "bookmark_star",
         //"skull_list",
@@ -903,6 +903,7 @@ class List {
         //"target",
         "shield",
         "taunt",
+        "circle",
         "filter_1",
         "filter_2",
         "filter_3",
@@ -938,6 +939,9 @@ class List {
     })
 
     static ALL = new List("All", "", "", List.Sort.NO_CHANGE, [], "LIST_ALL")
+    static red = null
+    static blue = null
+    static allianceMatch = null
 
     static from(object) {
         let list = new List(object.name, object.icon, object.color, object.sort, object.teams, object.id)
@@ -958,6 +962,10 @@ const Lists = {
     remove(list) {
         this.lists.splice(this.lists.indexOf(list), 1)
         main.hardRefresh()
+
+        if (list === List.red) List.red = null
+        else if (list === List.blue) List.blue = null
+
         Events.emit(Events.LIST_CHANGE)
     },
     indexOf(list) {
@@ -982,6 +990,8 @@ const Lists = {
         let panel = document.querySelector(".list-edit")
         panel.innerHTML = ""
         for (let list of this.lists) {
+            if (list.hidden) continue
+
             let el = document.createElement("div")
             el.className = "list"
 
@@ -997,6 +1007,7 @@ const Lists = {
                 this.setListEditPanel()
             })
             moveListHolder.appendChild(moveUp)
+
             let moveDown = document.createElement("div")
             moveDown.className = "material-symbols-outlined filled list-move-btn"
             moveDown.innerText = "arrow_drop_down"
@@ -1095,16 +1106,18 @@ const Lists = {
             })
             el.appendChild(dropdown)
 
-            let deleteButton = document.createElement("button")
-            deleteButton.className = "material-symbols-outlined list-delete"
-            deleteButton.innerText = "delete"
-            deleteButton.addEventListener("click", () => {
-                if(confirm("Are you sure you want to delete " + list.name + "? This cannot be undone.")) {
-                    Lists.remove(list)
-                    el.remove()
-                }
-            })
-            el.appendChild(deleteButton)
+            if (list !== List.red && list !== List.blue) {
+                let deleteButton = document.createElement("button")
+                deleteButton.className = "material-symbols-outlined list-delete"
+                deleteButton.innerText = "delete"
+                deleteButton.addEventListener("click", () => {
+                    if (confirm("Are you sure you want to delete " + list.name + "? This cannot be undone.")) {
+                        Lists.remove(list)
+                        el.remove()
+                    }
+                })
+                el.appendChild(deleteButton)
+            }
 
             panel.appendChild(el)
         }
@@ -1119,6 +1132,66 @@ const Lists = {
             this.setListEditPanel()
         })
         panel.appendChild(addList)
+
+        if (usingTBAMatches) {
+            let useAlliances = document.createElement("button")
+            useAlliances.innerText = (List.red == null) ? "Use Alliances" : "Hide Alliances"
+            panel.appendChild(useAlliances)
+
+            function setMatch(match) {
+                List.allianceMatch = match
+                setMatchNum.innerText = "Match " + List.allianceMatch
+
+                let redTeams = []
+                let blueTeams = []
+
+                for (let team of tba_match_data[match]["alliances"]["red"]["team_keys"]) redTeams.push(parseInt(team.substring(3)))
+                for (let team of tba_match_data[match]["alliances"]["blue"]["team_keys"]) blueTeams.push(parseInt(team.substring(3)))
+
+                if (List.red !== null) {
+                    Lists.remove(List.red)
+                    Lists.remove(List.blue)
+                    List.red = null
+                    List.blue = null
+                }
+                List.red = new List("Red Alliance", "circle", List.Colors.RED, List.Sort.SORT_ABOVE, redTeams)
+                Lists.add(List.red)
+                List.blue = new List("Blue Alliance", "circle", List.Colors.BLUE, List.Sort.SORT_BELOW, blueTeams)
+                Lists.add(List.blue)
+
+                setMatchNum.classList.remove("hidden")
+                Events.emit(Events.SET_LISTS_MODE)
+            }
+
+            let setMatchNum = document.createElement("button")
+            setMatchNum.innerText = "Match " + List.allianceMatch
+            if (List.red === null) setMatchNum.className = "hidden"
+            setMatchNum.addEventListener("click", () => {
+                let x = parseInt(prompt("What qualification match number?"))
+                if (isNaN(x)) return
+                setMatch(x)
+            })
+            panel.appendChild(setMatchNum)
+
+            useAlliances.addEventListener("click", () => {
+                if (List.red == null) {
+                    let x = parseInt(prompt("What qualification match number?"))
+                    if (isNaN(x)) return
+
+                    for (let list of this.lists) list.hidden = true
+
+                    setMatch(x)
+                } else {
+                    for (let list of this.lists) list.hidden = false
+                    Lists.remove(List.red)
+                    Lists.remove(List.blue)
+                    List.red = null
+                    List.blue = null
+                    Events.emit(Events.SET_LISTS_MODE)
+                }
+                Lists.setListEditPanel()
+            })
+        }
     },
     /**
      * Gets and returns the list that affects a particular team
@@ -1129,11 +1202,11 @@ const Lists = {
     getSortAffectingTeam(team, scope = {}, showAll = true) {
         for (let list of Lists.lists) {
             if (typeof scope[list.id] !== "undefined") {
-                if (list.includes(team))
+                if (list.includes(team) && !list.hidden)
                     return scope[list.id] === List.Sort.LIST_DEFAULT ? list.sort : scope[list.id]
             }
         }
-        if (showAll) return List.Sort.NO_CHANGE
+        if (showAll && List.red === null) return List.Sort.NO_CHANGE
         else return List.Sort.HIDE
     },
 
@@ -1141,7 +1214,13 @@ const Lists = {
      * Saves to browser storage for later :)
      */
     save() {
-        localforage.setItem(storageKeys.LISTS, JSON.stringify(this.lists))
+        let lists = []
+        for (let l of this.lists) {
+            let lcopy = JSON.parse(JSON.stringify(l))
+            lcopy.hidden = false
+            if (l !== List.red && l !== List.blue) lists.push(l)
+        }
+        localforage.setItem(storageKeys.LISTS, JSON.stringify(lists))
     },
 
     equal(a, b) {
@@ -1181,6 +1260,7 @@ const Events = {
     LIST_CHANGE: 1,
     GRAPH_SETTINGS: 2,
     DATA_PROCESSED: 3,
+    SET_LISTS_MODE: 4,
 }
 
 //#endregion

@@ -11,7 +11,6 @@
     justify-content: space-evenly;
     align-items: center;
 }
-
 .graph-team {
     display: flex;
     justify-content: center;
@@ -19,15 +18,13 @@
     gap: 0.5rem;
     cursor: pointer;
 }
-
 .graph-team-name {
-    font-size: 1.3rem;
+    font-size: 1.05rem;
     font-weight: bolder;
 }
-
 .graph-logo {
-    width: 40px;
-    height: 40px;
+    width: 32px;
+    height: 32px;
     border-radius: 0.5rem;
     border: 1px solid var(--line);
     object-fit: contain;
@@ -40,11 +37,11 @@
     gap: 0.25rem;
 }
 .small .graph-logo {
-    width: 30px;
-    height: 30px;
+    width: 24px;
+    height: 24px;
 }
 .small .graph-team-name {
-    font-size: 1rem;
+    font-size: 0.9rem;
     font-weight: bolder;
 }
 

@@ -27,12 +27,19 @@ class Table extends Widget {
         this.showAll = true
         this.scope = {}
         for (let list of Lists.lists) {
-            this.scope[list.id] = list.sort
+            this.scope[list.id] = List.Sort.LIST_DEFAULT
         }
         this.scopePanel = document.createElement("dialog")
         this.scopePanel.className = "table-scope-holder"
         this.content.appendChild(this.scopePanel)
 
+        Events.on(Events.SET_LISTS_MODE, () => {
+            if (List.red !== null) {
+                this.scope[List.red.id] = List.red.sort
+                this.scope[List.blue.id] = List.blue.sort
+            }
+            this.hardRefresh()
+        }, this)
         Events.on(Events.LIST_CHANGE, this.sortRows, this)
 
         this.content.classList.add("table")
@@ -299,6 +306,8 @@ class Table extends Widget {
                 let index = parseInt(i)
                 let list = Lists.lists[index]
 
+                if (list.hidden) continue
+
                 let listEl = document.createElement("div")
                 listEl.className = "table-setting material-symbols-outlined"
                 listEl.style.color = ""
@@ -490,6 +499,8 @@ class Table extends Widget {
             let el = document.createElement("div")
             el.className = "list"
 
+            if (list.hidden) continue
+
             let checkbox = document.createElement("input")
             checkbox.type = "checkbox"
             checkbox.checked = (typeof this.scope[list.id] !== "undefined")
@@ -522,6 +533,7 @@ class Table extends Widget {
                 "Sort Above": List.Sort.SORT_ABOVE,
                 "Sort Below": List.Sort.SORT_BELOW,
                 "Hide": List.Sort.HIDE,
+                "No Change": List.Sort.NO_CHANGE,
             }
             options["List Default (" + Object.fromEntries(Object.entries(options).map(a => a.reverse()))[list.sort] + ")"] = List.Sort.LIST_DEFAULT
             for (let option of Object.keys(options)) {
@@ -730,6 +742,11 @@ class Graph extends Widget {
         this.list = null
         this.selectedTeam = null
 
+        this.allianceMode = List.red !== null
+        if (this.allianceMode) {
+            this.teams = [...List.red.teams, ...List.blue.teams]
+        }
+
         this.scopePanel = document.createElement("dialog")
         this.scopePanel.className = "table-scope-holder"
         this.content.appendChild(this.scopePanel)
@@ -767,6 +784,13 @@ class Graph extends Widget {
             }
         }, this)
         Events.on(Events.GRAPH_SETTINGS, this.hardRefresh, this)
+        Events.on(Events.SET_LISTS_MODE, () => {
+            this.allianceMode = List.red !== null
+            if (this.allianceMode) this.teams = [...List.red.teams, ...List.blue.teams]
+            else if (this.list !== null) this.teams = JSON.parse(JSON.stringify(this.list.teams))
+            else this.teams = []
+            this.redoWidget()
+        }, this)
 
         let graphDropdown = document.createElement("select")
         graphDropdown.className = ""
@@ -798,12 +822,14 @@ class Graph extends Widget {
             this.name = "Graph - " + this.column.graph
             this.redoWidget()
         })
+        graphDropdown.value = ""
     }
 
     refresh() {
         super.refresh();
         if (this.content.offsetHeight < 500 || this.content.offsetWidth < 550 || (this.teamsEl.offsetHeight / this.content.offsetHeight > 0.25)) this.content.classList.add("small")
         else this.content.classList.remove("small")
+
         this.calcEl.style.width = this.content.offsetWidth - 2 + "px"
         this.calcEl.style.height = this.content.offsetHeight - this.teamsEl.offsetHeight + "px"
     }
@@ -924,6 +950,7 @@ class Graph extends Widget {
             teamName.className = "graph-team-name"
             teamName.style.color = this.getTeamColor(i)
             teamName.innerText = this.getShapeSymbol(this.getTeamShape(i)) + " " + (usingTBA ? t + " " + team_data[t]["Name"] : t)
+            teamName.title = this.getShapeSymbol(this.getTeamShape(i)) + " " + (usingTBA ? t + " " + team_data[t]["Name"] : t)
             teamEl.appendChild(teamName)
 
             teamEl.addEventListener("mousedown", (e) => {
@@ -938,7 +965,15 @@ class Graph extends Widget {
     }
     getTeamColor(i) {
         let ctx = new OffscreenCanvas(1,1).getContext("2d")
-        ctx.fillStyle = "oklch(56% 46% "+((360 / this.teams.length) * (i))+")"
+        if (this.allianceMode) {
+            if (i < 3) {
+                ctx.fillStyle = "oklch(56% 46% "+(50 * i)+")"
+            } else {
+                ctx.fillStyle = "oklch(56% 46% "+(205 + (45 * (i - 3)))+")"
+            }
+        } else {
+            ctx.fillStyle = "oklch(56% 46% "+((360 / this.teams.length) * (i))+")"
+        }
         ctx.fillRect(0,0,1,1)
         return "rgba(" + ctx.getImageData(0,0,1,1).data.join(", ") + ")"
     }
@@ -973,6 +1008,13 @@ class Graph extends Widget {
         let panel = document.createElement("div")
         panel.className = "graph-list-scope-edit"
         this.scopePanel.appendChild(panel)
+
+        if (List.red !== null) {
+            let allianceMode = document.createElement("div")
+            allianceMode.innerText = "Alliance mode is enabled."
+            panel.appendChild(allianceMode)
+            return
+        }
 
         let listsLabel = document.createElement("div")
         listsLabel.innerText = "List"
@@ -1070,6 +1112,7 @@ class Graph extends Widget {
     }
 
     out() {
+        delete this.allianceMode
         return super.out({
             teams: this.teams,
             list: this.list,
@@ -1088,6 +1131,7 @@ class TeamInfo extends Widget {
 
         this.list = List.ALL
         this.teams = Object.keys(team_data)
+        this.allianceMode = List.red !== null
 
         this.content.classList.add("team-info-widget")
 
@@ -1096,13 +1140,20 @@ class TeamInfo extends Widget {
         this._header.holder.appendChild(this.scopePanel)
         this.addHeaderIcon("visibility", "Scope", this.scopePanel, this.openScopeEditor)
         Events.on(Events.LIST_CHANGE, () => this.onListChange(), this)
+        Events.on(Events.SET_LISTS_MODE, () => {
+            this.allianceMode = List.red !== null
+            this.redoList()
+        }, this)
     }
     redoList() {
         this.content.innerHTML = ""
 
-        if (this.teams.length > 0) {
+        let teams = this.teams
+        if (this.allianceMode) teams = [...List.red.teams, ...List.blue.teams]
+
+        if (teams.length > 0) {
             let name = ""
-            for (let team of this.teams) {
+            for (let team of teams) {
                 let imageAndBasicHolderHolder = document.createElement("div")
                 imageAndBasicHolderHolder.className = "team-info-flex-horizontal"
                 this.content.appendChild(imageAndBasicHolderHolder)
@@ -1156,7 +1207,7 @@ class TeamInfo extends Widget {
                 basicInfoHolder.appendChild(eventRank)
 
                 if (usingTBA) {
-                    if (this.teams.length > 1) name = name + ", " + team
+                    if (teams.length > 1) name = name + ", " + team
                     else name = name + ", " + team + " " + team_data[team].Name
 
                     nameEl.innerText = team + " " + team_data[team].Name
@@ -1188,6 +1239,13 @@ class TeamInfo extends Widget {
         let panel = document.createElement("div")
         panel.className = "graph-list-scope-edit"
         this.scopePanel.appendChild(panel)
+
+        if (List.red !== null) {
+            let allianceMode = document.createElement("div")
+            allianceMode.innerText = "Alliance mode is enabled."
+            panel.appendChild(allianceMode)
+            return
+        }
 
         let listsLabel = document.createElement("div")
         listsLabel.innerText = "List"
@@ -1294,6 +1352,7 @@ class TeamInfo extends Widget {
     }
 
     out() {
+        delete this.allianceMode
         return super.out({
             list: this.list,
             teams: this.teams,
