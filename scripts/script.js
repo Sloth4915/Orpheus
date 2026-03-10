@@ -23,7 +23,7 @@ const storageKeys = {
 const MISSING_LOGO = "https://frc-cdn.firstinspires.org/eventweb_frc/ProgramLogos/FIRSTicon_RGB_withTM.png"
 
 const toolName = "Orpheus"
-const version = "2.1"
+const version = "2.2"
 
 let eventKey
 let event_data
@@ -294,6 +294,9 @@ document.querySelector("#top-mapping").onclick = function() {
 math.import({
     equal: function(a,b) {
         return a == b
+    },
+    includes: function(a,b) {
+        return (""+a).includes(""+b)
     }
 }, {override: true})
 
