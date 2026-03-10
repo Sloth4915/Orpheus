@@ -400,6 +400,9 @@ class Table extends Widget {
 
         // TODO do the below less
         for (let col of this.columns) this.setTextSizes(col)
+
+        this.aboveDivider.style.width = this.content.scrollWidth + "px"
+        this.belowDivider.style.width = this.content.scrollWidth + "px"
     }
     sortRows() {
         if (this.teams.length === 0 || this.activeColumn === "" || this.parent === null) return
@@ -869,11 +872,13 @@ class Graph extends Widget {
 
             for (let m in this.column.data[team]) {
                 if (!isNaN(parseFloat(m))) {
-                    if (graphSettings.x === "relative") {
-                        if (usingTBAMatches) {
+                    console.log(graphSettings.x)
+                    if (usingTBAMatches) {
+                        if (graphSettings.x === "relative") {
                             if (!Object.keys(team_data[team].TBA.matches).includes(m)) continue
                             else {
-                                let relativeNumber = Object.keys(team_data[team].TBA.matches).indexOf(m) + 1
+                                console.log(Object.keys(team_data[team].TBA.matches))
+                                let relativeNumber = Object.keys(team_data[team].TBA.matches).indexOf(''+m) + 1
                                 matches.push(relativeNumber)
                                 minX = Math.min(minX, relativeNumber)
                                 maxX = Math.max(maxX, relativeNumber)
@@ -1208,6 +1213,8 @@ class TeamInfo extends Widget {
                 if (usingTBA) {
                     if (teams.length > 1) name = name + ", " + team
                     else name = name + ", " + team + " " + team_data[team].Name
+
+                    if (typeof team_data[team].TBA === "undefined") continue
 
                     nameEl.innerText = team + " " + team_data[team].Name
                     location.innerText = team_data[team].TBA["school_name"]
@@ -1811,6 +1818,13 @@ class Welcome extends Widget {
             gameMapping = {
                 "year": 2025
             }
+
+            usingTBA = true
+            usingTBAMatches = true
+            usingTBAMedia = true
+            usingStatbotics = true
+            usingDesmos = true
+
             loadEvent()
 
             this.parent.removeChild(this)

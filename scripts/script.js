@@ -50,7 +50,9 @@ let showTeamIcons
 let roundingDigits = 3
 let rounding = Math.pow(10, roundingDigits)
 
-let onDesmosLoad = []
+let onDesmosLoad = [() => {
+    document.querySelector("#top-add-graph").disabled = false
+}]
 
 /*
 This API key should only be used on Orpheus. If you fork Orpheus, please get your own API key from https://www.thebluealliance.com/
@@ -149,6 +151,11 @@ function loadEvent() {
     }
 
     if (usingTBA) {
+        internalMapping["name"] = {
+            "alias": "Team Name",
+            "type": "",
+            "table": true
+        }
         load("event/" + eventKey + "/teams", function (data) {
             event_data = data
 
@@ -267,6 +274,8 @@ function loadEvent() {
                 }
             })
         }
+    } else {
+        processData()
     }
 }
 //#endregion
@@ -276,8 +285,9 @@ function loadEvent() {
 document.querySelector("#top-mapping").onclick = function() {
     loadFile(".json", (result) => {
         mapping = JSON.parse(result)
-        localforage.setItem(storageKeys.MAPPING, mapping)
-        location.reload()
+        localforage.setItem(storageKeys.MAPPING, mapping, () => {
+            window.location.reload()
+        })
     })
 }
 
@@ -290,11 +300,6 @@ math.import({
 let internalMapping = {
     "number": {
         "alias": "Team Number",
-        "type": "",
-        "table": true
-    },
-    "name": {
-        "alias": "Team Name",
         "type": "",
         "table": true
     },
@@ -345,7 +350,10 @@ function processData() {
     if (usingTBAMatches) {
         for (let t in team_data) {
             let matches = {}
-            for (let m in tba_match_data) matches[m] = tba_match_data[m]
+            for (let m in tba_match_data) {
+                if (tba_match_data[m]["alliances"]["blue"]["team_keys"].includes("frc" + t) || tba_match_data[m]["alliances"]["red"]["team_keys"].includes("frc" + t))
+                matches[m] = tba_match_data[m]
+            }
             team_data[t]["TBA"]["matches"] = matches
         }
     }
@@ -360,7 +368,9 @@ function processData() {
     for (let schema of Object.keys(mapping)) {
         console.log(schema, uploadedData[schema])
         for (let datum of uploadedData[schema]) {
-            teams.add(getTeam(schema, datum[mapping[schema]["team_key"]]))
+            let team = getTeam(schema, datum[mapping[schema]["team_key"]])
+            teams.add(team)
+            if (typeof team_data[team] === "undefined" && usingTBA) team_data[team] = {}
         }
     }
 
@@ -404,19 +414,23 @@ function processData() {
                             let team = getTeam(schema, match[mapping[schema]["team_key"]])
                             let matchNum = match[mapping[schema]["match_key"]]
 
-                            let otherBots = {
-                                "red 1": parseInt(tba_match_data[matchNum]["alliances"]["red"]["team_keys"][0].slice(3)),
-                                "red 2": parseInt(tba_match_data[matchNum]["alliances"]["red"]["team_keys"][1].slice(3)),
-                                "red 3": parseInt(tba_match_data[matchNum]["alliances"]["red"]["team_keys"][2].slice(3)),
-                                "blue 1": parseInt(tba_match_data[matchNum]["alliances"]["blue"]["team_keys"][0].slice(3)),
-                                "blue 2": parseInt(tba_match_data[matchNum]["alliances"]["blue"]["team_keys"][1].slice(3)),
-                                "blue 3": parseInt(tba_match_data[matchNum]["alliances"]["blue"]["team_keys"][2].slice(3))
-                            }
-                            let alliance = tba_match_data[matchNum]["alliances"]["red"]["team_keys"].includes("frc"+team) ? "red" : "blue"
-                            let position = tba_match_data[matchNum]["alliances"][alliance]["team_keys"].indexOf("frc"+team) + 1
-
-                            otherBots["other 1"] = parseInt(tba_match_data[matchNum]["alliances"][alliance]["team_keys"][((position + 1) % 3)].slice(3))
-                            otherBots["other 2"] = parseInt(tba_match_data[matchNum]["alliances"][alliance]["team_keys"][((position) % 3)].slice(3))
+                            let otherBots = {}
+                            let alliance
+                            let position
+                            if (usingTBAMatches) {
+                                otherBots = {
+                                    "red 1": parseInt(tba_match_data[matchNum]["alliances"]["red"]["team_keys"][0].slice(3)),
+                                    "red 2": parseInt(tba_match_data[matchNum]["alliances"]["red"]["team_keys"][1].slice(3)),
+                                    "red 3": parseInt(tba_match_data[matchNum]["alliances"]["red"]["team_keys"][2].slice(3)),
+                                    "blue 1": parseInt(tba_match_data[matchNum]["alliances"]["blue"]["team_keys"][0].slice(3)),
+                                    "blue 2": parseInt(tba_match_data[matchNum]["alliances"]["blue"]["team_keys"][1].slice(3)),
+                                    "blue 3": parseInt(tba_match_data[matchNum]["alliances"]["blue"]["team_keys"][2].slice(3))
+                                }
+                                alliance = tba_match_data[matchNum]["alliances"]["red"]["team_keys"].includes("frc"+team) ? "red" : "blue"
+                                position = tba_match_data[matchNum]["alliances"][alliance]["team_keys"].indexOf("frc"+team) + 1
+                                otherBots["other 1"] = parseInt(tba_match_data[matchNum]["alliances"][alliance]["team_keys"][((position + 1) % 3)].slice(3))
+                                otherBots["other 2"] = parseInt(tba_match_data[matchNum]["alliances"][alliance]["team_keys"][((position) % 3)].slice(3))
+                            } // TODO handle offline or non matches stuff
 
                             let evalContext = Object.assign({
                                 "match": matchNum,
@@ -611,11 +625,15 @@ function evaluate(expression, schema, context) {
                 else if (context.constants[search[0]]) val = context.constants[search[0]]
                 else val = context.data[search[0]]
             } else if (search[0].toLowerCase() === "tba") {
-                val = context.tba["score_breakdown"]
-                let specifier = search.slice(1)
-                if (!(specifier[0] === 'red' || specifier[0] === 'blue')) specifier.unshift(context.alliance)
-                for (let i of specifier)
-                    val = val[i]
+                if (!usingTBAMatches) {
+                    val = ""
+                } else {
+                    val = context.tba["score_breakdown"]
+                    let specifier = search.slice(1)
+                    if (!(specifier[0] === 'red' || specifier[0] === 'blue')) specifier.unshift(context.alliance)
+                    for (let i of specifier)
+                        val = val[i]
+                }
             } else {
                 if (["red 1", "red 2", "red 3", "blue 1", "blue 2", "blue 3", "other 1", "other 2"].includes(search[0].toLowerCase()))
                     val = findMatchData(schema, context[search[0].toLowerCase()], context.match)
@@ -630,7 +648,6 @@ function evaluate(expression, schema, context) {
             if (typeof val === "string") val = `"${val}"`
             exp = exp.replace(tag, val)
         }
-
         return exp
     }
 
@@ -763,10 +780,11 @@ function dataButtons() {
                     else return
                     console.log(data)
                     uploadedData[schema] = data
-                    localforage.setItem(storageKeys.DATA, uploadedData)
                     downloadButton.disabled = false
                     saveGeneralSettings()
-                    window.location.reload()
+                    localforage.setItem(storageKeys.DATA, uploadedData, () => {
+                        window.location.reload()
+                    })
                 })
             })
             if (dataStatus[schema] === "uploaded") uploadButton.classList.add("selected")
@@ -1363,9 +1381,19 @@ async function loadOther(url, onload) {
     }).then(data => {
         onload(data)
         api_data[url] = data
+        api_data["last_accessed"][url] = Date.now()
         saveAPIData()
         loading--
         checkLoading()
+    }).catch(() => {
+        document.querySelector("#connectivity-warning").classList.remove("hidden")
+        console.log('An error happened! Might not have any internet :( or website is down', url)
+        onload(api_data[url])
+        // 100ms pause to prevent race condition given nonexistant load times
+        setTimeout(() => {
+            loading--
+            checkLoading()
+        }, 100)
     })
 }
 function checkLoading() {
@@ -1506,7 +1534,9 @@ function saveAPIData() {
         desmos: false,
         statbotics: usingStatbotics
     }
-    document.querySelector("#top-last-saved-apis").innerText = "Last Saved for offline use: \n" + api_data["lastSaved"]
+
+    if (typeof api_data["lastSaved"] === "undefined") document.querySelector("#top-last-saved-apis").innerText = "No data saved"
+    else document.querySelector("#top-last-saved-apis").innerText = "Last Saved for offline use: \n" + api_data["lastSaved"]
 
     localforage.setItem(storageKeys.SAVED_API_DATA, api_data)
 }
@@ -1584,7 +1614,6 @@ localforage.getItem(storageKeys.DATA, (err, val) => {
     if (uploadedData !== null && typeof uploadedData !== "undefined") {
         for (let schema of Object.keys(uploadedData)) {
             if (typeof uploadedData[schema] === "string") {
-                console.log("api time", schema)
                 loadOther(uploadedData[schema], (data) => {
                     console.log('loaded ' + schema + " data")
                     if (Array.isArray(data)) uploadedData[schema] = data
@@ -1592,7 +1621,6 @@ localforage.getItem(storageKeys.DATA, (err, val) => {
                 })
                 dataStatus[schema] = "api"
             } else {
-                console.log("uploaded", schema)
                 dataStatus[schema] = "uploaded"
             }
         }
@@ -1611,14 +1639,23 @@ localforage.getItem(storageKeys.MAPPING, (err, val) => {
 })
 localforage.getItem(storageKeys.SAVED_API_DATA, (err, val) => {
     api_data = val
-    if (api_data === null) api_data = {}
+    if (api_data === null) api_data = {"last_accessed": {}}
+    if (typeof api_data["last_accessed"] === "undefined") api_data["last_accessed"] = {}
+    for (let url of Object.keys(api_data["last_accessed"])) {
+        // Remove old saved data after 48 hours
+        if (Date.now() - api_data["last_accessed"]["url"] > (1000*60*60*48)) {
+            delete api_data["last_accessed"][url]
+            delete api_data[url]
+        }
+    }
+    if (Object.keys(api_data["last_accessed"]).length === 0) delete api_data["lastSaved"]
+
+    // FIXME need better detection because in my testing this has just not worked at all
     if (!navigator.onLine) {
         document.querySelector(":root").classList.add("offline")
+        document.querySelector("#connectivity-warning").classList.remove("hidden")
         console.log("No Internet")
         usingOffline = true
-    } else {
-        api_data = {}
-        saveAPIData()
     }
     if (!--initLoading) finishInit()
 })
@@ -1632,7 +1669,8 @@ localforage.getItem(storageKeys.ENABLED_APIS, (err, apis) => {
     if (usingOffline) {
         apis = api_data.apis
     }
-    document.querySelector("#top-last-saved-apis").innerText = "Last Saved for offline use: \n" + api_data["lastSaved"]
+    if (typeof api_data["lastSaved"] === "undefined") document.querySelector("#top-last-saved-apis").innerText = "No data saved"
+    else document.querySelector("#top-last-saved-apis").innerText = "Last Saved for offline use: \n" + api_data["lastSaved"]
 
     usingTBA = apis.tbaevent
     document.querySelector("#top-toggle-use-tbaevent").innerText = "TBA API: " + (usingTBA ? "Enabled" : "Disabled")
@@ -1741,17 +1779,21 @@ for (let button of document.querySelectorAll("[for='top-control-widgets'] button
 
 function finishInit() {
     // Final Prep
+    if (desmosReady) document.querySelector("#top-add-graph").disabled = false
+
     dataButtons()
     setLoadingIndicator()
+    document.querySelector("#loading").className = "hidden"
     if (typeof eventKey !== "undefined" && typeof mapping !== "undefined" && isDataUploaded()) {
-        loadEvent()
-
         Events.on(Events.DATA_PROCESSED, () => {
+            console.log("data processed")
             let table = new Table()
             main.addChild(table)
             table.addColumn(["orpheus`number"])
             if (usingTBA) table.addColumn(["orpheus`name"])
         })
+
+        loadEvent()
     } else {
         document.querySelector("#loading").className = "hidden"
         main.addChild(new Welcome())

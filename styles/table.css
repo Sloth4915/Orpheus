@@ -145,7 +145,6 @@
 }
 
 .divider-above, .divider-below {
-    width: 100%;
     min-height: 2px;
     background-color: var(--font);
 }

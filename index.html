@@ -4,6 +4,15 @@
     <meta charset="UTF-8">
     <title class="tool-name">Orpheus</title>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"/>
+
+    <!--PWA Stuff-->
+    <link rel="manifest" href="manifest.json"/>
+    <script>
+        if ("serviceWorker" in navigator) {
+            navigator.serviceWorker.register("scripts/sw.js");
+        }
+    </script>
+
     <!-- Orpheus Primary Stylesheets -->
     <link rel="stylesheet" href="styles/themes.css"/>
     <link rel="stylesheet" href="styles/global.css"/>
@@ -69,7 +78,7 @@
                 <div class="dropdown-pause"></div>
                 <button id="top-toggle-use-allapi">Enable All</button>
                 <button id="top-toggle-use-noneapi">Disable All</button>
-                <div id="top-last-saved-apis">Last Saved for offline use: </div>
+                <div id="top-last-saved-apis" title="Saved API data will be cleared after 48 hours">Last Saved for offline use: </div>
             </dialog>
 
             <button id="top-control-preferences" class="dropdown-button">Preferences</button>
@@ -95,7 +104,7 @@
             <dialog class="top-control-dropdown" for="top-control-widgets">
                 Bulk Data
                 <button data-widget-type="table">Table</button>
-                <button data-widget-type="graph">Graph</button>
+                <button data-widget-type="graph" id="top-add-graph" disabled>Graph</button>
                 <button data-widget-type="info">Team Info</button>
                 <div class="dropdown-pause"></div>
                 Team Info
@@ -122,7 +131,10 @@
             <button id="top-credits" disabled title="Coming soon">Credits</button>
         </div>
 
-        <h1 class="tool-name">Orpheus</h1>
+        <h1 class="tool-name">
+            Orpheus
+            <div id="connectivity-warning" class="hidden material-symbols-outlined" title="You may not be connected to the internet and thus some data may be outdated.">signal_cellular_connected_no_internet_0_bar</div>
+        </h1>
     </div>
 
     <div class="content">
