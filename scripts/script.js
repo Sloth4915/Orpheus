@@ -44,6 +44,7 @@ let gameMapping = {
 let theme
 
 let loading = 0
+let fullyOffline = false
 
 let showTeamIcons
 
@@ -1367,7 +1368,12 @@ async function loadOther(url, onload) {
     setLoadingIndicator()
 
     if (usingOffline) {
-        onload(api_data[url])
+        if (api_data[url]) onload(api_data[url])
+        else {
+            console.log("No API data saved")
+            fullyOffline = true
+            setLoadingIndicator()
+        }
         // 100ms pause to prevent race condition given nonexistant load times
         setTimeout(() => {
             loading--
@@ -1391,12 +1397,18 @@ async function loadOther(url, onload) {
     }).catch(() => {
         document.querySelector("#connectivity-warning").classList.remove("hidden")
         console.log('An error happened! Might not have any internet :( or website is down', url)
-        onload(api_data[url])
-        // 100ms pause to prevent race condition given nonexistant load times
-        setTimeout(() => {
-            loading--
-            checkLoading()
-        }, 100)
+        if (api_data[url]) {
+            onload(api_data[url])
+            // 100ms pause to prevent race condition given nonexistant load times
+            setTimeout(() => {
+                loading--
+                checkLoading()
+            }, 100)
+        } else {
+            console.log("No API data saved")
+            fullyOffline = true
+            setLoadingIndicator()
+        }
     })
 }
 function checkLoading() {
@@ -1407,6 +1419,12 @@ function checkLoading() {
     } else setLoadingIndicator()
 }
 function setLoadingIndicator() {
+    if (fullyOffline) {
+        document.querySelector("#loading").className = ""
+        document.querySelector("#loading-text").innerText = "You are offline"
+        document.querySelector("#loading-status").innerText = "and data isn't currently saved for offline use"
+        return
+    }
     document.querySelector("#loading").className = ""
     document.querySelector("#loading-text").innerText = "Loading".padEnd(10 - (loading % 4), ".")
     document.querySelector("#loading-status").innerText = "Waiting on " + loading + " requests"

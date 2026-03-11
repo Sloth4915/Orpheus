@@ -143,4 +143,11 @@ footer a {
     max-width: max(15rem, 20vw);
 }
 
+.name-holder {
+    display: flex;
+    flex-direction: row;
+    font-weight: bolder;
+    font-size: 1.25rem;
+}
+
 
