@@ -1,0 +1,25 @@
+:root.mobile {
+    font-size: 1.5rem;
+}
+
+.mobile .widget-header {
+    height: 34px;
+    gap: 24px;
+    font-size: 1rem;
+}
+
+.mobile footer {
+    font-size: 0.55rem;
+}
+
+.mobile .data-resizer {
+    width: 12px;
+}
+
+.mobile .row {
+    height: 85px;
+}
+
+.mobile select {
+    font-size: 0.9rem;
+}

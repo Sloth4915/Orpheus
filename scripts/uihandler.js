@@ -9,7 +9,6 @@ Widgets extend WidgetBase and are what most widgets should extend. See widgets.j
 The idea is that this is mostly standalone and could be moved into other projects with minimal changes.
  */
 
-
 /**
  * Clamps a value to a minimum and maximum
  * @param value The value to be clamped
@@ -652,8 +651,8 @@ class Widget extends WidgetBase {
                 if (widget.parent.type === "tabs") continue
 
                 let bound = widget.el.getBoundingClientRect()
-                if (bound.top < y && bound.top - y > -30 && x > bound.left && x < bound.right) { // Top
-                    if (bound.top - y > -22) {
+                if (bound.top < y && bound.top - y > (-headerSize * (15 / 11)) && x > bound.left && x < bound.right) { // Top
+                    if (bound.top - y > -headerSize) {
                         if (widget.type === "tabs") {
                             return {widget, "tabGroup": "add"}
                         } else {
@@ -859,6 +858,11 @@ class Widget extends WidgetBase {
 function getRem(rem = 1) {
     return rem * parseFloat(getComputedStyle(document.documentElement).fontSize);
 }
+
+let mobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0
+if (mobile) document.documentElement.classList.add("mobile")
+
+let headerSize = mobile ? 34 : 22
 
 let widgetDragPreview = document.createElement("div")
 widgetDragPreview.className = "widget-drag-preview"

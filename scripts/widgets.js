@@ -92,7 +92,7 @@ class Table extends Widget {
                 name: column.table,
                 table: column.table,
                 mapping: column.mapping,
-                size: column["size"] ?? 110, // Pixels
+                size: column["size"] ?? (mobile ? 160 : 110), // Pixels
                 data: column.data,
                 order: column["order"] ?? this.columns.length, // Left to right
             })
@@ -126,20 +126,41 @@ class Table extends Widget {
             this.columnResizers[column.id] = colResizer
             let resizing = false
             let index
+            let ctx = this
+            let touchStartX = 0
             colResizer.addEventListener("mousedown", () => {
                 resizing = true
                 index = this.indexOfColumn(column.id)
             })
-            document.body.addEventListener("mousemove", (e) => {
-                if (!resizing) return
-                this.columns[index].size = Math.max(this.columns[index].size + e.movementX, 70)
-                e.preventDefault()
-                window.getSelection().empty()
-                this.refresh()
-                this.setTextSizes(this.columns[index])
+            colResizer.addEventListener("touchstart", (e) => {
+                resizing = true
+                index = this.indexOfColumn(column.id)
+                touchStartX = e.touches[0].screenX
             })
+            colResizer.addEventListener("mousemove", (e) => {
+                resizerMove(e.movementX)
+                e.preventDefault()
+            })
+            colResizer.addEventListener("touchmove", (e) => {
+                resizing = true
+                index = this.indexOfColumn(column.id)
+                resizerMove(e.touches[0].screenX - touchStartX)
+                touchStartX = e.touches[0].screenX
+            })
+
+            function resizerMove(dx) {
+                if (!resizing) return
+                ctx.columns[index].size = Math.max(ctx.columns[index].size + dx, 70)
+                window.getSelection().empty()
+                ctx.refresh()
+                ctx.setTextSizes(ctx.columns[index])
+            }
+
             document.body.addEventListener("mouseup", () => resizing = false)
             document.body.addEventListener("mouseleave", () => resizing = false)
+            document.body.addEventListener("touchend", () => resizing = false)
+            document.body.addEventListener("touchcancel", () => resizing = false)
+
             this.header.appendChild(colResizer)
             //#endregion
 
@@ -153,54 +174,58 @@ class Table extends Widget {
             let dragging = false
             let dragData
             let dragRemovalEl
-            colDragger.addEventListener("mousedown", (e) => {
+
+            function dragStart(x, y) {
                 dragData = {
                     column: null,
                     insertBefore: null,
                 }
                 dragging = true
                 colDragger.classList.add("dragging")
-                for (let col of this.columns) col.order *= 2
-                dragRemovalEl = document.createElement("div")
-                dragRemovalEl.className = "table-column-drag-remove material-symbols-outlined"
-                dragRemovalEl.innerText = "delete"
-                dragRemovalEl.style.left = (e.clientX - getRem(2)) + "px"
-                dragRemovalEl.style.top = (e.clientY + getRem(3)) + "px"
-                this.content.appendChild(dragRemovalEl)
-                this.refresh()
-            })
-            document.body.addEventListener("mousemove", (e) => {
+                for (let col of ctx.columns) col.order *= 2
+
+                if (ctx.columns.length > 1) {
+                    dragRemovalEl = document.createElement("div")
+                    dragRemovalEl.className = "table-column-drag-remove material-symbols-outlined"
+                    dragRemovalEl.innerText = "delete"
+                    dragRemovalEl.style.left = (x - getRem(2)) + "px"
+                    dragRemovalEl.style.top = (y + getRem(3)) + "px"
+                    ctx.content.appendChild(dragRemovalEl)
+                }
+                ctx.refresh()
+            }
+            function dragMove(target, cx) {
                 if (!dragging) return
 
-                let column = this.getColumnById(e.target.getAttribute("data-column"))
-                let insertBefore = e.target.offsetLeft + e.target.offsetWidth / 2 > e.clientX
+                let column = ctx.getColumnById(target.getAttribute("data-column"))
+                let insertBefore = target.offsetLeft + target.offsetWidth / 2 > cx
                 if (column === null) return
 
-                if (insertBefore) this.columnDragIndicator.style.order = ((column.order * 2) + 99) + ""
-                else this.columnDragIndicator.style.order = ((column.order * 2) + 101) + ""
+                if (insertBefore) ctx.columnDragIndicator.style.order = ((column.order * 2) + 99) + ""
+                else ctx.columnDragIndicator.style.order = ((column.order * 2) + 101) + ""
 
                 dragData = {
                     "column": column,
                     insertBefore
                 }
-            })
-            document.body.addEventListener("mouseleave", () => {
+            }
+            function dragCancel() {
                 dragging = false
-                this.columnDragIndicator.style.order = "-999"
+                ctx.columnDragIndicator.style.order = "-999"
                 if (dragRemovalEl !== undefined) {
                     dragRemovalEl.remove()
                     dragRemovalEl = undefined
                 }
-            })
-            document.body.addEventListener("mouseup", (e) => {
+            }
+            function dragComplete(cx, cy) {
                 if (!dragging) return
                 dragging = false
-                this.columnDragIndicator.style.order = "-999"
+                ctx.columnDragIndicator.style.order = "-999"
 
                 if (dragData.column !== null) {
                     let removalBounds = dragRemovalEl.getBoundingClientRect()
-                    if (removalBounds.left < e.clientX && e.clientX < removalBounds.right && removalBounds.top < e.clientY && e.clientY < removalBounds.bottom) {
-                        this.removeColumn(thisColumn.columnId)
+                    if (removalBounds.left < cx && cx < removalBounds.right && removalBounds.top < cy && cy < removalBounds.bottom) {
+                        ctx.removeColumn(thisColumn.columnId)
                     } else {
                         if (dragData.insertBefore) {
                             thisColumn.order = dragData.column.order - 1
@@ -215,20 +240,53 @@ class Table extends Widget {
                     dragRemovalEl = undefined
                 }
 
-                this.refresh()
+                ctx.refresh()
+            }
+
+            colDragger.addEventListener("mousedown", (e) => {
+                dragStart(e.clientX, e.clientY)
+            })
+            colDragger.addEventListener("touchstart", (e) => {
+                dragStart(e.touches[0].clientX, e.touches[0].clientY)
+            })
+            document.body.addEventListener("mousemove", (e) => {
+                dragMove(e.target, e.clientX)
+            })
+            document.body.addEventListener("touchmove", (e) => {
+                let x = e.touches[0].clientX
+                if (this.columns.length <= 1) return
+                for (let col of this.columns) {
+                    let head = this.elements[col.columnId]["header"]
+                    let bound = head.getBoundingClientRect()
+
+                    if (bound.left < x && x < bound.right) {
+                        dragMove(head, x)
+                        continue
+                    }
+                }
+            })
+            document.body.addEventListener("mouseleave", dragCancel)
+            document.body.addEventListener("touchcancel", dragCancel)
+            document.body.addEventListener("mouseup", (e) => {
+                dragComplete(e.clientX, e.clientY)
+            })
+            document.body.addEventListener("touchend", (e) => {
+                dragComplete(e.changedTouches[0].clientX, e.changedTouches[0].clientY)
             })
             //#endregion
 
-            let removeButton = document.createElement("div")
-            removeButton.innerText = "cancel_presentation"
-            removeButton.addEventListener("click", (e) => {
-                e.stopPropagation()
-                this.removeColumn(thisColumn.columnId)
-            })
-            removeButton.className = "column-header-button material-symbols-outlined"
-
             controls.appendChild(colDragger)
-            controls.appendChild(removeButton)
+
+            if (!mobile) {
+                let removeButton = document.createElement("div")
+                removeButton.innerText = "cancel_presentation"
+                removeButton.addEventListener("click", (e) => {
+                    e.stopPropagation()
+                    this.removeColumn(thisColumn.columnId)
+                })
+                removeButton.className = "column-header-button material-symbols-outlined"
+                controls.appendChild(removeButton)
+            }
         }
 
         if (this.activeColumn === "") this.setActiveColumn(this.columns[0].columnId)
