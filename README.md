@@ -222,7 +222,7 @@ The `media` type is for image URLs to be shown in the team media widget.
 
 ```json5
 {
-   "type": "text",
+   "type": "media",
    "key": [JSON Array of image URL keys]
 }
 ```
@@ -354,14 +354,11 @@ In the `Layout` menu at the top, you can save and load a layout for later. This 
 
 The following features (in no particular order) are planned and should be coming soon(ish):
 
- - Mobile support
  - Refer to other data from within a schema
    - For example something like hopper size from pit scouting used in match scouting
  - Watch match/team videos from within Orpheus
  - Bar charts
  - Weighted matches (make first __ amount of matches in a competition lower weight for averages)
- - Better offline support and automated API enabling/disabling
- - Optionally load data from an API in place of manual uploads
  - Media widget that shows multiple teams
  - Ranking points shown in matches widget
  - Conditional skipping of match eval
