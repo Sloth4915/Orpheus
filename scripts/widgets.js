@@ -1839,8 +1839,6 @@ class Welcome extends Widget {
             usingTBA = true
             usingTBAMatches = true
             usingTBAMedia = true
-            usingStatbotics = true
-            usingDesmos = true
 
             loadEvent()
 
