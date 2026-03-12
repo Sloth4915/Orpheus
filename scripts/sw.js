@@ -6,9 +6,6 @@ const CACHE_NAME = `orpheus-4915-${VERSION}`
 const APP_STATIC_RESOURCES = [
     "/",
 
-    // This API key is only allowed for use on Orpheus. If you'd like to add Desmos to your fork of Orpheus or for use in your own project, please visit www.desmos.com/my-api or reach out to the Desmos Studio team at partnerships@desmos.com
-    "https://www.desmos.com/api/v1.11/calculator.js?apiKey=14470c380841448eae58c1b5f832477f",
-
     // Images
     "/images/192.png",
     "/images/512.png",
@@ -20,6 +17,12 @@ const APP_STATIC_RESOURCES = [
     "/scripts/script.js",
     "/scripts/uihandler.js",
     "/scripts/widget.js",
+
+    // Dependencies
+    "/deps/localForage/dist/localforage.js",
+    "/deps/mathjs/math.js",
+    // This API key is only allowed for use on Orpheus. If you'd like to add Desmos to your fork of Orpheus or for use in your own project, please visit www.desmos.com/my-api or reach out to the Desmos Studio team at partnerships@desmos.com
+    "https://www.desmos.com/api/v1.11/calculator.js?apiKey=14470c380841448eae58c1b5f832477f",
 
     // Styles
     "styles/comments.css",
@@ -35,6 +38,9 @@ const APP_STATIC_RESOURCES = [
     "styles/team-info.css",
     "styles/themes.css",
     "styles/widgets.css",
+
+    // Icons
+    "https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"
 ]
 
 self.addEventListener("install", (event) => {
