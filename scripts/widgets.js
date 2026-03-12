@@ -4,6 +4,8 @@
 This file contains all the widgets that the user interacts with and displays data.
  */
 
+// TODO: Finish abstraction of element creation and drag events
+
 class Table extends Widget {
     constructor() {
         super();
@@ -29,8 +31,7 @@ class Table extends Widget {
         for (let list of Lists.lists) {
             this.scope[list.id] = List.Sort.LIST_DEFAULT
         }
-        this.scopePanel = document.createElement("dialog")
-        this.scopePanel.className = "table-scope-holder"
+        this.scopePanel = element("dialog", "table-scope-holder")
         this.content.appendChild(this.scopePanel)
 
         Events.on(Events.SET_LISTS_MODE, () => {
@@ -44,37 +45,24 @@ class Table extends Widget {
 
         this.content.classList.add("table")
 
-        this.header = document.createElement("div")
-        this.header.classList.add("row", "header")
-        this.content.appendChild(this.header)
+        this.header = element("div", "row header", {}, this.content)
 
-        let teamSettingsBlock = document.createElement("div")
-        teamSettingsBlock.className = "table-settings-block"
-        teamSettingsBlock.setAttribute("data-id", this.id)
-        this.header.appendChild(teamSettingsBlock)
+        // Unused in header but there for spacing
+        let teamSettingsBlock = element("div", "table-settings-block", {"data-id": this.id}, this.header)
 
         this.addHeaderIcon("visibility", "Scope", this.scopePanel, this.openScopeEditor)
         this.addHeaderIcon("view_column", "Columns", this.scopePanel, this.openColumnEditor, [0, 60])
 
-        this.columnDragIndicator = document.createElement("div")
-        this.columnDragIndicator.className = "data-drag-indicator"
-        this.columnDragIndicator.style.order = "-99"
-        this.header.appendChild(this.columnDragIndicator)
+        this.columnDragIndicator = element("div", "data-drag-indicator", {"style": {"order": "-99"}}, this.header)
 
         if (usingTBAMedia) {
-            let logoPlaceholder = document.createElement("div")
-            logoPlaceholder.className = "table-logo placeholder"
-            this.header.appendChild(logoPlaceholder)
+            let logoPlaceholder = element("div", "table-logo placeholder", {}, this.header)
             this.hasAddedMedia = true
         }
 
-        this.aboveDivider = document.createElement("div")
-        this.aboveDivider.className = "divider-above hidden"
-        this.content.appendChild(this.aboveDivider)
+        this.aboveDivider = element("div", "divider-above hidden", {}, this.content)
 
-        this.belowDivider = document.createElement("div")
-        this.belowDivider.className = "divider-below hidden"
-        this.content.appendChild(this.belowDivider)
+        this.belowDivider = element("div", "divider-below hidden", {}, this.content)
 
         this.minWidth = 220
         this.minHeight = 165
@@ -116,52 +104,28 @@ class Table extends Widget {
             })
             this.header.appendChild(headerEl)
 
-            let controls = document.createElement("div")
-            controls.className = "data-controls"
-            headerEl.appendChild(controls)
+            let controls = element("div", "data-controls", {}, headerEl)
 
             //#region Resizing
-            let colResizer = document.createElement("div")
-            colResizer.className = "data-resizer"
+            let colResizer = element("div", "data-resizer", {}, this.header)
             this.columnResizers[column.id] = colResizer
             let resizing = false
             let index
             let ctx = this
-            let touchStartX = 0
-            colResizer.addEventListener("mousedown", () => {
+            addDownEvent(colResizer, (e) => {
                 resizing = true
                 index = this.indexOfColumn(column.id)
             })
-            colResizer.addEventListener("touchstart", (e) => {
-                resizing = true
-                index = this.indexOfColumn(column.id)
-                touchStartX = e.touches[0].screenX
-            })
-            colResizer.addEventListener("mousemove", (e) => {
-                resizerMove(e.movementX)
-                e.preventDefault()
-            })
-            colResizer.addEventListener("touchmove", (e) => {
-                resizing = true
-                index = this.indexOfColumn(column.id)
-                resizerMove(e.touches[0].screenX - touchStartX)
-                touchStartX = e.touches[0].screenX
-            })
-
-            function resizerMove(dx) {
+            addMoveEvent((e) => {
                 if (!resizing) return
-                ctx.columns[index].size = Math.max(ctx.columns[index].size + dx, 70)
+                ctx.columns[index].size = Math.max(ctx.columns[index].size + e.movementX, 70)
                 window.getSelection().empty()
                 ctx.refresh()
                 ctx.setTextSizes(ctx.columns[index])
-            }
-
-            document.body.addEventListener("mouseup", () => resizing = false)
-            document.body.addEventListener("mouseleave", () => resizing = false)
-            document.body.addEventListener("touchend", () => resizing = false)
-            document.body.addEventListener("touchcancel", () => resizing = false)
-
-            this.header.appendChild(colResizer)
+                if (!mobile) e.raw.preventDefault()
+            })
+            addUpEvent(() => resizing = false)
+            addCancelEvent(() => resizing = false)
             //#endregion
 
             //#region Dragging
@@ -175,7 +139,7 @@ class Table extends Widget {
             let dragData
             let dragRemovalEl
 
-            function dragStart(x, y) {
+            addDownEvent(colDragger, (e) => {
                 dragData = {
                     column: null,
                     insertBefore: null,
@@ -188,17 +152,33 @@ class Table extends Widget {
                     dragRemovalEl = document.createElement("div")
                     dragRemovalEl.className = "table-column-drag-remove material-symbols-outlined"
                     dragRemovalEl.innerText = "delete"
-                    dragRemovalEl.style.left = (x - getRem(2)) + "px"
-                    dragRemovalEl.style.top = (y + getRem(3)) + "px"
+                    dragRemovalEl.style.left = (e.clientX - getRem(2)) + "px"
+                    dragRemovalEl.style.top = (e.clientY + getRem(3)) + "px"
                     ctx.content.appendChild(dragRemovalEl)
                 }
                 ctx.refresh()
-            }
-            function dragMove(target, cx) {
+            })
+            addMoveEvent((e) => {
                 if (!dragging) return
 
+                let target
+                if (mobile) {
+                    let x = e.clientX
+                    if (this.columns.length <= 1) return
+                    for (let col of this.columns) {
+                        let head = this.elements[col.columnId]["header"]
+                        let bound = head.getBoundingClientRect()
+
+                        if (bound.left < x && x < bound.right) {
+                            target = head
+                        }
+                    }
+                } else target = e.raw.target
+
+                if (typeof target === "undefined") return
+
                 let column = ctx.getColumnById(target.getAttribute("data-column"))
-                let insertBefore = target.offsetLeft + target.offsetWidth / 2 > cx
+                let insertBefore = target.offsetLeft + target.offsetWidth / 2 > e.clientX
                 if (column === null) return
 
                 if (insertBefore) ctx.columnDragIndicator.style.order = ((column.order * 2) + 99) + ""
@@ -208,7 +188,7 @@ class Table extends Widget {
                     "column": column,
                     insertBefore
                 }
-            }
+            })
             function dragCancel() {
                 dragging = false
                 ctx.columnDragIndicator.style.order = "-999"
@@ -243,28 +223,6 @@ class Table extends Widget {
                 ctx.refresh()
             }
 
-            colDragger.addEventListener("mousedown", (e) => {
-                dragStart(e.clientX, e.clientY)
-            })
-            colDragger.addEventListener("touchstart", (e) => {
-                dragStart(e.touches[0].clientX, e.touches[0].clientY)
-            })
-            document.body.addEventListener("mousemove", (e) => {
-                dragMove(e.target, e.clientX)
-            })
-            document.body.addEventListener("touchmove", (e) => {
-                let x = e.touches[0].clientX
-                if (this.columns.length <= 1) return
-                for (let col of this.columns) {
-                    let head = this.elements[col.columnId]["header"]
-                    let bound = head.getBoundingClientRect()
-
-                    if (bound.left < x && x < bound.right) {
-                        dragMove(head, x)
-                        continue
-                    }
-                }
-            })
             document.body.addEventListener("mouseleave", dragCancel)
             document.body.addEventListener("touchcancel", dragCancel)
             document.body.addEventListener("mouseup", (e) => {
@@ -459,8 +417,9 @@ class Table extends Widget {
         // TODO do the below less
         for (let col of this.columns) this.setTextSizes(col)
 
-        this.aboveDivider.style.width = this.content.scrollWidth + "px"
-        this.belowDivider.style.width = this.content.scrollWidth + "px"
+        let tableWidth = this.header.scrollWidth - 2
+        this.aboveDivider.style.width = tableWidth + "px"
+        this.belowDivider.style.width = tableWidth + "px"
     }
     sortRows() {
         if (this.teams.length === 0 || this.activeColumn === "" || this.parent === null) return

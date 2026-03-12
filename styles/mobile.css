@@ -14,6 +14,13 @@
 
 .mobile .data-resizer {
     width: 12px;
+    margin-left: -6px;
+    margin-right: -6px;
+    touch-action: none;
+}
+
+.data-dragger {
+    touch-action: none;
 }
 
 .mobile .row {
@@ -22,4 +29,20 @@
 
 .mobile select {
     font-size: 0.9rem;
+}
+
+.mobile .x > .resizer {
+    width: 8px;
+    min-width: 8px;
+    touch-action: none;
+}
+
+.mobile .y > .resizer {
+    height: 8px;
+    min-height: 8px;
+    touch-action: none;
+}
+
+.mobile .widget-header.tabs {
+    min-height: 30px;
 }

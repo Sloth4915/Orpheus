@@ -20,6 +20,117 @@ Math.clamp = function(value, min, max) {
     return Math.max(Math.min(value, max), min)
 }
 
+//#region IO Helper functions/abstraction
+
+/** Creates a element node with classes, attributes, and automatically adds it as a child to another element */
+function element(type, classes = "", attributes = {}, appendTo = null) {
+    let el = document.createElement(type)
+    el.className = classes
+    if (typeof attributes["style"] !== "undefined") {
+        for (let s of Object.keys(attributes["style"])) {
+            el.style[s] = attributes["style"][s]
+        }
+        delete attributes["style"]
+    }
+    for (let attr of Object.keys(attributes)) {
+        el.setAttribute(attr, attributes[attr])
+    }
+    if (appendTo !== null && appendTo !== undefined) appendTo.appendChild(el)
+    return el
+}
+
+let _touchpos = [0,0]
+let _moveEvents = []
+let _upEvents = []
+let _cancelEvents = []
+document.body.addEventListener("touchstart", (e) => {
+    _touchpos = [e.touches[0].clientX, e.touches[0].clientY]
+})
+
+/**
+ * Callback will be passed in event with clientX, clientY, mobile, and "raw" for raw event
+ */
+function addDownEvent(el, callback) {
+    el.addEventListener("mousedown", (e) => {
+        callback({
+            clientX: e.clientX,
+            clientY: e.clientY,
+            mobile: false,
+            raw: e
+        })
+    })
+    el.addEventListener("touchstart", (e) => {
+        callback({
+            clientX: e.touches[0].clientX,
+            clientY: e.touches[0].clientY,
+            mobile: true,
+            raw: e
+        })
+    })
+}
+
+/**
+ * Callback will be passed in event with clientX, clientY, mobile, and "raw" for raw event
+ */
+function addMoveEvent(callback) {
+    _moveEvents.push(callback)
+}
+document.body.addEventListener("mousemove", (e) => {
+    for (let callback of _moveEvents)
+        callback({
+            clientX: e.clientX,
+            clientY: e.clientY,
+            movementX: e.movementX,
+            movementY: e.movementY,
+            mobile: false,
+            raw: e
+        })
+})
+document.body.addEventListener("touchmove", (e) => {
+    for (let callback of _moveEvents) {
+        callback({
+            clientX: e.touches[0].clientX,
+            clientY: e.touches[0].clientY,
+            movementX: e.touches[0].clientX - _touchpos[0],
+            movementY: e.touches[0].clientY - _touchpos[1],
+            mobile: true,
+            raw: e
+        })
+    }
+    _touchpos = [e.touches[0].clientX, e.touches[0].clientY]
+})
+
+/** touchcancel or mouseleave*/
+function addCancelEvent(callback) {
+    document.body.addEventListener("mouseleave", callback)
+    document.body.addEventListener("touchcancel", callback)
+}
+
+/**
+ * Callback will be passed in event with clientX, clientY, mobile, and "raw" for raw event
+ */
+function addUpEvent(callback) {
+    document.body.addEventListener("mouseup", (e) => {
+        callback({
+            clientX: e.clientX,
+            clientY: e.clientY,
+            mobile: false,
+            raw: e
+        })
+    })
+    document.body.addEventListener("touchend", (e) => {
+        callback({
+            clientX: e.changedTouches[0].clientX,
+            clientY: e.changedTouches[0].clientY,
+            mobile: true,
+            raw: e
+        })
+        _touchpos = [0,0]
+    })
+}
+//#endregion
+
+//#region Widgets
 class WidgetBase {
     constructor() {
         this.w = 0
@@ -139,7 +250,7 @@ class WidgetGroup extends WidgetBase {
 
         super.refresh()
 
-        let resizerSize = this.resizers.length * 4
+        let resizerSize = this.resizers.length * (mobile ? 8 : 4)
 
         let tooSmall = []
         let shrinkRequired = 0
@@ -272,11 +383,11 @@ class WidgetGroup extends WidgetBase {
             resizer.className = "resizer"
 
             let moving = false
-            resizer.addEventListener("mousedown", (e) => {
+            addDownEvent(resizer, (e) => {
                 moving = true
-                e.preventDefault()
+                if (!e.mobile) e.raw.preventDefault()
             })
-            document.body.addEventListener("mousemove", (e) => {
+            addMoveEvent((e) => {
                 if (moving) {
                     let index = this.resizers.indexOf(resizer)
                     let widget1 = this.children[index]
@@ -289,11 +400,10 @@ class WidgetGroup extends WidgetBase {
                         widget2.size -= change
                     }
                     this.refresh(false)
-                   // console.log(widget1.widget.color, widget2.widget.color)
+                    // console.log(widget1.widget.color, widget2.widget.color)
                 }
             })
-            document.body.addEventListener("mouseup", mouseUp)
-            document.body.addEventListener("mouseleave", mouseUp)
+            addUpEvent(mouseUp)
 
             let self = this
             function mouseUp() {
@@ -465,7 +575,7 @@ class WidgetTabGroup extends WidgetBase {
         this.header.holder.style.width = this.width + "px"
 
         if (this.children.length)
-            this.children[this.activeChild].setSize(this.width, this.height - 19)
+            this.children[this.activeChild].setSize(this.width, this.height - (mobile ? 30 : 19))
 
         for (let i in this.header.selectButtons) {
             this.header.selectButtons[i].innerText = this.children[i].displayName()
@@ -557,9 +667,6 @@ class WidgetTabGroup extends WidgetBase {
         for (let i of this.children) if (i.widget === child) return true
         return false
     }
-    becomeOrphan(child) {
-        this.removeChild(child)
-    }
     indexOf(child) {
         for (let i in this.children)
             if (this.children[i] === child) return parseInt(i)
@@ -632,6 +739,9 @@ class Widget extends WidgetBase {
         this._header.remover.addEventListener("mouseup", () => {
             if (activeWidgets.length > 1) this.parent.removeChild(this)
         })
+        this._header.remover.addEventListener("touchend", () => {
+            if (activeWidgets.length > 1) this.parent.removeChild(this)
+        })
         this._header.holder.appendChild(this._header.remover)
 
         //#region Widget Dragging
@@ -651,7 +761,7 @@ class Widget extends WidgetBase {
                 if (widget.parent.type === "tabs") continue
 
                 let bound = widget.el.getBoundingClientRect()
-                if (bound.top < y && bound.top - y > (-headerSize * (15 / 11)) && x > bound.left && x < bound.right) { // Top
+                if (bound.top < y && bound.top - y > (-topDragSize * (15 / 11)) && x > bound.left && x < bound.right) { // Top
                     if (bound.top - y > -headerSize) {
                         if (widget.type === "tabs") {
                             return {widget, "tabGroup": "add"}
@@ -661,13 +771,13 @@ class Widget extends WidgetBase {
                     } else if (widget.parent.type !== "tabs") return {widget, "axis": "y", "dragPos": "before"}
                     break
                 }
-                else if (bound.right > x && bound.right - x < 30 && y > bound.top && y < bound.bottom) {
+                else if (bound.right > x && bound.right - x < sideDragSize && y > bound.top && y < bound.bottom) {
                     return {widget, "axis": "x", "dragPos": "after"}
                 }
-                else if (bound.left < x && bound.left - x > -30 && y > bound.top && y < bound.bottom) {
+                else if (bound.left < x && bound.left - x > -sideDragSize && y > bound.top && y < bound.bottom) {
                     return {widget, "axis": "x", "dragPos": "before"}
                 }
-                else if (bound.bottom > y && bound.bottom - y < 30 && x > bound.left && x < bound.right) {
+                else if (bound.bottom > y && bound.bottom - y < sideDragSize && x > bound.left && x < bound.right) {
                     return {widget, "axis": "y", "dragPos": "after"}
                 }
 
@@ -676,11 +786,11 @@ class Widget extends WidgetBase {
             return null
         }
 
-        this._header.dragger.addEventListener("mousedown", () => {
+        addDownEvent(this._header.dragger, () => {
             isDragging = true
             this._header.dragger.classList.add("dragging")
         })
-        document.body.addEventListener("mousemove", (e) => {
+        addMoveEvent((e) => {
             if (!isDragging) return
             this._header.dragger.style.left = Math.clamp(e.clientX - (this._header.dragger.offsetWidth / 2), 0,window.innerWidth - this._header.dragger.offsetWidth) + "px"
             this._header.dragger.style.top = Math.clamp(e.clientY - (this._header.dragger.offsetHeight / 2), 0, window.innerHeight - this._header.dragger.offsetHeight - 8) + "px"
@@ -692,10 +802,12 @@ class Widget extends WidgetBase {
 
                 let el = currentDrag.widget.el
 
+                console.log(currentDrag)
+
                 if (currentDrag.tabGroup === undefined) {
                     let width, height
-                    widgetDragPreview.style.width = (width = currentDrag.axis === "y" ? el.offsetWidth : 30) + "px"
-                    widgetDragPreview.style.height = (height = currentDrag.axis === "x" ? el.offsetHeight : 30) + "px"
+                    widgetDragPreview.style.width = (width = currentDrag.axis === "y" ? el.offsetWidth : sideDragSize) + "px"
+                    widgetDragPreview.style.height = (height = currentDrag.axis === "x" ? el.offsetHeight : sideDragSize) + "px"
 
                     if (currentDrag.axis === "x" && currentDrag.dragPos === "before") {
                         widgetDragPreview.style.left = el.offsetLeft + "px"
@@ -715,7 +827,7 @@ class Widget extends WidgetBase {
                     }
                 } else {
                     widgetDragPreview.style.width = el.offsetWidth + "px"
-                    widgetDragPreview.style.height = "23px"
+                    widgetDragPreview.style.height = headerSize + "px"
 
                     widgetDragPreview.style.left = (el.offsetLeft) + "px"
                     widgetDragPreview.style.top = el.offsetTop+"px"
@@ -723,11 +835,12 @@ class Widget extends WidgetBase {
 
             } else widgetDragPreview.classList.add("hidden")
         })
-        document.body.addEventListener("mouseleave", () => {
+        addCancelEvent(() => {
             isDragging = false
             this._header.dragger.classList.remove("dragging")
+
         })
-        document.body.addEventListener("mouseup", (e) => {
+        addUpEvent((e) => {
             if (!isDragging) return
             isDragging = false
             widgetDragPreview.classList.add("hidden")
@@ -740,9 +853,9 @@ class Widget extends WidgetBase {
                 if (widget.parent.type === "tabs") continue
 
                 let bound = widget.el.getBoundingClientRect()
-                if (bound.top < e.clientY && bound.top - e.clientY > -30 && e.clientX > bound.left && e.clientX < bound.right) { // Top
+                if (bound.top < e.clientY && bound.top - e.clientY > -sideDragSize && e.clientX > bound.left && e.clientX < bound.right) { // Top
                     console.log(widget.parent.type, bound.top - e.clientY)
-                    if (bound.top - e.clientY > -22) {
+                    if (bound.top - e.clientY > -topDragSize * (15 / 11)) {
                         if (widget.type === "tabs") {
                             widget.addChild(this)
                         } else {
@@ -756,15 +869,15 @@ class Widget extends WidgetBase {
                     } else if (widget.parent.type !== "tabs") completeDrag.call(this, widget, "y", "before")
                     break
                 }
-                else if (bound.right > e.clientX && bound.right - e.clientX < 30 && e.clientY > bound.top && e.clientY < bound.bottom) {
+                else if (bound.right > e.clientX && bound.right - e.clientX < sideDragSize && e.clientY > bound.top && e.clientY < bound.bottom) {
                     completeDrag.call(this, widget, "x", "after")
                     break
                 }
-                else if (bound.left < e.clientX && bound.left - e.clientX > -30 && e.clientY > bound.top && e.clientY < bound.bottom) {
+                else if (bound.left < e.clientX && bound.left - e.clientX > -sideDragSize && e.clientY > bound.top && e.clientY < bound.bottom) {
                     completeDrag.call(this, widget, "x", "before")
                     break
                 }
-                else if (bound.bottom > e.clientY && bound.bottom - e.clientY < 30 && e.clientX > bound.left && e.clientX < bound.right) {
+                else if (bound.bottom > e.clientY && bound.bottom - e.clientY < sideDragSize && e.clientX > bound.left && e.clientX < bound.right) {
                     completeDrag.call(this, widget, "y", "after")
                     break
                 }
@@ -850,6 +963,7 @@ class Widget extends WidgetBase {
         this.content.style.height = (this.h - this._header.holder.offsetHeight) + "px"
     }
 }
+//#endregion
 
 /**
  * @param rem
@@ -859,10 +973,14 @@ function getRem(rem = 1) {
     return rem * parseFloat(getComputedStyle(document.documentElement).fontSize);
 }
 
+//#region Init
+
 let mobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0
 if (mobile) document.documentElement.classList.add("mobile")
 
 let headerSize = mobile ? 34 : 22
+let topDragSize = mobile ? 40 : 30
+let sideDragSize = mobile ? 60 : 30
 
 let widgetDragPreview = document.createElement("div")
 widgetDragPreview.className = "widget-drag-preview"
@@ -882,6 +1000,9 @@ window.addEventListener("resize", () => {
 main.width = window.innerWidth
 main.height = window.innerHeight - document.querySelector(".sticky-header").offsetHeight - document.querySelector("footer").offsetHeight - 4
 
+//#endregion
+
+// Required for Widget loading
 setTimeout(() => {
     WidgetBase.WidgetTypes["base"] = WidgetBase
     WidgetBase.WidgetTypes["group"] = WidgetGroup
