@@ -88,6 +88,8 @@ class Table extends Widget {
 
             column.id = column.id ?? column.columnId
 
+            console.log(column)
+
             this.elements[thisColumn.columnId] = {}
 
             for (let team of this.teams) {
@@ -98,7 +100,7 @@ class Table extends Widget {
             headerEl.className = "data header"
             headerEl.setAttribute("data-column", column.id)
             this.elements[thisColumn.columnId]["header"] = headerEl
-            headerEl.innerText = column.name
+            headerEl.innerText = column.table
             headerEl.addEventListener("click", () => {
                 this.setActiveColumn(column.id)
             })
@@ -501,7 +503,8 @@ class Table extends Widget {
             dataEl.appendChild(den)
         } else {
             let value = typeof column.data[team] === "object" ? column.data[team]["summarized"] : column.data[team]
-            if (typeof value === "number") dataEl.innerText = (Math.round(value * rounding) / rounding) + ""
+            if (typeof value === "undefined") dataEl.innerText = ""
+            else if (typeof value === "number") dataEl.innerText = (Math.round(value * rounding) / rounding) + ""
             else dataEl.innerText = value
         }
 
@@ -650,6 +653,7 @@ class Table extends Widget {
             grandchildHolder.className = "grandchild-holder"
             groupColumns.appendChild(grandchildHolder)
 
+            // TODO remove groups when theres no children
             for (let child of Object.keys(schema)) {
                 let id = context + "`" + child
                 if (typeof schema[child]["type"] === "undefined") {
@@ -876,7 +880,7 @@ class Graph extends Widget {
         if (this.column == null) {
             return
         }
-        this.calculator.updateSettings({xAxisLabel: graphSettings.x === "absolute" ? "Event Match #" : "Team Match #", yAxisLabel: this.column.name})
+        this.calculator.updateSettings({xAxisLabel: graphSettings.x === "absolute" ? "Event Match #" : "Team Match #", yAxisLabel: this.column.graph})
 
         let minX = Infinity
         let maxX = -Infinity
@@ -1650,7 +1654,7 @@ class Matches extends Widget {
         matchHolder.className = "match-holder"
         this.content.appendChild(matchHolder)
 
-        if (usingTBA) {
+        if (usingTBAMatches) {
             this.name = team + " " + team_data[team].Name + " Matches"
 
             let upcoming = false
@@ -1754,7 +1758,8 @@ class Matches extends Widget {
                 }
             }
         } else {
-            this.name = this.name + ", " + team + " Matches"
+            this.name = team + " Matches"
+            matchHolder.innerText = "Currently, TBA Matches must be enabled to see team matches"
         }
         this.teamDropdown.value = team
     }

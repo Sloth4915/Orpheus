@@ -23,7 +23,7 @@ const storageKeys = {
 const MISSING_LOGO = "https://frc-cdn.firstinspires.org/eventweb_frc/ProgramLogos/FIRSTicon_RGB_withTM.png"
 
 const toolName = "Orpheus"
-const version = "2.2"
+const version = "2.3"
 
 let eventKey
 let event_data
@@ -562,8 +562,8 @@ function processData() {
                         }
                         else {
                             for (let key of datumMapping[x]["key"]) {
-                                console.log(key, i)
-                                if (i[key].trim() !== "")
+                                console.log(key, i, i[key])
+                                if (typeof i[key] !== "undefined" && i[key].trim() !== "")
                                     teamMedia[team].push(i[key])
                             }
                         }
@@ -607,7 +607,9 @@ function processData() {
     for (let teamNum in teamMedia) {
         for (let media of teamMedia[teamNum]) {
             // Add to start instead of pushing to the end. This is so scouting images will always come before images sourced from TBA, which may be outdated
-            if (typeof team_data[teamNum] !== "undefined") team_data[teamNum].media.unshift({type: "image", src: media})
+            if (typeof team_data[teamNum] === "undefined") continue
+            if (typeof team_data[teamNum]["media"] === "undefined") team_data[teamNum]["media"] = []
+            team_data[teamNum].media.unshift({type: "image", src: media})
         }
     }
 
@@ -803,7 +805,11 @@ function dataButtons() {
             apiButton.addEventListener("click", () => {
                 let url = prompt("What is the URL for this data? It must return a JSON array or a JSON object where the 'data' key is an array.")
                 if (url === null) return
-                if (url === "get") dataUrls[schema]
+                if (url === "get") {
+                    alert(dataUrls[schema])
+                    return
+                }
+                for (let k of Object.keys(dataUrls)) uploadedData[k] = dataUrls[k]
                 uploadedData[schema] = url
                 localforage.setItem(storageKeys.DATA, uploadedData, () => {
                     downloadButton.disabled = false
