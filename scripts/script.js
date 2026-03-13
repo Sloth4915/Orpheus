@@ -23,7 +23,7 @@ const storageKeys = {
 const MISSING_LOGO = "https://frc-cdn.firstinspires.org/eventweb_frc/ProgramLogos/FIRSTicon_RGB_withTM.png"
 
 const toolName = "Orpheus"
-const version = "2.3"
+const version = "2.3.1"
 
 let eventKey
 let event_data
@@ -1471,7 +1471,14 @@ function checkLoading() {
 function setLoadingIndicator() {
     if (fullyOffline) {
         document.querySelector("#loading").className = ""
-        if (usingTBAMatches) {
+        if (usingTBAMatches && usingStatbotics) {
+            document.querySelector("#loading-text").innerText = "You are offline, quals haven't started, or Statbotics is broken"
+            document.querySelector("#loading-status").innerText = "Turn off Statbotics & TBA Matches in the API menu or try again later"
+        } else if (usingStatbotics) {
+            document.querySelector("#loading-text").innerText = "You are offline, or Statbotics is broken"
+            document.querySelector("#loading-status").innerText = "Turn off Statbotics in the API menu or try again later"
+        }
+        else if (usingTBAMatches) {
             document.querySelector("#loading-text").innerText = "You are offline or quals haven't started"
             document.querySelector("#loading-status").innerText = "If quals haven't started, turn off TBA Matches in the API menu"
         } else {
