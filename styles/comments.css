@@ -12,3 +12,14 @@
 .comment-title-text {
     text-decoration: underline;
 }
+
+.comment-chunk {
+    margin-top: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.comment-holder {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}

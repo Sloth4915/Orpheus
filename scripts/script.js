@@ -372,6 +372,7 @@ function processData() {
     // Get a list of teams
     let teams = new Set()
     for (let schema of Object.keys(mapping)) {
+        if (typeof uploadedData[schema] === "undefined") uploadedData[schema] = []
         console.log(schema, uploadedData[schema])
         for (let datum of uploadedData[schema]) {
             let team = getTeam(schema, datum[mapping[schema]["team_key"]])
@@ -1470,8 +1471,13 @@ function checkLoading() {
 function setLoadingIndicator() {
     if (fullyOffline) {
         document.querySelector("#loading").className = ""
-        document.querySelector("#loading-text").innerText = "You are offline"
-        document.querySelector("#loading-status").innerText = "and data isn't currently saved for offline use"
+        if (usingTBAMatches) {
+            document.querySelector("#loading-text").innerText = "You are offline or quals haven't started"
+            document.querySelector("#loading-status").innerText = "If quals haven't started, turn off TBA Matches in the API menu"
+        } else {
+            document.querySelector("#loading-text").innerText = "You are offline"
+            document.querySelector("#loading-status").innerText = "and data isn't currently saved for offline use"
+        }
         return
     }
     document.querySelector("#loading").className = ""

@@ -79,10 +79,12 @@ dialog {
     padding: 1rem;
     width: max-content;
     height: max-content;
+    max-width: 100vw;
 }
 #loading-status {
     font-size: 1.6rem;
     font-weight: normal;
+    max-width: 100vw;
 }
 #loading.hidden {display: none;}
 

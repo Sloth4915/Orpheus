@@ -1552,54 +1552,68 @@ class Comments extends Widget {
         this.content.innerHTML = ""
 
         let content = this.content
-        function findComments(context, schema, nameOverride) {
+        let i = 0
+        function findComments(context, schema, addToEl, nameOverride) {
             let group = document.createElement("div")
             group.label = nameOverride ?? getColumnFromID(context).name
             for (let child of Object.keys(schema)) {
+                i++
                 if (typeof schema[child]["type"] === "undefined") {
-                    findComments(context + "`" + child, schema[child], undefined)
+                    findComments(context + "`" + child, schema[child], addToEl,undefined)
                 }
                 else if (schema[child]["type"] === "comment") {
                     let col = getColumnFromID(context + "`" + child)
 
-                    let el = document.createElement("div")
+                    for (let x of Object.keys(col.data[team])) {
+                        console.log("key", x, col.data[team][x])
 
-                    let open = true
+                        let note = document.createElement("div")
 
-                    let label = document.createElement("div")
-                    label.className = "comment-title"
-                    label.addEventListener("click", () => {
-                        open = !open
-                        opener.innerText = open ? "arrow_drop_up" : "arrow_drop_down"
-                        notes.classList.toggle("hidden")
-                    })
-                    el.appendChild(label)
+                        let noteCol = document.createElement("b")
+                        noteCol.innerText = col.name + ": "
+                        note.appendChild(noteCol)
+                        let content = document.createElement("div")
+                        content.innerText = col.data[team][x].trim()
+                        note.appendChild(content)
+                        note.style.order = "" + ((parseInt(x) * 1000) + i)
 
-                    let opener = document.createElement("div")
-                    opener.className = "material-symbols-outlined"
-                    opener.innerText = "arrow_drop_up"
-                    label.appendChild(opener)
+                        addToEl.appendChild(note)
 
-                    let title = document.createElement("div")
-                    title.innerText = col.name
-                    title.className = "comment-title-text"
-                    label.appendChild(title)
-
-                    let notes = document.createElement("div")
-                    notes.className = ""
-                    el.appendChild(notes)
-
-                    let text = ""
-                    for (let x of Object.values(col.data[team])) {
-                        text += x + "\n\n"
                     }
-                    notes.innerText = text.trim()
-                    content.appendChild(el)
                 }
             }
         }
         for (let schema of Object.keys(mapping)) {
-            findComments(schema, mapping[schema].data, mapping[schema]["alias"] ?? schema)
+            let el = document.createElement("div")
+            content.appendChild(el)
+
+            let open = true
+
+            let label = document.createElement("div")
+            label.className = "comment-title"
+            label.addEventListener("click", () => {
+                open = !open
+                opener.innerText = open ? "arrow_drop_up" : "arrow_drop_down"
+                contents.classList.toggle("hidden")
+            })
+            el.appendChild(label)
+
+            let opener = document.createElement("div")
+            opener.className = "material-symbols-outlined"
+            opener.innerText = "arrow_drop_up"
+            label.appendChild(opener)
+
+            let title = document.createElement("div")
+            title.innerText = getColumnFromID(schema).name
+            title.className = "comment-title-text"
+            label.appendChild(title)
+
+            let contents = document.createElement("div")
+            contents.className = "comment-holder"
+            content.appendChild(contents)
+
+
+            findComments(schema, mapping[schema].data, contents, mapping[schema]["alias"] ?? schema)
         }
 
         if (usingTBA) {
