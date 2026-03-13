@@ -29,6 +29,7 @@ let eventKey
 let event_data
 let uploadedData = {}
 let dataStatus = {}
+let dataUrls = {}
 let team_data = {}
 let api_data = {}
 let tba_match_data = {}
@@ -137,14 +138,15 @@ document.querySelector("#top-load-event").onclick = function() {
     let x = prompt("What event code do you want? For example: 2024wabon, 2025waahs, 2025pncmp, etc")
     if (x === "get") alert(eventKey)
     else if (x === "clear") {
-        localforage.removeItem(storageKeys.EVENT)
-        window.location.reload()
+        localforage.removeItem(storageKeys.EVENT, () => {
+            window.location.reload()
+        })
     }
     else if (x !== "") {
-        localforage.setItem(storageKeys.EVENT, x.toLowerCase())
-        window.location.reload()
+        localforage.setItem(storageKeys.EVENT, x.toLowerCase(), () => {
+            window.location.reload()
+        })
     }
-
 }
 function loadEvent() {
     if (usingStatbotics) {
@@ -801,11 +803,13 @@ function dataButtons() {
             apiButton.addEventListener("click", () => {
                 let url = prompt("What is the URL for this data? It must return a JSON array or a JSON object where the 'data' key is an array.")
                 if (url === null) return
+                if (url === "get") dataUrls[schema]
                 uploadedData[schema] = url
-                localforage.setItem(storageKeys.DATA, uploadedData)
-                downloadButton.disabled = false
-                saveGeneralSettings()
-                window.location.reload()
+                localforage.setItem(storageKeys.DATA, uploadedData, () => {
+                    downloadButton.disabled = false
+                    saveGeneralSettings()
+                    window.location.reload()
+                })
             })
             dataInButtons.appendChild(apiButton)
 
@@ -815,7 +819,7 @@ function dataButtons() {
 
             downloadButton.disabled = (typeof uploadedData[schema] === "undefined") || !(uploadedData[schema].length)
             downloadButton.addEventListener("click", () => download((mapping[schema]["alias"] ? mapping[schema]["alias"] : schema) + ".json", JSON.stringify(uploadedData[schema])))
-            data.appendChild(downloadButton)
+            dataInButtons.appendChild(downloadButton)
 
             let dropdownPause = document.createElement("div")
             dropdownPause.className = "#dropdown-pause"
@@ -842,8 +846,47 @@ function setRoundingEl() {
 }
 
 document.querySelector("#top-clear-files").addEventListener("click", () => {
+    if (!confirm("Are you sure? This will clear any data, lists, etc and fully reset Orpheus")) return
     localforage.clear(() => {
         window.location.reload()
+    })
+})
+document.querySelector("#top-clear-data").addEventListener("click", () => {
+    if (!confirm("Are you sure? This will delete the data and mapping that you have uploaded. Offline data will also be cleared")) return
+    localforage.removeItem(storageKeys.DATA, () => {
+        localforage.removeItem(storageKeys.MAPPING, () => {
+            localforage.removeItem(storageKeys.SAVED_API_DATA, () => {
+                location.reload()
+            })
+        })
+    })
+})
+
+document.querySelector("#top-share-data").addEventListener("click", () => {
+    let data4915 = {
+        "mapping": {
+            data: mapping,
+            game: gameMapping
+        },
+        "data": {},
+        "eventKey": eventKey,
+    }
+    for (let schema of Object.keys(mapping)) {
+        data4915["data"][schema] = dataStatus[schema] === "api" ? dataUrls[schema] : uploadedData[schema]
+    }
+    download(eventKey + ".data4915", JSON.stringify(data4915))
+})
+document.querySelector("#top-upload-shared-data").addEventListener("click", () => {
+    loadFile(".data4915", (result) => {
+        let json = JSON.parse(result)
+        console.log(json)
+        localforage.setItem(storageKeys.EVENT, json["eventKey"], () => {
+            localforage.setItem(storageKeys.MAPPING, json["mapping"], () => {
+                localforage.setItem(storageKeys.DATA, json["data"], () => {
+                    location.reload()
+                })
+            })
+        })
     })
 })
 
@@ -1580,12 +1623,6 @@ document.querySelector("#top-import-settings").addEventListener("click", () => {
     })
 })
 
-document.querySelector("#top-reset-preferences").addEventListener("click", () => {
-    if (!confirm("Are you sure? This will clear all saved data, preferences, columns, etc, and cannot be undone.")) return
-    for (let key of Object.keys(storageKeys)) localforage.removeItem(key)
-    window.location.reload()
-})
-
 //#endregion
 
 //#region Init
@@ -1635,11 +1672,14 @@ localforage.getItem(storageKeys.DATA, (err, val) => {
     if (uploadedData !== null && typeof uploadedData !== "undefined") {
         for (let schema of Object.keys(uploadedData)) {
             if (typeof uploadedData[schema] === "string") {
-                loadOther(uploadedData[schema], (data) => {
+                dataUrls[schema] = uploadedData[schema]
+
+                // Wrapped in a timeout to prevent a potential race condition when offline with loadOther being called before saved api data is loaded by localforage
+                setTimeout(() => loadOther(uploadedData[schema], (data) => {
                     console.log('loaded ' + schema + " data")
                     if (Array.isArray(data)) uploadedData[schema] = data
                     else uploadedData[schema] = data["data"]
-                })
+                }), 1)
                 dataStatus[schema] = "api"
             } else {
                 dataStatus[schema] = "uploaded"

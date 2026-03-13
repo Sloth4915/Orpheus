@@ -53,8 +53,13 @@ dialog {
 }
 .top-button-cluster {
     display: flex;
-    flex-direction: row;
+    flex-direction: row !important;
+    justify-content: space-between;
     flex-wrap: nowrap;
+    white-space: nowrap;
+}
+.top-button-cluster button {
+    flex-grow: 1;
 }
 
 #loading {

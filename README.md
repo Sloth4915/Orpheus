@@ -344,11 +344,18 @@ Select a team to view all of a team's matches. This kinda requires TBA matches.
 
 ### 4.2 Lists
 
-You can add teams to a List for easier sorting.
+You can add teams to a List for easier sorting. 
 
 ### 4.3 Saved layouts
 
 In the `Layout` menu at the top, you can save and load a layout for later. This feature is still a bit buggy and you can currently only save one layout at a time.
+
+### 4.4 PWA
+Orpheus can be installed as a PWA or "Progressive Web App" for fully offline use!
+
+On phones, find the "Add to Home Screen" button in your browser settings.
+
+On desktop, there should be an install button in the address bar.
 
 ## 5. Upcoming Features
 
