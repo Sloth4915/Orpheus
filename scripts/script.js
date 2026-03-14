@@ -23,7 +23,7 @@ const storageKeys = {
 const MISSING_LOGO = "https://frc-cdn.firstinspires.org/eventweb_frc/ProgramLogos/FIRSTicon_RGB_withTM.png"
 
 const toolName = "Orpheus"
-const version = "2.3.1"
+const version = "2.3.2"
 
 let eventKey
 let event_data
@@ -481,9 +481,18 @@ function processData() {
                                 if (summarize === "average" || summarize === "mean") {
                                     let val = 0
                                     for (let match of Object.keys(data[team])) {
-                                        if (datumMapping[x]["type"] === "number") val += data[team][match]
-                                        if (datumMapping[x]["type"] === "ratio") val += data[team][match]["ratio"]
-                                        if (datumMapping[x]["type"] === "accuracy") val += Math.abs(data[team][match]["difference"])
+                                        if (datumMapping[x]["type"] === "number") {
+                                            let dataPoint = data[team][match]
+                                            console.log(x, dataPoint)
+                                            if (!isNaN(parseFloat(dataPoint))) dataPoint = parseFloat(dataPoint)
+                                            val += dataPoint
+                                        }
+                                        if (datumMapping[x]["type"] === "ratio") {
+                                            let dataPoint = data[team][match]["ratio"]
+                                            if (!isNaN(parseFloat(dataPoint))) dataPoint = parseFloat(dataPoint)
+                                            val += dataPoint
+                                        }
+                                        if (datumMapping[x]["type"] === "accuracy") val += Math.abs(parseFloat(data[team][match]["difference"]))
                                     }
                                     val /= Object.keys(data[team]).length
                                     data[team]["summarized"] = val
@@ -555,7 +564,6 @@ function processData() {
                         if (typeof teamMedia[team] === "undefined") teamMedia[team] = []
                     }
                     for (let i of uploadedData[schema]) {
-                        console.log(datumMapping)
                         let team = getTeam(schema, i[mapping[schema]["team_key"]])
                         if (typeof datumMapping[x]["key"] === "string") {
                             if (i[datumMapping[x]["key"]].trim() !== "")
@@ -563,7 +571,6 @@ function processData() {
                         }
                         else {
                             for (let key of datumMapping[x]["key"]) {
-                                console.log(key, i, i[key])
                                 if (typeof i[key] !== "undefined" && i[key].trim() !== "")
                                     teamMedia[team].push(i[key])
                             }
@@ -638,10 +645,12 @@ function evaluate(expression, schema, context) {
                     val = ""
                 } else {
                     val = context.tba["score_breakdown"]
-                    let specifier = search.slice(1)
-                    if (!(specifier[0] === 'red' || specifier[0] === 'blue')) specifier.unshift(context.alliance)
-                    for (let i of specifier)
-                        val = val[i]
+                    if (val !== null) {
+                        let specifier = search.slice(1)
+                        if (!(specifier[0] === 'red' || specifier[0] === 'blue')) specifier.unshift(context.alliance)
+                        for (let i of specifier)
+                            val = val[i]
+                    }
                 }
             } else {
                 if (["red 1", "red 2", "red 3", "blue 1", "blue 2", "blue 3", "other 1", "other 2"].includes(search[0].toLowerCase()))
@@ -670,6 +679,10 @@ function evaluate(expression, schema, context) {
                 }
                 return math.evaluate(replaceConstants(context["functions"][f]["returns"], parameters))
             }
+
+    // FIXME remove - debug aaaa
+    //if (schema !== "pit" && expression === "[auto-shot]")
+    //console.log(math.evaluate(replaceConstants(expression), functions), expression, schema, context)
 
     return math.evaluate(replaceConstants(expression), functions)
 }

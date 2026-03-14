@@ -503,6 +503,7 @@ class Table extends Widget {
             dataEl.appendChild(den)
         } else {
             let value = typeof column.data[team] === "object" ? column.data[team]["summarized"] : column.data[team]
+            console.log(column.id ?? column.columnId, value)
             if (typeof value === "undefined") dataEl.innerText = ""
             else if (typeof value === "number") dataEl.innerText = (Math.round(value * rounding) / rounding) + ""
             else dataEl.innerText = value
