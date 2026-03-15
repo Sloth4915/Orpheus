@@ -1578,6 +1578,8 @@ class Comments extends Widget {
                         note.appendChild(content)
                         note.style.order = "" + ((parseInt(x) * 1000) + i)
 
+                        if ((""+col.data[team][x]).trim().startsWith("undefined (")) continue
+
                         addToEl.appendChild(note)
 
                     }
@@ -1612,7 +1614,6 @@ class Comments extends Widget {
             let contents = document.createElement("div")
             contents.className = "comment-holder"
             content.appendChild(contents)
-
 
             findComments(schema, mapping[schema].data, contents, mapping[schema]["alias"] ?? schema)
         }
