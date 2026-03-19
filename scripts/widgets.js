@@ -225,14 +225,11 @@ class Table extends Widget {
             controls.appendChild(colDragger)
 
             if (!mobile) {
-                let removeButton = document.createElement("div")
-                removeButton.innerText = "cancel_presentation"
+                let removeButton = element("div", "column-header-button material-symbols-outlined", {"innerText": "cancel_presentation"}, controls)
                 removeButton.addEventListener("click", (e) => {
                     e.stopPropagation()
                     this.removeColumn(thisColumn.columnId)
                 })
-                removeButton.className = "column-header-button material-symbols-outlined"
-                controls.appendChild(removeButton)
             }
         }
 
@@ -288,39 +285,26 @@ class Table extends Widget {
                 delete this.teamElements[team]
             }
 
-            let teamEl = document.createElement("div")
-            teamEl.className = "row"
+            let teamEl = element("div", "row", {}, this.content)
             this.teamElements[team] = teamEl
 
-            let teamSettingsBlock = document.createElement("div")
-            teamSettingsBlock.className = "table-settings-block"
-            teamSettingsBlock.setAttribute("data-id", this.id)
-            teamEl.appendChild(teamSettingsBlock)
+            let teamSettingsBlock = element("div", "table-settings-block", {"data-id": this.id}, teamEl)
 
-            let tsChunk = document.createElement("div")
-            tsChunk.className = "table-settings-chunk"
+            let tsChunk = element("div", "table-settings-chunk")
             let num = 0
             for (let i in Lists.lists) {
                 num++
                 if (num > Lists.lists.length / 2 + 0.5 && Lists.lists.length > 4) {
                     num = 0
                     teamSettingsBlock.appendChild(tsChunk)
-                    tsChunk = document.createElement("div")
-                    tsChunk.className = "table-settings-chunk"
+                    tsChunk = element("div", "table-settings-chunk")
                 }
                 let index = parseInt(i)
                 let list = Lists.lists[index]
 
                 if (list.hidden) continue
 
-                let listEl = document.createElement("div")
-                listEl.className = "table-setting material-symbols-outlined"
-                listEl.style.color = ""
-                listEl.innerText = list.icon
-                listEl.title = list.name
-                listEl.setAttribute("data-list", list.id)
-                listEl.setAttribute("data-team", team)
-                listEl.setAttribute("data-id", this.id)
+                let listEl = element("div", "table-setting material-symbols-outlined", {"innerText": list.icon, "style": {"color": "", "title": list.name}, "data-list": list.id, "data-team": team, "data-id": this.id}, tsChunk)
                 if (list.includes(team)) {
                     listEl.classList.add("filled")
                     listEl.style.color = list.color.color
@@ -328,7 +312,6 @@ class Table extends Widget {
                 listEl.addEventListener("click", () => {
                     list.toggle(team)
                 })
-                tsChunk.appendChild(listEl)
             }
             teamSettingsBlock.appendChild(tsChunk)
 
@@ -337,19 +320,10 @@ class Table extends Widget {
             }
 
             if (usingTBAMedia) {
-                let logo = document.createElement("img")
-                logo.setAttribute("data-team-logo", team)
-                logo.setAttribute("data-id", this.id)
+                let logo = element("img", "table-logo", {"data-team-logo": team, "data-id": this.id}, teamEl)
                 if (typeof team_data[team] !== "undefined" && typeof team_data[team].Icon !== "undefined") logo.src = team_data[team].Icon
                 else logo.src = MISSING_LOGO
-                logo.className = "table-logo"
-                teamEl.appendChild(logo)
             }
-
-            let tools = document.createElement("div")
-            tools.className = "tools"
-
-            this.content.appendChild(teamEl)
         }
     }
     removeTeam(...[teams]) {
@@ -466,28 +440,17 @@ class Table extends Widget {
         }
     }
     createTableCell(team, column) {
-        let dataEl = document.createElement("div")
-        dataEl.className = "data"
+        let dataEl = element("div", "data")
         this.elements[column.id ?? column.columnId][team] = dataEl
 
         if (column.mapping.type === "ratio" && (typeof column.mapping["summarize"] === "undefined" || column.mapping["summarize"] === "ratio")) {
             dataEl.innerHTML = ""
 
-            let num = document.createElement("div")
-            num.className = "numerator"
-            num.innerText = (Math.round(column.data[team]["sum_num"] * rounding) / rounding) + ""
-            dataEl.appendChild(num)
-
-            let divider = document.createElement("div")
-            divider.className = "ratio-divider"
-            dataEl.appendChild(divider)
-
-            let den = document.createElement("div")
-            den.className = "numerator"
-            den.innerText = (Math.round(column.data[team]["sum_den"] * rounding) / rounding) + ""
+            element("div", "numerator", {"innerText": (Math.round(column.data[team]["sum_num"] * rounding) / rounding) + ""}, dataEl)
+            element("div", "ratio-divider", {}, dataEl)
+            element("div", "denominator", {"innerText": (Math.round(column.data[team]["sum_den"] * rounding) / rounding) + ""}, dataEl)
 
             dataEl.title = (Math.round(column.data[team]["summarized"] * rounding) / rounding)
-            dataEl.appendChild(den)
         } else {
             let value = typeof column.data[team] === "object" ? column.data[team]["summarized"] : column.data[team]
             console.log(column.id ?? column.columnId, value)
