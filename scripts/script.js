@@ -12,7 +12,6 @@ const storageKeys = {
     EVENT: "scouting_4915_event",
     DATA: "scouting_4915_data",
     MAPPING: "scouting_4915_mapping",
-    THEME: "scouting_4915_theme",
     ENABLED_APIS: "scouting_4915_apis",
     SETTINGS: "scouting_4915_settings_general",
     SAVED_API_DATA: "scouting_4915_api_saved",
@@ -23,7 +22,7 @@ const storageKeys = {
 const MISSING_LOGO = "https://frc-cdn.firstinspires.org/eventweb_frc/ProgramLogos/FIRSTicon_RGB_withTM.png"
 
 const toolName = "Orpheus"
-const version = "2.3.2"
+const version = "2.4"
 
 let eventKey
 let event_data
@@ -41,8 +40,6 @@ let gameMapping = {
     "win": 3,
     "tie": 1
 }
-
-let theme
 
 let loading = 0
 let fullyOffline = false
@@ -929,7 +926,7 @@ class List {
     }
 
     add(team) {
-        if (!this.teams.includes(team)) this.teams.push(team)
+        if (!this.teams.includes(team)) this.teams.push(parseInt(team))
         main.refresh()
         Events.emit(Events.LIST_CHANGE)
     }
@@ -1354,6 +1351,9 @@ const Events = {
 //#endregion
 
 //#region Theme, Projector Mode, Graph Settings
+
+// Initial theme loading is done in index.html
+
 function changeThemeTo(to) {
     let root = document.querySelector(":root").classList
     root.remove("dark")
@@ -1361,7 +1361,7 @@ function changeThemeTo(to) {
     theme = to
     if (theme === "dark") root.add("dark")
     else if (theme === "4915") root.add("spartronics_theme")
-    localforage.setItem(storageKeys.THEME, theme)
+    localStorage.setItem("theme4915", theme)
 }
 // Theme toggle button
 document.querySelector("#top-theme").onclick = function() {
@@ -1658,14 +1658,8 @@ document.querySelector("#top-import-settings").addEventListener("click", () => {
 //#endregion
 
 //#region Init
-let initLoading = 8
+let initLoading = 7
 
-localforage.getItem(storageKeys.THEME, (err, val) => {
-    if (val === null) theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"
-    else theme = val
-    changeThemeTo(theme)
-    if (!--initLoading) finishInit()
-})
 localforage.getItem(storageKeys.SETTINGS, (err, settings) => {
     if (settings === null) {
         settings = {

@@ -31,8 +31,19 @@
     <link rel="stylesheet" href="styles/overrides.css"/>
     <link rel="stylesheet" href="styles/mobile.css"/>
     <!-- Scripts -->
+
     <script src="deps/localForage/dist/localforage.js"></script>
     <script src="deps/mathjs/math.js"></script>
+
+    <script>
+        var theme = localStorage.getItem("theme4915") ?? "light"
+        document.querySelector(":root").classList.remove("dark")
+        document.querySelector(":root").classList.remove("spartronics_theme")
+        if (theme === "dark") document.querySelector(":root").classList.add("dark")
+        else if (theme === "4915") document.querySelector(":root").classList.add("spartronics_theme")
+        localStorage.setItem("theme4915", theme)
+    </script>
+
     <!-- This API key is only allowed for use on Orpheus. If you'd like to add Desmos to your fork of Orpheus or for use in your own project, please visit www.desmos.com/my-api or reach out to the Desmos Studio team at partnerships@desmos.com -->
     <script src="https://www.desmos.com/api/v1.11/calculator.js?apiKey=14470c380841448eae58c1b5f832477f" onload="
         // This way, we can check if desmos successfully loaded. If it loaded late (maybe due to slow internet or something), it can call the functions to initialize the things that require it.

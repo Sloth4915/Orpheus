@@ -32,6 +32,5 @@ html, body {
 
 * {
     color: var(--font);
-    transition: color 200ms, background-color 200ms;
     z-index: inherit;
 }

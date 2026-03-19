@@ -96,15 +96,11 @@ class Table extends Widget {
                 this.teamElements[team].appendChild(this.createTableCell(team, column))
             }
 
-            let headerEl = document.createElement("div")
-            headerEl.className = "data header"
-            headerEl.setAttribute("data-column", column.id)
+            let headerEl = element("div", "data header", {"data-column": column.id, "innerText": column.table}, this.header)
             this.elements[thisColumn.columnId]["header"] = headerEl
-            headerEl.innerText = column.table
             headerEl.addEventListener("click", () => {
                 this.setActiveColumn(column.id)
             })
-            this.header.appendChild(headerEl)
 
             let controls = element("div", "data-controls", {}, headerEl)
 
@@ -131,11 +127,7 @@ class Table extends Widget {
             //#endregion
 
             //#region Dragging
-            let colDragger = document.createElement("div")
-            colDragger.className = "data-dragger material-symbols-outlined"
-            colDragger.setAttribute("data-column-drag", column.id)
-            colDragger.setAttribute("data-id", this.id)
-            colDragger.innerText = "drag_indicator"
+            let colDragger = element("div", "data-dragger material-symbols-outlined", {"data-column-drag": column.id, "data-id": this.id, "innerText": "drag_indicator"})
 
             let dragging = false
             let dragData
@@ -151,12 +143,7 @@ class Table extends Widget {
                 for (let col of ctx.columns) col.order *= 2
 
                 if (ctx.columns.length > 1) {
-                    dragRemovalEl = document.createElement("div")
-                    dragRemovalEl.className = "table-column-drag-remove material-symbols-outlined"
-                    dragRemovalEl.innerText = "delete"
-                    dragRemovalEl.style.left = (e.clientX - getRem(2)) + "px"
-                    dragRemovalEl.style.top = (e.clientY + getRem(3)) + "px"
-                    ctx.content.appendChild(dragRemovalEl)
+                    dragRemovalEl = element("div", "table-column-drag-remove material-symbols-outlined", {"innerText": "delete", "style": {"left": (e.clientX - getRem(2)) + "px", "top": (e.clientY + getRem(3)) + "px"}}, ctx.content)
                 }
                 ctx.refresh()
             })

@@ -32,6 +32,10 @@ function element(type, classes = "", attributes = {}, appendTo = null) {
         }
         delete attributes["style"]
     }
+    if (typeof attributes["innerText"] !== "undefined") {
+        el.innerText = attributes["innerText"]
+        delete attributes["innerText"]
+    }
     for (let attr of Object.keys(attributes)) {
         el.setAttribute(attr, attributes[attr])
     }
