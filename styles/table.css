@@ -20,6 +20,7 @@
     position: sticky;
     top:0;
     order: -10000;
+    z-index: 2;
 }
 .data {
     padding: 0.25rem;
@@ -34,6 +35,7 @@
     overflow: clip;
     flex-direction: column;
     flex-shrink: 0;
+    word-break: break-word;
 }
 .data.header.selected {
     background-color: var(--highlight);
@@ -147,6 +149,9 @@
 .divider-above, .divider-below {
     min-height: 2px;
     background-color: var(--font);
+    margin-top: -1px;
+    margin-bottom: -1px;
+    z-index: 1;
 }
 .divider-above {
     order: -1;
