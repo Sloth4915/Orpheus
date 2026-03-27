@@ -22,7 +22,7 @@ const storageKeys = {
 const MISSING_LOGO = "https://frc-cdn.firstinspires.org/eventweb_frc/ProgramLogos/FIRSTicon_RGB_withTM.png"
 
 const toolName = "Orpheus"
-const version = "2.4.1"
+const version = "2.4.2"
 
 let eventKey
 let event_data
@@ -1856,7 +1856,13 @@ Events.on(Events.LIST_CHANGE, () => Lists.save())
 // Save/load Layout
 localforage.getItem(storageKeys.WIDGETS, (err, val) => {
     if (val != null) {
-        let parsed = JSON.parse(val)
+        let parsed
+        try {
+            parsed = JSON.parse(val)
+        } catch {
+            localforage.setItem(storageKeys.WIDGETS, "{}")
+            parsed = {}
+        }
         if (typeof parsed !== "object") {
             console.error("Something weird happened with the saved layouts...")
             if (!--initLoading) finishInit()
