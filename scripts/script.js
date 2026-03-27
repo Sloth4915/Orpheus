@@ -22,7 +22,7 @@ const storageKeys = {
 const MISSING_LOGO = "https://frc-cdn.firstinspires.org/eventweb_frc/ProgramLogos/FIRSTicon_RGB_withTM.png"
 
 const toolName = "Orpheus"
-const version = "2.4"
+const version = "2.4.1"
 
 let eventKey
 let event_data
@@ -426,6 +426,7 @@ function processData() {
                             let alliance
                             let position
                             if (usingTBAMatches) {
+                                console.log(matchNum, tba_match_data[matchNum])
                                 otherBots = {
                                     "red 1": parseInt(tba_match_data[matchNum]["alliances"]["red"]["team_keys"][0].slice(3)),
                                     "red 2": parseInt(tba_match_data[matchNum]["alliances"]["red"]["team_keys"][1].slice(3)),
@@ -1689,7 +1690,11 @@ function addLoadLayoutButton(layoutName) {
 main.addRefreshHook(() => saveLayout())
 
 document.querySelector(".top-layout-reset").addEventListener("click", () => {
-    for (let child of main.children) main.removeChild(child)
+    for (let child of main.children) main.removeChild(child.widget)
+    let table = new Table()
+    main.addChild(table)
+    table.addColumn(["orpheus`number"])
+    if (usingTBA) table.addColumn(["orpheus`name"])
 })
 
 //#endregion
