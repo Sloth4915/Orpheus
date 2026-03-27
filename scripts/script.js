@@ -41,6 +41,8 @@ let gameMapping = {
     "tie": 1
 }
 
+let initialSetup = true
+let loadingLayout = false
 let loading = 0
 let fullyOffline = false
 
@@ -84,6 +86,8 @@ let graphSettings = {
     points: true,
     bestfit: true
 }
+
+let savedLayouts = {}
 //#endregion
 
 //#region Init header controls
@@ -480,7 +484,6 @@ function processData() {
                                     for (let match of Object.keys(data[team])) {
                                         if (datumMapping[x]["type"] === "number") {
                                             let dataPoint = data[team][match]
-                                            console.log(x, dataPoint)
                                             if (!isNaN(parseFloat(dataPoint))) dataPoint = parseFloat(dataPoint)
                                             val += dataPoint
                                         }
@@ -619,6 +622,7 @@ function processData() {
     }
 
     Events.emit(Events.DATA_PROCESSED)
+    initialSetup = false
 }
 
 function evaluate(expression, schema, context) {
@@ -1339,6 +1343,7 @@ const Events = {
         if (typeof this.handlers[event] !== "undefined") {
             for (let handler of this.handlers[event]) handler.handler.call(handler.context);
         }
+        saveLayout()
     },
 
     // List of Events
@@ -1346,6 +1351,7 @@ const Events = {
     GRAPH_SETTINGS: 2,
     DATA_PROCESSED: 3,
     SET_LISTS_MODE: 4,
+    SAVE_LAYOUT: 5, // An event that does nothing except save the layout (because all events save layout when emitted)
 }
 
 //#endregion
@@ -1613,7 +1619,7 @@ function closeContextMenu() {
 }
 //#endregion
 
-//#region Save Settings, Load Config File
+//#region Save Settings, Load Config File, Layout Loading/Saving
 function saveGeneralSettings() {
     localforage.setItem(storageKeys.SETTINGS, {
         "rounding": roundingDigits,
@@ -1655,10 +1661,41 @@ document.querySelector("#top-import-settings").addEventListener("click", () => {
     })
 })
 
+function saveLayout(key = "_default") {
+    if (initialSetup || loadingLayout) return
+    console.log('saving')
+    savedLayouts[key] = main.out()
+    localforage.setItem(storageKeys.WIDGETS, JSON.stringify(savedLayouts))
+}
+function addLoadLayoutButton(layoutName) {
+    let holder = element("div", "top-button-cluster", {}, document.querySelector(".saved-layouts"))
+
+    let button = element("button", "", {"innerText": layoutName}, holder)
+    button.addEventListener("click", () => {
+        loadingLayout = true
+        main.in(JSON.parse(JSON.stringify(savedLayouts[layoutName])))
+        loadingLayout = false
+        saveLayout()
+    })
+
+    let removeButton = element("button", "", {"innerText": "Remove"}, holder)
+    removeButton.addEventListener("click", () => {
+        holder.remove()
+        delete savedLayouts[layoutName]
+        localforage.setItem(storageKeys.WIDGETS, JSON.stringify(savedLayouts))
+    })
+}
+
+main.addRefreshHook(() => saveLayout())
+
+document.querySelector(".top-layout-reset").addEventListener("click", () => {
+    for (let child of main.children) main.removeChild(child)
+})
+
 //#endregion
 
 //#region Init
-let initLoading = 7
+let initLoading = 8
 
 localforage.getItem(storageKeys.SETTINGS, (err, settings) => {
     if (settings === null) {
@@ -1812,14 +1849,32 @@ localforage.getItem(storageKeys.LISTS, (err, val) => {
 Events.on(Events.LIST_CHANGE, () => Lists.save())
 
 // Save/load Layout
-document.querySelector(".top-save-layout").addEventListener("click", () => {
-    localforage.setItem(storageKeys.WIDGETS, main.out())
+localforage.getItem(storageKeys.WIDGETS, (err, val) => {
+    if (val != null) {
+        let parsed = JSON.parse(val)
+        if (typeof parsed !== "object") {
+            console.error("Something weird happened with the saved layouts...")
+            if (!--initLoading) finishInit()
+            return
+        }
+        savedLayouts = parsed
+        for (let key of Object.keys(savedLayouts)) {
+            console.log("adding", key)
+            if (key !== "_default") addLoadLayoutButton(key)
+        }
+    } else {
+
+    }
+    if (!--initLoading) finishInit()
 })
-document.querySelector(".top-load-layout").addEventListener("click", () => {
-    localforage.getItem(storageKeys.WIDGETS, (err, val) => {
-        for (let child of main.children) main.removeChild(child.widget)
-        main.in(val)
-    })
+document.querySelector(".top-save-layout").addEventListener("click", () => {
+    let name = prompt("What do you want to call this layout?")
+    if (name !== null) {
+        let existing = typeof savedLayouts[name] !== "undefined"
+        savedLayouts[name] = main.out()
+        localforage.setItem(storageKeys.WIDGETS, JSON.stringify(savedLayouts))
+        if (!existing) addLoadLayoutButton(name)
+    }
 })
 
 // Version and Title
@@ -1873,11 +1928,20 @@ function finishInit() {
     document.querySelector("#loading").className = "hidden"
     if (typeof eventKey !== "undefined" && typeof mapping !== "undefined" && isDataUploaded()) {
         Events.on(Events.DATA_PROCESSED, () => {
-            console.log("data processed")
-            let table = new Table()
-            main.addChild(table)
-            table.addColumn(["orpheus`number"])
-            if (usingTBA) table.addColumn(["orpheus`name"])
+            loadingLayout = true
+            setTimeout(() => {
+                console.log("loading saved layout")
+                if (typeof savedLayouts["_default"] === "undefined") {
+                    let table = new Table()
+                    main.addChild(table)
+                    table.addColumn(["orpheus`number"])
+                    if (usingTBA) table.addColumn(["orpheus`name"])
+                } else {
+                    main.in(JSON.parse(JSON.stringify(savedLayouts["_default"])))
+                }
+                loadingLayout = false
+                saveLayout()
+            }, 0)
         })
 
         loadEvent()

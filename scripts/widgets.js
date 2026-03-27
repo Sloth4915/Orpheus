@@ -19,7 +19,7 @@ class Table extends Widget {
 
         this.activeColumn = ""
         this.columns = []
-        this.teams = Object.keys(team_data).map((a) => parseInt(a))
+        this.teams = Object.keys(team_data).map((a) => (a + ""))
         for (let team of this.teams) this.addTeamEl(team)
         this.sort = 1
 
@@ -96,7 +96,7 @@ class Table extends Widget {
                 this.teamElements[team].appendChild(this.createTableCell(team, column))
             }
 
-            let headerEl = element("div", "data header", {"data-column": column.id, "innerText": column.table}, this.header)
+            let headerEl = element("div", "data header", {"data-column": column.id, "innerText": column.table, "data-id": this.id}, this.header)
             this.elements[thisColumn.columnId]["header"] = headerEl
             headerEl.addEventListener("click", () => {
                 this.setActiveColumn(column.id)
@@ -270,8 +270,10 @@ class Table extends Widget {
     addTeam(...[teams]) {
         if (typeof teams !== "object") teams = [teams]
         for (let team of teams) {
-            this.teams.push(team)
-            this.addTeamEl(team)
+            team = team + ""
+            if(this.teams.includes(team + "")) continue
+            this.teams.push(team + "")
+            this.addTeamEl(team + "")
         }
 
         this.sortRows()
@@ -383,6 +385,8 @@ class Table extends Widget {
         let tableWidth = this.header.scrollWidth - 2
         this.aboveDivider.style.width = tableWidth + "px"
         this.belowDivider.style.width = tableWidth + "px"
+
+        Events.emit(Events.SAVE_LAYOUT)
     }
     sortRows() {
         if (this.teams.length === 0 || this.activeColumn === "" || this.parent === null) return
@@ -440,7 +444,7 @@ class Table extends Widget {
         }
     }
     createTableCell(team, column) {
-        let dataEl = element("div", "data")
+        let dataEl = element("div", "data", {"data-id": this.id})
         this.elements[column.id ?? column.columnId][team] = dataEl
 
         if (column.mapping.type === "ratio" && (typeof column.mapping["summarize"] === "undefined" || column.mapping["summarize"] === "ratio")) {
@@ -453,7 +457,6 @@ class Table extends Widget {
             dataEl.title = (Math.round(column.data[team]["summarized"] * rounding) / rounding)
         } else {
             let value = typeof column.data[team] === "object" ? column.data[team]["summarized"] : column.data[team]
-            console.log(column.id ?? column.columnId, value)
             if (typeof value === "undefined") dataEl.innerText = ""
             else if (typeof value === "number") dataEl.innerText = (Math.round(value * rounding) / rounding) + ""
             else dataEl.innerText = value
@@ -905,6 +908,8 @@ class Graph extends Widget {
             })
             this.calculator.setDefaultState(this.calculator.getState())
         }
+
+        Events.emit(Events.SAVE_LAYOUT)
     }
     createTeamList() {
         this.teamsEl.innerHTML = ""
@@ -1210,6 +1215,8 @@ class TeamInfo extends Widget {
             this.content.innerText = "Select teams or a list of teams to view info about them"
             this.name = "Team Info"
         }
+
+        Events.emit(Events.SAVE_LAYOUT)
     }
     openScopeEditor() {
         this.scopePanel.innerHTML = ""
@@ -1439,6 +1446,7 @@ class TeamMedia extends Widget {
             this.activeMedia.style.width = (this.content.offsetWidth) + "px"
             this.activeMedia.style.height = (this.content.offsetHeight) + "px"
         }
+        Events.emit(Events.SAVE_LAYOUT)
     }
     hardRefresh() {
         super.hardRefresh();
@@ -1515,23 +1523,24 @@ class Comments extends Widget {
                 else if (schema[child]["type"] === "comment") {
                     let col = getColumnFromID(context + "`" + child)
 
-                    for (let x of Object.keys(col.data[team])) {
-                        console.log("key", x, col.data[team][x])
+                    if (typeof col.data[team] !== "undefined") {
+                        for (let x of Object.keys(col.data[team])) {
+                            console.log("key", x, col.data[team][x])
 
-                        let note = document.createElement("div")
+                            let note = document.createElement("div")
 
-                        let noteCol = document.createElement("b")
-                        noteCol.innerText = col.name + ": "
-                        note.appendChild(noteCol)
-                        let content = document.createElement("div")
-                        content.innerText = col.data[team][x].trim()
-                        note.appendChild(content)
-                        note.style.order = "" + ((parseInt(x) * 1000) + i)
+                            let noteCol = document.createElement("b")
+                            noteCol.innerText = col.name + ": "
+                            note.appendChild(noteCol)
+                            let content = document.createElement("div")
+                            content.innerText = col.data[team][x].trim()
+                            note.appendChild(content)
+                            note.style.order = "" + ((parseInt(x) * 1000) + i)
 
-                        if ((""+col.data[team][x]).trim().startsWith("undefined (")) continue
+                            if (("" + col.data[team][x]).trim().startsWith("undefined (")) continue
 
-                        addToEl.appendChild(note)
-
+                            addToEl.appendChild(note)
+                        }
                     }
                 }
             }
@@ -1574,6 +1583,8 @@ class Comments extends Widget {
             this.name = this.name + ", " + team + " Comments"
         }
         this.teamDropdown.value = team
+
+        Events.emit(Events.SAVE_LAYOUT)
     }
 
     out() {
@@ -1728,6 +1739,8 @@ class Matches extends Widget {
             matchHolder.innerText = "Currently, TBA Matches must be enabled to see team matches"
         }
         this.teamDropdown.value = team
+
+        Events.emit(Events.SAVE_LAYOUT)
     }
 
     out() {

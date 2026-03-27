@@ -149,6 +149,9 @@ class WidgetBase {
         this.parent = null
 
         this.id = WidgetBase.generateId()
+
+        this.refreshHooks = []
+        this.hardRefreshHooks = []
     }
 
     set width(to) {
@@ -191,6 +194,8 @@ class WidgetBase {
     refresh() {
         this.el.style.width = this.w + "px"
         this.el.style.height = this.h + "px"
+
+        for (let hook of this.refreshHooks) hook(this)
     }
 
     /**
@@ -198,6 +203,7 @@ class WidgetBase {
      */
     hardRefresh() {
         this.refresh()
+        for (let hook of this.hardRefreshHooks) hook(this)
     }
 
     /**
@@ -231,6 +237,15 @@ class WidgetBase {
             this[field] = a[field]
         }
         this.hardRefresh()
+    }
+
+    /** For external things to do things on refresh */
+    addRefreshHook(callback) {
+        this.refreshHooks.push(callback)
+    }
+    /** For external things to do things on hardRefresh */
+    addHardRefreshHook(callback) {
+        this.hardRefreshHooks.push(callback)
     }
 
     static WidgetTypes = {
@@ -540,6 +555,10 @@ class WidgetGroup extends WidgetBase {
         return super.out({children, "axis": this.axis})
     }
     in(a) {
+        for (let child of this.children) {
+            this.removeChild(child.widget)
+        }
+
         let children = a["children"]
         for (let child of children) {
             let childWidget = new WidgetBase.WidgetTypes[child.widget.type]()
