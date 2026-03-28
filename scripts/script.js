@@ -22,7 +22,7 @@ const storageKeys = {
 const MISSING_LOGO = "https://frc-cdn.firstinspires.org/eventweb_frc/ProgramLogos/FIRSTicon_RGB_withTM.png"
 
 const toolName = "Orpheus"
-const version = "2.4.2"
+const version = "2.4.3"
 
 let eventKey
 let event_data
@@ -937,6 +937,8 @@ class List {
     }
     remove(team) {
         if (this.teams.includes(team)) this.teams.splice(this.teams.indexOf(team), 1)
+        else if (this.teams.includes(parseInt(team))) this.teams.splice(this.teams.indexOf(parseInt(team)), 1)
+        else if (this.teams.includes(""+team)) this.teams.splice(this.teams.indexOf(""+team), 1)
         main.refresh()
         Events.emit(Events.LIST_CHANGE)
     }
