@@ -1,4 +1,4 @@
-'use strict';
+"use strict";
 
 /*
 This is probably one of the more confusing parts of this codebase and its one of the parts that breaks most.
@@ -22,7 +22,7 @@ Math.clamp = function(value, min, max) {
 
 //#region IO Helper functions/abstraction
 
-/** Creates a element node with classes, attributes, and automatically adds it as a child to another element */
+/** Creates an element node with classes, attributes, and automatically adds it as a child to another element */
 function element(type, classes = "", attributes = {}, appendTo = null) {
     let el = document.createElement(type)
     el.className = classes
@@ -139,8 +139,7 @@ class WidgetBase {
     constructor() {
         this.w = 0
         this.h = 0
-        this.el = document.createElement("div")
-        this.el.className = "widget"
+        this.el = element("div", "widget")
 
         this.minWidth = 100
         this.minHeight = 100
@@ -199,7 +198,7 @@ class WidgetBase {
     }
 
     /**
-     * A hard refresh - something significant has changed and you should do stuff that will require processing here.
+     * A hard refresh - something significant has changed. You should do stuff that will require processing here.
      */
     hardRefresh() {
         this.refresh()
@@ -398,8 +397,7 @@ class WidgetGroup extends WidgetBase {
         else this.el.insertBefore(child.el, this.el.childNodes[insertIndex * 2 - 1])
 
         if (this.children.length) { // If already at least 1 child, add a resizer
-            let resizer = document.createElement("div")
-            resizer.className = "resizer"
+            let resizer = element("div", "resizer")
 
             let moving = false
             addDownEvent(resizer, (e) => {
@@ -516,9 +514,6 @@ class WidgetGroup extends WidgetBase {
         for (let i of this.children) if (i.widget === child) return true
         return false
     }
-    becomeOrphan(child) {
-        this.removeChild(child)
-    }
     refreshMinSizes() {
         this.minWidth = this.axis === "x" ? this.resizers.length * 6 : 0
         this.minHeight = this.axis === "y" ? this.resizers.length * 6 : 0
@@ -581,16 +576,11 @@ class WidgetTabGroup extends WidgetBase {
         this.type = "tabs"
 
         this.header = {
-            holder: document.createElement("div"),
+            holder: element("div", "widget-header tabs", {}, this.el),
             selectButtons: []
         }
-        this.header.holder.className = "widget-header tabs"
 
-        this.el.append(this.header.holder)
-
-        this.content = document.createElement("div")
-        this.content.className = "widget-content"
-        this.el.appendChild(this.content)
+        this.content = element("div", "widget-content", {}, this.el)
     }
     refresh() {
         super.refresh()
@@ -625,13 +615,11 @@ class WidgetTabGroup extends WidgetBase {
             ...this.children.slice(insertIndex, this.children.length)
         ]
 
-        let tabSelectButton = document.createElement("div")
-        tabSelectButton.className = "widget-tab"
-        this.header.holder.appendChild(tabSelectButton)
-        this.header.selectButtons.push(tabSelectButton)
+        let tabSelectButton = element("div", "widget-tab", {}, this.header.holder)
         tabSelectButton.addEventListener("click", () => {
             this.activeChild = this.header.selectButtons.indexOf(tabSelectButton)
         })
+        this.header.selectButtons.push(tabSelectButton)
 
         for (let i of this.children) i.el.classList.add("inactive-tab")
         this.activeChild = insertIndex
@@ -645,13 +633,11 @@ class WidgetTabGroup extends WidgetBase {
 
             this.children.push(child)
 
-            let tabSelectButton = document.createElement("div")
-            tabSelectButton.className = "widget-tab"
-            this.header.holder.appendChild(tabSelectButton)
-            this.header.selectButtons.push(tabSelectButton)
+            let tabSelectButton = element("div", "widget-tab", {}, this.header.holder)
             tabSelectButton.addEventListener("click", () => {
                 this.activeChild = this.header.selectButtons.indexOf(tabSelectButton)
             })
+            this.header.selectButtons.push(tabSelectButton)
         }
         this.activeChild = this.children.length - 1
     }
@@ -749,28 +735,19 @@ class Widget extends WidgetBase {
 
         //#region Widget header
         this._header = {
-            holder: document.createElement("div"),
-            name: document.createElement("div"),
-            dragger: document.createElement("div"),
-            remover: document.createElement("div"),
+            holder: element("div", "widget-header")
         }
-        this._header.holder.className = "widget-header"
+        this._header.dragger = element("div", "material-symbols-outlined widget-drag", {"innerText": "drag_indicator"}, this._header.holder)
+        this._header.remover = element("div", "material-symbols-outlined widget-remove", {"innerText": "close"}, this._header.holder)
+        this._header.name = element("div", "", {}, this._header.holder)
 
         // Widget Removal
-        this._header.remover.className = "material-symbols-outlined widget-remove"
-        this._header.remover.innerText = "close"
         this._header.remover.addEventListener("mouseup", () => {
             if (activeWidgets.length > 1) this.parent.removeChild(this)
         })
         this._header.remover.addEventListener("touchend", () => {
             if (activeWidgets.length > 1) this.parent.removeChild(this)
         })
-        this._header.holder.appendChild(this._header.remover)
-
-        //#region Widget Dragging
-        this._header.dragger.className = "material-symbols-outlined widget-drag"
-        this._header.dragger.innerText = "drag_indicator"
-        this._header.holder.appendChild(this._header.dragger)
 
         let isDragging = false
 
@@ -935,23 +912,16 @@ class Widget extends WidgetBase {
 
         //#endregion
 
-        this._header.holder.appendChild(this._header.name)
         this.name = "Widget"
 
         //#endregion
 
-        this.content = document.createElement("div")
-        this.content.className = "widget-content-real"
-
         this.el.append(this._header.holder)
-        this.el.appendChild(this.content)
+        this.content = element("div", "widget-content-real", {}, this.el)
     }
 
     addHeaderIcon(icon, title, dialog, callback, openOffset = [0,0]) {
-        let el = document.createElement("div")
-        el.className = "material-symbols-outlined widget-header-icon"
-        el.innerText = icon
-        el.title = title
+        let el = element("div", "material-symbols-outlined widget-header-icon", {"innerText": icon, "title": title})
 
         el.addEventListener("click", (e) => {
             dialog.style.left = (e.clientX + openOffset[0]) + "px"
@@ -963,7 +933,7 @@ class Widget extends WidgetBase {
             if (!dialog.contains(e.target) && !e.target.classList.contains("widget-header-icon")) dialog.close()
         })
 
-        this._header.name.insertAdjacentElement('beforebegin', el)
+        this._header.name.insertAdjacentElement("beforebegin", el)
     }
 
     get name() {
@@ -1005,9 +975,7 @@ let headerSize = mobile ? 34 : 22
 let topDragSize = mobile ? 40 : 30
 let sideDragSize = mobile ? 60 : 30
 
-let widgetDragPreview = document.createElement("div")
-widgetDragPreview.className = "widget-drag-preview"
-document.body.appendChild(widgetDragPreview)
+let widgetDragPreview = element("div", "widget-drag-preview", {}, document.body)
 
 let activeWidgets = []
 let uniqueIds = [] // Documents widget ids that have been used

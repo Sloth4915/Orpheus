@@ -1,4 +1,4 @@
-'use strict';
+"use strict";
 
 /*
 This script has most of the stuff that other widgets interact with.
@@ -22,10 +22,11 @@ const storageKeys = {
 const MISSING_LOGO = "https://frc-cdn.firstinspires.org/eventweb_frc/ProgramLogos/FIRSTicon_RGB_withTM.png"
 
 const toolName = "Orpheus"
-const version = "2.4.3"
+const version = "2.5"
 
 let eventKey
 let event_data
+let alliances = null
 let uploadedData = {}
 let dataStatus = {}
 let dataUrls = {}
@@ -102,10 +103,11 @@ for (let el of document.querySelector("#top-controls").children) {
             setTimeout(() => headerControlsShowing = true, 0)
         }
     } else if (el.tagName === "DIALOG") {
-        el.onclick = function() {
+        el.addEventListener("click", () => {
             headerControlsShowing = false
             setTimeout(() => headerControlsShowing = true, 0)
-        }
+        })
+        element("div", "")
         let inner = document.createElement("div")
         inner.innerHTML = el.innerHTML
         el.innerHTML = ""
@@ -277,6 +279,9 @@ function loadEvent() {
                     }
                 }
             })
+            load("event/" + eventKey + "/alliances", function (data) {
+                console.log("alliances", data)
+            })
         }
     } else {
         processData()
@@ -426,7 +431,6 @@ function processData() {
                             let alliance
                             let position
                             if (usingTBAMatches) {
-                                console.log(matchNum, tba_match_data[matchNum])
                                 otherBots = {
                                     "red 1": parseInt(tba_match_data[matchNum]["alliances"]["red"]["team_keys"][0].slice(3)),
                                     "red 2": parseInt(tba_match_data[matchNum]["alliances"]["red"]["team_keys"][1].slice(3)),
@@ -649,7 +653,7 @@ function evaluate(expression, schema, context) {
                     val = context.tba["score_breakdown"]
                     if (val !== null) {
                         let specifier = search.slice(1)
-                        if (!(specifier[0] === 'red' || specifier[0] === 'blue')) specifier.unshift(context.alliance)
+                        if (!(specifier[0] === "red" || specifier[0] === "blue")) specifier.unshift(context.alliance)
                         for (let i of specifier)
                             val = val[i]
                     }
@@ -681,10 +685,6 @@ function evaluate(expression, schema, context) {
                 }
                 return math.evaluate(replaceConstants(context["functions"][f]["returns"], parameters))
             }
-
-    // FIXME remove - debug aaaa
-    //if (schema !== "pit" && expression === "[auto-shot]")
-    //console.log(math.evaluate(replaceConstants(expression), functions), expression, schema, context)
 
     return math.evaluate(replaceConstants(expression), functions)
 }
@@ -784,21 +784,15 @@ function dataButtons() {
 
     if (typeof mapping !== "undefined") {
         for (let schema of Object.keys(mapping)) {
-            let label = document.createElement("div")
-            label.innerText = mapping[schema]["alias"] ??  schema
-            data.appendChild(label)
+            let label = element("div", "", {"innerText": mapping[schema]["alias"] ?? schema}, data)
 
-            let dataInButtons = document.createElement("div")
-            dataInButtons.className = "top-button-cluster"
-            data.appendChild(dataInButtons)
+            let dataInButtons = element("div", "top-button-cluster", {}, data)
 
-            let uploadButton = document.createElement("button")
-            uploadButton.innerText = "Upload"
-            uploadButton.title = "Upload data. You'll need to keep redoing this for updates."
+            let uploadButton = element("button", dataStatus[schema] === "uploaded" ? "selected" : "", {"innerText": "Upload", "title": "Upload data. You'll need to keep redoing this to update your data."}, dataInButtons)
             uploadButton.addEventListener("click", () => {
                 loadFile(".csv,.json", (result, filetype) => {
                     let data
-                    filetype = filetype == "csv" || filetype == "json" ? filetype : prompt("What is the filetype? (csv/json)").toLowerCase().trim()
+                    filetype = filetype === "csv" || filetype === "json" ? filetype : prompt("What is the filetype? (csv/json)").toLowerCase().trim()
                     if (filetype === "csv") data = csvToJson(result) // Converts CSV to JSON
                     else if (filetype === "json") data = JSON.parse(result) // Parses json
                     else return
@@ -811,13 +805,8 @@ function dataButtons() {
                     })
                 })
             })
-            if (dataStatus[schema] === "uploaded") uploadButton.classList.add("selected")
-            dataInButtons.appendChild(uploadButton)
 
-            let apiButton = document.createElement("button")
-            apiButton.innerText = "Load from URL"
-            apiButton.title = "Load your scouting data from a URL. Requires internet connectivity for updates"
-            if (dataStatus[schema] === "api") apiButton.classList.add("selected")
+            let apiButton = element("button", dataStatus[schema] === "api" ? "selected" : "", {"innerText": "Load from URL", "title": "Load your scouting data from a URL. Requires internet connectivity for updates"}, dataInButtons)
             apiButton.addEventListener("click", () => {
                 let url = prompt("What is the URL for this data? It must return a JSON array or a JSON object where the 'data' key is an array.")
                 if (url === null) return
@@ -833,19 +822,11 @@ function dataButtons() {
                     window.location.reload()
                 })
             })
-            dataInButtons.appendChild(apiButton)
 
-            let downloadButton = document.createElement("button")
-            downloadButton.innerText = "Download"
-            downloadButton.id = "top-download-" + schema
-
-            downloadButton.disabled = (typeof uploadedData[schema] === "undefined") || !(uploadedData[schema].length)
+            let downloadButton = element("button", "", {"innerText": "Download", "id": "top-download-" + schema, "disabled": (typeof uploadedData[schema] === "undefined") || !(uploadedData[schema].length)}, dataInButtons)
             downloadButton.addEventListener("click", () => download((mapping[schema]["alias"] ? mapping[schema]["alias"] : schema) + ".json", JSON.stringify(uploadedData[schema])))
-            dataInButtons.appendChild(downloadButton)
 
-            let dropdownPause = document.createElement("div")
-            dropdownPause.className = "#dropdown-pause"
-            data.appendChild(dropdownPause)
+            element("div", "dropdown-pause", {}, data)
         }
     }
 }
@@ -1114,7 +1095,7 @@ const Lists = {
 
             let iconChanger = document.createElement("div")
             iconChanger.className = "hidden"
-            icon.addEventListener("click", (e) => {
+            icon.addEventListener("click", () => {
                 setTimeout(() => iconChanger.classList.toggle("hidden"))
             })
 
@@ -1456,7 +1437,7 @@ async function loadOther(url, onload) {
 
     await fetch(url).then(response => {
         if (!response.ok) {
-            throw new Error('Network response was not ok')
+            throw new Error("Network response was not ok")
         }
         return response.json()
     }).then(data => {
@@ -1468,7 +1449,7 @@ async function loadOther(url, onload) {
         checkLoading()
     }).catch(() => {
         document.querySelector("#connectivity-warning").classList.remove("hidden")
-        console.log('An error happened! Might not have any internet :( or website is down', url)
+        console.log("An error happened! Might not have any internet :( or website is down", url)
         if (api_data[url]) {
             onload(api_data[url])
             // 100ms pause to prevent race condition given nonexistant load times
@@ -1514,13 +1495,11 @@ function setLoadingIndicator() {
     document.querySelector("#loading-status").innerText = "Waiting on " + loading + " requests"
 }
 function loadFile(accept, listener) {
-    let fileInput = document.createElement("input")
-    fileInput.type = "file"
-    fileInput.accept = accept
+    let fileInput = element("input", "", {"type": "file", "accept": accept})
     fileInput.addEventListener("change", (e) => {
         const reader = new FileReader()
         reader.onload = (loadEvent) => {
-            listener(loadEvent.target.result, filename.split('.').pop().toLowerCase())
+            listener(loadEvent.target.result, filename.split(".").pop().toLowerCase())
         }
         let filename = e.target.files[0].name
         reader.readAsText(e.target.files[0])
@@ -1528,12 +1507,7 @@ function loadFile(accept, listener) {
     fileInput.click()
 }
 function download(filename, text) {
-    let el = document.createElement("a")
-    el.setAttribute("href", "data:text/plain;charset=utf-8," + encodeURIComponent(text))
-    el.setAttribute("download", filename)
-    //document.appendChild(el)
-    el.click()
-    //document.removeChild(el)
+    element("a", "", {"href": "data:text/plain;charset=utf-8," + encodeURIComponent(text), "download": filename}).click()
 }
 
 document.querySelector("#top-toggle-use-allapi").addEventListener("click", () => {
@@ -1584,7 +1558,7 @@ document.addEventListener("contextmenu", (e) => {
     return
     let contextMenu = document.querySelector(".context-menu")
 
-    if (contextMenu.contains(e.target) || controlPressed || e.target.tagName === 'A') { // If right clicking on context menu, open browser context menu
+    if (contextMenu.contains(e.target) || controlPressed || e.target.tagName === "A") { // If right clicking on context menu, open browser context menu
         closeContextMenu()
         controlPressed = false // Opening context menu means the keyup event never happens so this fixes that
         return
@@ -1601,13 +1575,10 @@ document.addEventListener("contextmenu", (e) => {
     while (options.childElementCount > 0) options.children[0].remove()
 
     function optionEl(name, action) {
-        let option = document.createElement("button")
-        option.className = "context-option"
-        option.innerText = name
+        let option = element("button", "context-option", {"innerText": name}, options)
         option.addEventListener("click", () => {
             action()
         })
-        options.appendChild(option)
     }
 
     let context = e.target.getAttribute("data-context")
@@ -1631,7 +1602,7 @@ function saveGeneralSettings() {
     })
 }
 function saveAPIData() {
-    api_data["lastSaved"] = new Date().toLocaleString([], {year: 'numeric', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit'})
+    api_data["lastSaved"] = new Date().toLocaleString([], {year: "numeric", month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit"})
     api_data["apis"] = {
         tbaevent: usingTBA,
         tbamatch: usingTBAMatches,
@@ -1666,7 +1637,6 @@ document.querySelector("#top-import-settings").addEventListener("click", () => {
 
 function saveLayout(key = "_default") {
     if (initialSetup || loadingLayout) return
-    console.log('saving')
     savedLayouts[key] = main.out()
     localforage.setItem(storageKeys.WIDGETS, JSON.stringify(savedLayouts))
 }
@@ -1746,7 +1716,6 @@ localforage.getItem(storageKeys.DATA, (err, val) => {
 
                 // Wrapped in a timeout to prevent a potential race condition when offline with loadOther being called before saved api data is loaded by localforage
                 setTimeout(() => loadOther(uploadedData[schema], (data) => {
-                    console.log('loaded ' + schema + " data")
                     if (Array.isArray(data)) uploadedData[schema] = data
                     else uploadedData[schema] = data["data"]
                 }), 1)

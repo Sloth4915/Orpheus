@@ -1,10 +1,8 @@
-'use strict';
+"use strict";
 
 /*
 This file contains all the widgets that the user interacts with and displays data.
  */
-
-// TODO: Finish abstraction of element creation and drag events
 
 class Table extends Widget {
     constructor() {
@@ -48,7 +46,7 @@ class Table extends Widget {
         this.header = element("div", "row header", {}, this.content)
 
         // Unused in header but there for spacing
-        let teamSettingsBlock = element("div", "table-settings-block", {"data-id": this.id}, this.header)
+        element("div", "table-settings-block", {"data-id": this.id}, this.header)
 
         this.addHeaderIcon("visibility", "Scope", this.scopePanel, this.openScopeEditor)
         this.addHeaderIcon("view_column", "Columns", this.scopePanel, this.openColumnEditor, [0, 60])
@@ -56,7 +54,7 @@ class Table extends Widget {
         this.columnDragIndicator = element("div", "data-drag-indicator", {"style": {"order": "-99"}}, this.header)
 
         if (usingTBAMedia) {
-            let logoPlaceholder = element("div", "table-logo placeholder", {}, this.header)
+            element("div", "table-logo placeholder", {}, this.header)
             this.hasAddedMedia = true
         }
 
@@ -88,8 +86,6 @@ class Table extends Widget {
 
             column.id = column.id ?? column.columnId
 
-            console.log(column)
-
             this.elements[thisColumn.columnId] = {}
 
             for (let team of this.teams) {
@@ -110,7 +106,7 @@ class Table extends Widget {
             let resizing = false
             let index
             let ctx = this
-            addDownEvent(colResizer, (e) => {
+            addDownEvent(colResizer, () => {
                 resizing = true
                 index = this.indexOfColumn(column.id)
             })
@@ -359,7 +355,7 @@ class Table extends Widget {
 
         for (let col of this.columns) {
             for (let el of Object.values(this.elements[col.columnId])) {
-                el.style.width = col.size + 'px'
+                el.style.width = col.size + "px"
                 el.style.order = ((col.order * 2) + 100)
 
                 this.columnResizers[col.columnId].style.order = ((col.order * 2) + 101)
@@ -468,19 +464,14 @@ class Table extends Widget {
     openScopeEditor() {
         this.scopePanel.innerHTML = ""
 
-        let panel = document.createElement("div")
-        panel.className = "table-list-scope-edit"
-        this.scopePanel.appendChild(panel)
+        let panel = element("div", "table-list-scope-edit", {}, this.scopePanel)
 
         for (let list of Lists.lists) {
-            let el = document.createElement("div")
-            el.className = "list"
-
             if (list.hidden) continue
 
-            let checkbox = document.createElement("input")
-            checkbox.type = "checkbox"
-            checkbox.checked = (typeof this.scope[list.id] !== "undefined")
+            let el = element("div", "list", {}, panel)
+
+            let checkbox = element("input", "", {"type": "checkbox", "checked": typeof this.scope[list.id] !== "undefined"}, el)
             checkbox.addEventListener("change", () => {
                 dropdown.disabled = !checkbox.checked
                 if (checkbox.checked) {
@@ -493,19 +484,11 @@ class Table extends Widget {
                 }
                 this.sortRows()
             })
-            el.appendChild(checkbox)
 
-            let icon = document.createElement("div")
-            icon.className = "material-symbols-outlined filled list-icon"
-            icon.innerText = list.icon
-            icon.style.color = list.color.color
-            el.appendChild(icon)
+            let icon = element("div", "material-symbols-outlined filled list-icon", {"innerText": list.icon, "style": {"color": list.color.color}}, el)
+            let name = element("div", "", {"innerText": list.name}, el)
 
-            let name = document.createElement("div")
-            name.innerText = list.name
-            el.appendChild(name)
-
-            let dropdown = document.createElement("select")
+            let dropdown = element("select", "", {}, el)
             let options = {
                 "Sort Above": List.Sort.SORT_ABOVE,
                 "Sort Below": List.Sort.SORT_BELOW,
@@ -514,10 +497,7 @@ class Table extends Widget {
             }
             options["List Default (" + Object.fromEntries(Object.entries(options).map(a => a.reverse()))[list.sort] + ")"] = List.Sort.LIST_DEFAULT
             for (let option of Object.keys(options)) {
-                let optionEl = document.createElement("option")
-                optionEl.innerText = option
-                optionEl.setAttribute("value", options[option])
-                dropdown.appendChild(optionEl)
+                element("option", "", {"innerText": option, "value": options[option]}, dropdown)
             }
             if (typeof this.scope[list.id] === "undefined") {
                 dropdown.value = "aaa"
@@ -530,62 +510,36 @@ class Table extends Widget {
                 this.scope[list.id] = parseInt(dropdown.value)
                 this.sortRows()
             })
-            el.appendChild(dropdown)
-
-            panel.appendChild(el)
         }
 
-        let showAllHolder = document.createElement("div")
-        showAllHolder.style.display = "flex"
-        showAllHolder.style["flex-direction"] = "row"
-        panel.appendChild(showAllHolder)
+        let showAllHolder = element("div", "", {"style": {"display": "flex", "flex-direction": "row"}}, panel)
 
-        let showAllCheckbox = document.createElement("input")
-        showAllCheckbox.type = "checkbox"
-        showAllCheckbox.checked = this.showAll
-        showAllCheckbox.id = "table-label-checkbox"
+        let showAllCheckbox = element("input", "", {"type": "checkbox", "checked": this.showAll, "id": "table-label-checkbox"}, showAllHolder)
         showAllCheckbox.addEventListener("change", () => {
             this.showAll = showAllCheckbox.checked
             this.sortRows()
         })
         showAllHolder.appendChild(showAllCheckbox)
 
-        let showAllLabel = document.createElement("label")
-        showAllLabel.innerText = "Show unlisted teams"
-        showAllLabel.for = "table-label-checkbox"
-        showAllHolder.appendChild(showAllLabel)
+        let showAllLabel = element("label", "", {"innerText": "Show unlisted teams", "for": "table-label-checkbox"}, showAllHolder)
     }
     openColumnEditor() {
         this.scopePanel.innerHTML = ""
 
-        let panel = document.createElement("div")
-        panel.className = "table-column-edit"
-        this.scopePanel.appendChild(panel)
+        let panel = element("div", "table-column-edit", {}, this.scopePanel)
 
-        let label = document.createElement("div")
-        label.className = "add-columns-title"
-        label.innerText = "Add Columns"
-        panel.appendChild(label)
+        let label = element("div", "add-columns-title", {"innerText": "Add Columns"}, panel)
 
-        let columns = document.createElement("div")
-        columns.className = "add-columns"
-        panel.appendChild(columns)
+        let columns = element("div", "add-columns", {}, panel)
 
         function findColumns(context, schema, nameOverride) {
-            let group = document.createElement("div")
-            group.classList = "table-column-panel-group"
+            let group = element("div", "table-column-panel-group", {})
 
             let open = false
 
-            let groupController = document.createElement("div")
-            groupController.className = "table-column-panel-group-controller"
-            let dropdownButton = document.createElement("div")
-            dropdownButton.className = "material-symbols-outlined"
-            dropdownButton.innerText = "arrow_drop_down"
-            groupController.appendChild(dropdownButton)
-            let groupName = document.createElement("div")
-            groupName.innerText = nameOverride ?? getColumnFromID(context).name
-            groupController.appendChild(groupName)
+            let groupController = element("div", "table-column-panel-group-controller", {}, group)
+            let dropdownButton = element("div", "material-symbols-outlined", {"innerText": "arrow_drop_down"}, groupController)
+            let groupName = element("div", "", {"innerText": nameOverride ?? getColumnFromID(context).name}, groupController)
             groupController.addEventListener("click", (e) => {
                 open = !open
                 dropdownButton.innerText = open ? "arrow_drop_up" : "arrow_drop_down"
@@ -593,19 +547,12 @@ class Table extends Widget {
                 e.preventDefault()
                 window.getSelection().removeAllRanges()
             })
-            group.appendChild(groupController)
 
-            let groupColumns = document.createElement("div")
-            groupColumns.className = "table-column-panel-columns-holder hidden"
-            group.appendChild(groupColumns)
+            let groupColumns = element("div", "table-column-panel-columns-holder hidden", {}, group)
 
-            let childHolder = document.createElement("div")
-            childHolder.className = "child-holder"
-            groupColumns.appendChild(childHolder)
+            let childHolder = element("div", "child-holder", {}, groupColumns)
 
-            let grandchildHolder = document.createElement("div")
-            grandchildHolder.className = "grandchild-holder"
-            groupColumns.appendChild(grandchildHolder)
+            let grandchildHolder = element("div", "grandchild-holder", {}, groupColumns)
 
             // TODO remove groups when theres no children
             for (let child of Object.keys(schema)) {
@@ -615,11 +562,7 @@ class Table extends Widget {
                     if (cEl.children[1].children.length) grandchildHolder.appendChild(cEl)
                 }
                 else if (schema[child]["table"] && !this.includes(id)) {
-                    let el = document.createElement("div")
-                    el.className = "table-column-panel-column"
-                    el.innerText = getColumnFromID(id).table
-                    el.value = id
-
+                    let el = element("div", "table-column-panel-column", {"innerText": getColumnFromID(id).table, "value": id}, childHolder)
                     el.addEventListener("click", () => {
                         this.addColumn(id)
                         setTimeout(() => {
@@ -632,8 +575,6 @@ class Table extends Widget {
                             }
                         }, 1)
                     })
-
-                    childHolder.appendChild(el)
                 }
             }
             return group
@@ -655,11 +596,9 @@ class Table extends Widget {
     hardRefresh() {
         super.hardRefresh();
 
-        // Add icon to header, if it doesn't exist yet.
+        // Add icon spot to header, if it doesn't exist yet.
         if (this.hasAddedMedia === undefined && usingTBAMedia) {
-            let logoPlaceholder = document.createElement("div")
-            logoPlaceholder.className = "table-logo placeholder"
-            this.header.appendChild(logoPlaceholder)
+            element("div", "table-logo placeholder", {}, this.header)
             this.hasAddedMedia = true
         }
 
@@ -725,9 +664,7 @@ class Graph extends Widget {
             this.teams = [...List.red.teams, ...List.blue.teams]
         }
 
-        this.scopePanel = document.createElement("dialog")
-        this.scopePanel.className = "table-scope-holder"
-        this.content.appendChild(this.scopePanel)
+        this.scopePanel = element("dialog", "table-scope-holder", {}, this.content)
         this.addHeaderIcon("visibility", "Scope", this.scopePanel, this.openScopeEditor)
 
         document.addEventListener("mouseup", () => {
@@ -738,19 +675,12 @@ class Graph extends Widget {
 
         this.name = "Select a column to graph"
 
-        this.calcEl = document.createElement("div")
-        this.calcEl.className = "graph"
-        this.content.appendChild(this.calcEl)
+        this.calcEl = element("div", "graph", {}, this.content)
 
-        this.teamsEl = document.createElement("div")
-        this.teamsEl.className = "graph-teams"
-        this.content.appendChild(this.teamsEl)
+        this.teamsEl = element("div", "graph-teams", {}, this.content)
 
-        if (desmosReady) {
-            this.createCalculator()
-        } else {
-            onDesmosLoad.push(this.createCalculator)
-        }
+        if (desmosReady) this.createCalculator()
+        else onDesmosLoad.push(this.createCalculator)
 
         this.createTeamList()
 
@@ -770,24 +700,17 @@ class Graph extends Widget {
             this.redoWidget()
         }, this)
 
-        let graphDropdown = document.createElement("select")
-        graphDropdown.className = ""
-        this.graphDropdown = graphDropdown
+        let graphDropdown = this.graphDropdown = element("select")
         this._header.name.insertAdjacentElement("beforebegin", graphDropdown)
 
         function findGraphs(context, schema, nameOverride) {
-            let group = document.createElement("optgroup")
-            group.label = nameOverride ?? getColumnFromID(context).name
+            let group = element("optgroup", "", {"label": nameOverride ?? getColumnFromID(context).name})
             for (let child of Object.keys(schema)) {
                 if (typeof schema[child]["type"] === "undefined") {
                     findGraphs(context + "`" + child, schema[child], undefined)
                 }
                 else if (schema[child]["graph"]) {
-                    let el = document.createElement("option")
-                    let id = context + "`" + child
-                    el.innerText = getColumnFromID(id).graph
-                    el.value = id
-                    group.appendChild(el)
+                    let el = element("option", "", {"id": context + "`" + child, "value": context + "`" + child, "innerText": getColumnFromID(id).graph}, group)
                 }
             }
             graphDropdown.appendChild(group)
@@ -853,7 +776,7 @@ class Graph extends Widget {
                             if (!Object.keys(team_data[team].TBA.matches).includes(m)) continue
                             else {
                                 console.log(Object.keys(team_data[team].TBA.matches))
-                                let relativeNumber = Object.keys(team_data[team].TBA.matches).indexOf(''+m) + 1
+                                let relativeNumber = Object.keys(team_data[team].TBA.matches).indexOf(""+m) + 1
                                 matches.push(relativeNumber)
                                 minX = Math.min(minX, relativeNumber)
                                 maxX = Math.max(maxX, relativeNumber)
@@ -877,12 +800,12 @@ class Graph extends Widget {
                 }
             }
 
-            this.calculator.setExpression({ id: "x" + team, latex: 'x_' + i + ' = \\left['+matches+'\\right]' });
-            this.calculator.setExpression({ id: "y" + team,  latex: 'y_' + i + ' = \\left['+values+'\\right]' });
+            this.calculator.setExpression({ id: "x" + team, latex: "x_" + i + " = \\left["+matches+"\\right]" });
+            this.calculator.setExpression({ id: "y" + team,  latex: "y_" + i + " = \\left["+values+"\\right]" });
             if (graphSettings.points)
                 this.calculator.setExpression({
                     id: "points" + team,
-                    latex: '(x_{' + i + '},y_{' + i + '})',
+                    latex: "(x_{" + i + "},y_{" + i + "})",
                     color: this.getTeamColor(i),
                     pointStyle: this.getTeamShape(i),
                     pointSize: (this.selectedTeam === null ? 16 : (this.selectedTeam === team ? 18 : 16)),
@@ -892,7 +815,7 @@ class Graph extends Widget {
             if (graphSettings.bestfit)
                 this.calculator.setExpression({
                     id: "line" + team,
-                    latex: 'y_{' + i + '}\\sim a_{' + i + '}x_{' + i + '}+b_{' + i + '}',
+                    latex: "y_{" + i + "}\\sim a_{" + i + "}x_{" + i + "}+b_{" + i + "}",
                     color: this.getTeamColor(i),
                     lineWidth: (this.selectedTeam === null ? 4 : (this.selectedTeam === team ? 5 : 4)),
                     lineOpacity: (this.selectedTeam === null ? 0.8 : (this.selectedTeam === team ? 1 : 0.25))
@@ -915,33 +838,19 @@ class Graph extends Widget {
         this.teamsEl.innerHTML = ""
         for (let i in this.teams) {
             let t = this.teams[i]
-            let teamEl = document.createElement("div")
-            teamEl.className = "graph-team"
+            let teamEl = element("div", "graph-team", {}, this.teamsEl)
 
             if (usingTBAMedia) {
-                let logo = document.createElement("img")
-                logo.setAttribute("data-team-logo", t)
-                logo.setAttribute("data-id", this.id)
-                if (typeof team_data[t] !== "undefined" && typeof team_data[t].Icon !== "undefined") logo.src = team_data[t].Icon
-                else logo.src = MISSING_LOGO
-                logo.className = "graph-logo"
-                teamEl.appendChild(logo)
+                let logo = element("img", "graph-logo", {"data-team-logo": t, "data-id": this.id, "src": team_data[t].Icon ?? MISSING_LOGO}, teamEl)
             }
 
-            let teamName = document.createElement("div")
-            teamName.className = "graph-team-name"
-            teamName.style.color = this.getTeamColor(i)
-            teamName.innerText = this.getShapeSymbol(this.getTeamShape(i)) + " " + (usingTBA ? t + " " + team_data[t]["Name"] : t)
-            teamName.title = this.getShapeSymbol(this.getTeamShape(i)) + " " + (usingTBA ? t + " " + team_data[t]["Name"] : t)
-            teamEl.appendChild(teamName)
+            let teamName = element("div", "graph-team-name", {"innerText": this.getShapeSymbol(this.getTeamShape(i)) + " " + (usingTBA ? t + " " + team_data[t]["Name"] : t), "title": this.getShapeSymbol(this.getTeamShape(i)) + " " + (usingTBA ? t + " " + team_data[t]["Name"] : t)}, teamEl)
 
             teamEl.addEventListener("mousedown", (e) => {
                 e.preventDefault()
                 this.selectedTeam = t
                 this.createExpressions(true, false)
             })
-
-            this.teamsEl.appendChild(teamEl)
         }
         if (this.teams.length === 0) this.teamsEl.innerText = "No teams selected"
     }
@@ -965,13 +874,13 @@ class Graph extends Widget {
     }
     getShapeSymbol(i) {
         switch (i) {
-            case "POINT": return '⬤'
-            case "CROSS": return '✖'
-            case "SQUARE": return '■'
-            case "PLUS": return '🞦'
-            case "TRIANGLE": return '▲'
-            case "DIAMOND": return '◆'
-            case "STAR": return '★'
+            case "POINT": return "⬤"
+            case "CROSS": return "✖"
+            case "SQUARE": return "■"
+            case "PLUS": return "🞦"
+            case "TRIANGLE": return "▲"
+            case "DIAMOND": return "◆"
+            case "STAR": return "★"
         }
     }
     hardRefresh() {
@@ -987,39 +896,24 @@ class Graph extends Widget {
     openScopeEditor() {
         this.scopePanel.innerHTML = ""
 
-        let panel = document.createElement("div")
-        panel.className = "graph-list-scope-edit"
-        this.scopePanel.appendChild(panel)
+        let panel = element("div", "graph-list-scope-edit", {}, this.scopePanel)
 
         if (List.red !== null) {
-            let allianceMode = document.createElement("div")
-            allianceMode.innerText = "Alliance mode is enabled."
-            panel.appendChild(allianceMode)
+            let allianceMode = element("div", "", {"innerText": "Alliance mode is enabled"}, panel)
             return
         }
 
-        let listsLabel = document.createElement("div")
-        listsLabel.innerText = "List"
-        panel.appendChild(listsLabel)
+        let listsLabel = element("div", "", {"innerText": "List"}, panel)
 
-        let lists = document.createElement("div")
-        lists.className = "graph-list-of"
-        panel.appendChild(lists)
+        let lists = element("div", "graph-list-of", {}, panel)
 
         let activeList = null
         for (let list of Lists.lists) {
-            let el = document.createElement("div")
-            el.className = "list"
+            let el = element("div", "list", {}, lists)
 
-            let icon = document.createElement("div")
-            icon.className = "material-symbols-outlined filled list-icon"
-            icon.innerText = list.icon
-            icon.style.color = list.color.color
-            el.appendChild(icon)
+            let icon = element("div", "material-symbols-outlined filled list-icon", {"innerText": list.icon, "style": {"color": list.color.color}}, el)
 
-            let name = document.createElement("div")
-            name.innerText = list.name
-            el.appendChild(name)
+            let name = element("div", "", {"innerText": list.name}, el)
 
             el.addEventListener("click", () => {
                 this.list = list
@@ -1040,23 +934,15 @@ class Graph extends Widget {
                 el.classList.add("selected")
                 activeList = el
             }
-
-            lists.appendChild(el)
         }
 
-        let teamsLabel = document.createElement("div")
-        teamsLabel.innerText = "Team List"
-        panel.appendChild(teamsLabel)
+        let teamsLabel = element("div", "", {"innerText": "Team List"}, panel)
 
-        let teams = document.createElement("div")
-        teams.className = "graph-list-of"
-        panel.appendChild(teams)
+        let teams = element("div", "graph-list-of", {}, panel)
 
         let context = this
         function addTeamEl(team) {
-            let teamEl = document.createElement("div")
-            teamEl.className = "graph-scope-team"
-            teamEl.innerText = team
+            let teamEl = element("div", "graph-scope-team", {"innerText": team}, teams)
             teamEl.addEventListener("click", () => {
                 context.teams.splice(context.teams.indexOf(team), 1)
                 context.redoWidget()
@@ -1067,15 +953,13 @@ class Graph extends Widget {
                 }
                 setTimeout(() => teamEl.remove(), 1)
             })
-            teams.appendChild(teamEl)
         }
 
         for (let team of this.teams) {
             addTeamEl(team)
         }
 
-        let addButton = document.createElement("button")
-        addButton.innerText = "Add team"
+        let addButton = element("button", "", {"innerText": "Add team"}, panel)
         addButton.addEventListener("click", () => {
             // TODO better search
             let x = prompt("What team number?")
@@ -1090,7 +974,6 @@ class Graph extends Widget {
                 }
             }
         })
-        panel.appendChild(addButton)
     }
 
     out() {
@@ -1116,9 +999,7 @@ class TeamInfo extends Widget {
 
         this.content.classList.add("team-info-widget")
 
-        this.scopePanel = document.createElement("dialog")
-        this.scopePanel.className = "table-scope-holder"
-        this._header.holder.appendChild(this.scopePanel)
+        this.scopePanel = element("dialog", "table-scope-holder", {}, this._header.holder)
         this.addHeaderIcon("visibility", "Scope", this.scopePanel, this.openScopeEditor)
         Events.on(Events.LIST_CHANGE, () => this.onListChange(), this)
         Events.on(Events.SET_LISTS_MODE, () => {
@@ -1135,27 +1016,14 @@ class TeamInfo extends Widget {
         if (teams.length > 0) {
             let name = ""
             for (let team of teams) {
-                let imageAndBasicHolderHolder = document.createElement("div")
-                imageAndBasicHolderHolder.className = "team-info-flex-horizontal"
-                this.content.appendChild(imageAndBasicHolderHolder)
+                let imageAndBasicHolderHolder = element("div", "team-info-flex-horizontal", {}, this.content)
 
-                let logo = document.createElement("img")
-                logo.setAttribute("data-team-logo", team)
-                logo.setAttribute("data-id", this.id)
-                logo.className = "team-info-logo"
-                imageAndBasicHolderHolder.appendChild(logo)
+                let logo = element("img", "team-info-logo", {"data-team-logo": team, "data-id": this.id}, imageAndBasicHolderHolder)
 
-                let listChunk = document.createElement("div")
+                let listChunk = element("div", "team-info-list", {}, imageAndBasicHolderHolder)
                 listChunk.className = "team-info-list"
                 for (let list of Lists.lists) {
-                    let listEl = document.createElement("div")
-                    listEl.className = "table-setting material-symbols-outlined"
-                    listEl.style.color = ""
-                    listEl.innerText = list.icon
-                    listEl.title = list.name
-                    listEl.setAttribute("data-list", list.id)
-                    listEl.setAttribute("data-team", team)
-                    listEl.setAttribute("data-id", this.id)
+                    let listEl = element("div", "table-setting material-symbols-outlined", {"innerText": list.icon, "title": list.name, "data-list": list.id, "data-team": team, "data-id": this.id}, listChunk)
                     if (list.includes(team)) {
                         listEl.classList.add("filled")
                         listEl.style.color = list.color.color
@@ -1163,29 +1031,17 @@ class TeamInfo extends Widget {
                     listEl.addEventListener("click", () => {
                         list.toggle(team)
                     })
-                    listChunk.appendChild(listEl)
                 }
-                imageAndBasicHolderHolder.appendChild(listChunk)
 
-                let basicInfoHolder = document.createElement("div")
-                basicInfoHolder.className = "team-info-basic-holder"
-                imageAndBasicHolderHolder.appendChild(basicInfoHolder)
+                let basicInfoHolder = element("div", "team-info-basic-holder", {}, imageAndBasicHolderHolder)
 
-                let nameEl = document.createElement("div")
-                nameEl.className = "team-info-name"
-                basicInfoHolder.appendChild(nameEl)
+                let nameEl = element("div", "team-info-name", {}, basicInfoHolder)
 
-                let location = document.createElement("div")
-                location.className = "team-info-basic-text"
-                basicInfoHolder.appendChild(location)
+                let location = element("div", "team-info-basic-text", {}, basicInfoHolder)
 
-                let rookieYear = document.createElement("div")
-                rookieYear.className = "team-info-basic-text"
-                basicInfoHolder.appendChild(rookieYear)
+                let rookieYear = element("div", "team-info-basic-text", {}, basicInfoHolder)
 
-                let eventRank = document.createElement("div")
-                eventRank.className = "team-info-basic-text"
-                basicInfoHolder.appendChild(eventRank)
+                let eventRank = element("div", "team-info-basic-text", {}, basicInfoHolder)
 
                 if (usingTBA) {
                     if (teams.length > 1) name = name + ", " + team
@@ -1221,39 +1077,24 @@ class TeamInfo extends Widget {
     openScopeEditor() {
         this.scopePanel.innerHTML = ""
 
-        let panel = document.createElement("div")
-        panel.className = "graph-list-scope-edit"
-        this.scopePanel.appendChild(panel)
+        let panel = element("div", "graph-list-scope-edit", {}, this.scopePanel)
 
         if (List.red !== null) {
-            let allianceMode = document.createElement("div")
-            allianceMode.innerText = "Alliance mode is enabled."
-            panel.appendChild(allianceMode)
+            element("div", "", {"innerText": "Alliance mode is enabled."}, panel)
             return
         }
 
-        let listsLabel = document.createElement("div")
-        listsLabel.innerText = "List"
-        panel.appendChild(listsLabel)
+        let listsLabel = element("div", "", {"innerText": "List"}, panel)
 
-        let lists = document.createElement("div")
-        lists.className = "graph-list-of"
-        panel.appendChild(lists)
+        let lists = element("div", "graph-list-of", {}, panel)
 
         let activeList = null
         for (let list of [List.ALL, ...Lists.lists]) {
-            let el = document.createElement("div")
-            el.className = "list"
+            let el = element("div", "list", {}, lists)
 
-            let icon = document.createElement("div")
-            icon.className = "material-symbols-outlined filled list-icon"
-            icon.innerText = list.icon
-            icon.style.color = list.color.color
-            el.appendChild(icon)
+            let icon = element("div", "material-symbols-outlined filled list-icon", {"innerText": list.icon, "style": {"color": list.color.color}}, el)
 
-            let name = document.createElement("div")
-            name.innerText = list.name
-            el.appendChild(name)
+            let name = element("div", "", {"innerText": list.name}, el)
 
             el.addEventListener("click", () => {
                 this.list = list
@@ -1275,23 +1116,15 @@ class TeamInfo extends Widget {
                 el.classList.add("selected")
                 activeList = el
             }
-
-            lists.appendChild(el)
         }
 
-        let teamsLabel = document.createElement("div")
-        teamsLabel.innerText = "Team List"
-        panel.appendChild(teamsLabel)
+        let teamsLabel = element("div", "", {"innerText": "Team List"}, panel)
 
-        let teams = document.createElement("div")
-        teams.className = "graph-list-of"
-        panel.appendChild(teams)
+        let teams = element("div", "graph-list-of", {}, panel)
 
         let context = this
         function addTeamEl(team) {
-            let teamEl = document.createElement("div")
-            teamEl.className = "graph-scope-team"
-            teamEl.innerText = team
+            let teamEl = element("div", "graph-scope-team", {"innerText": team}, teams)
             teamEl.addEventListener("click", () => {
                 context.teams.splice(context.teams.indexOf(team), 1)
                 context.redoList()
@@ -1302,15 +1135,13 @@ class TeamInfo extends Widget {
                 }
                 setTimeout(() => teamEl.remove(), 1)
             })
-            teams.appendChild(teamEl)
         }
 
         for (let team of this.teams) {
             addTeamEl(team)
         }
 
-        let addButton = document.createElement("button")
-        addButton.innerText = "Add team"
+        let addButton = elements("button", "", {"innerText": "Add team"}, panel)
         addButton.addEventListener("click", () => {
             // TODO better search
             let x = prompt("What team number?")
@@ -1325,7 +1156,6 @@ class TeamInfo extends Widget {
                 }
             }
         })
-        panel.appendChild(addButton)
     }
     onListChange() {
         if (this.list !== null) {
@@ -1363,32 +1193,23 @@ class TeamMedia extends Widget {
         this.activeMedia = null
         this.activeMediaType = ""
 
-        this.controls = document.createElement("div")
-        this.controls.className = "team-media-controls"
-        this.content.appendChild(this.controls)
+        this.controls = element("div", "team-media-controls", {}, this.content)
 
-        this.previous = document.createElement("button")
-        this.previous.className = "material-symbols-outlined"
-        this.previous.innerText = "arrow_left"
+        this.previous = element("button", "material-symbols-outlined", {"innerText": "arrow_left"}, this.controls)
         this.previous.addEventListener("click", () => {
             this.mediaOn--
             if (this.mediaOn < 0) this.mediaOn = team_data[this.team].media.length + this.mediaOn
             this.setMedia(this)
         })
-        this.controls.appendChild(this.previous)
 
-        this.progress = document.createElement("div")
-        this.controls.appendChild(this.progress)
+        this.progress = element("div", "", {}, this.controls)
 
-        this.next = document.createElement("button")
-        this.next.className = "material-symbols-outlined"
-        this.next.innerText = "arrow_right"
+        this.next = element("button", "material-symbols-outlined", {"innerText": "arrow_right"}, this.controls)
         this.next.addEventListener("click", () => {
             this.mediaOn++
             if (this.mediaOn >= team_data[this.team].media.length) this.mediaOn = 0
             this.setMedia()
         })
-        this.controls.appendChild(this.next)
 
         this.content.addEventListener("mouseenter", () => {
             if (team_data[this.team].media.length > 0) this.controls.classList.add("shown")
@@ -1399,19 +1220,16 @@ class TeamMedia extends Widget {
 
         this.mediaOn = 0
 
-        this.teamDropdown = document.createElement("select")
+        this.teamDropdown = element("select")
         this._header.name.insertAdjacentElement("beforebegin", this.teamDropdown)
         for (let num of Object.keys(team_data)) {
-            let team = document.createElement("option")
-            team.value = num
-            team.innerText = num + " " + team_data[num].Name
-            this.teamDropdown.appendChild(team)
+            let team = element("option", "", {"value": num, "innerText": num + " " + team_data[num].Name}, this.teamDropdown)
         }
         this.teamDropdown.addEventListener("change", () => {
             this.setTeam(this.teamDropdown.value)
         })
 
-        if (Object.keys(team_data).includes('4915')) this.setTeam('4915')
+        if (Object.keys(team_data).includes("4915")) this.setTeam("4915")
         else this.setTeam(Object.keys(team_data)[0])
     }
     setTeam(team) {
@@ -1457,20 +1275,14 @@ class TeamMedia extends Widget {
     setMedia() {
         if (this.activeMedia !== null) this.activeMedia.remove()
         if (team_data[this.team].media.length === 0) {
-            let info = document.createElement("div")
-            info.innerText = "Team " + this.team + " does not have any media"
-            this.activeMedia = info
+            this.activeMedia = element("div", "", {"innerText": "Team " + this.team + " does not have any media"}, this.content)
             this.activeMediaType = "text"
-            this.content.appendChild(info)
         } else {
             this.progress.innerText = (this.mediaOn + 1) + " / " + team_data[this.team].media.length
             let media = team_data[this.team].media[this.mediaOn]
             if (media.type === "image") {
-                let image = document.createElement("img")
-                image.src = media.src
-                this.activeMedia = image
+                this.activeMedia = element("img", "", {"src": media.src}, this.content)
                 this.activeMediaType = "image"
-                this.content.appendChild(image)
             }
             // TODO add youtube support
         }
@@ -1492,19 +1304,16 @@ class Comments extends Widget {
         this.minWidth = 100
         this.minHeight = 70
 
-        this.teamDropdown = document.createElement("select")
+        this.teamDropdown = element("select")
         this._header.name.insertAdjacentElement("beforebegin", this.teamDropdown)
         for (let num of Object.keys(team_data)) {
-            let team = document.createElement("option")
-            team.value = num
-            team.innerText = num + " " + team_data[num].Name
-            this.teamDropdown.appendChild(team)
+            let team = element("option", "", {"value": num, "innerText": num + " " + team_data[num].Name}, this.teamDropdown)
         }
         this.teamDropdown.addEventListener("change", () => {
             this.setTeam(this.teamDropdown.value)
         })
 
-        if (Object.keys(team_data).includes('4915')) this.setTeam('4915')
+        if (Object.keys(team_data).includes("4915")) this.setTeam("4915")
         else this.setTeam(Object.keys(team_data)[0])
     }
     setTeam(team) {
@@ -1512,69 +1321,46 @@ class Comments extends Widget {
 
         let content = this.content
         let i = 0
-        function findComments(context, schema, addToEl, nameOverride) {
-            let group = document.createElement("div")
-            group.label = nameOverride ?? getColumnFromID(context).name
+        function findComments(context, schema, addToEl) {
             for (let child of Object.keys(schema)) {
                 i++
                 if (typeof schema[child]["type"] === "undefined") {
-                    findComments(context + "`" + child, schema[child], addToEl,undefined)
+                    findComments(context + "`" + child, schema[child], addToEl)
                 }
                 else if (schema[child]["type"] === "comment") {
                     let col = getColumnFromID(context + "`" + child)
 
                     if (typeof col.data[team] !== "undefined") {
                         for (let x of Object.keys(col.data[team])) {
-                            console.log("key", x, col.data[team][x])
-
-                            let note = document.createElement("div")
-
-                            let noteCol = document.createElement("b")
-                            noteCol.innerText = col.name + ": "
-                            note.appendChild(noteCol)
-                            let content = document.createElement("div")
-                            content.innerText = col.data[team][x].trim()
-                            note.appendChild(content)
-                            note.style.order = "" + ((parseInt(x) * 1000) + i)
-
                             if (("" + col.data[team][x]).trim().startsWith("undefined (")) continue
 
-                            addToEl.appendChild(note)
+                            let note = element("div", "", {"style": {"order": "" + ((parseInt(x) * 1000) + i)}}, addToEl)
+                            let noteCol = element("b", "", {"innerText": col.name + ": "}, note)
+                            let content = element("div", "", {"innerText": col.data[team][x].trim()}, note)
                         }
                     }
                 }
             }
         }
         for (let schema of Object.keys(mapping)) {
-            let el = document.createElement("div")
-            content.appendChild(el)
+            let el = element("div", "", {}, content)
 
             let open = true
 
-            let label = document.createElement("div")
-            label.className = "comment-title"
+            let label = element("div", "comment-title", {}, el)
             label.addEventListener("click", () => {
                 open = !open
                 opener.innerText = open ? "arrow_drop_up" : "arrow_drop_down"
                 contents.classList.toggle("hidden")
             })
-            el.appendChild(label)
 
-            let opener = document.createElement("div")
-            opener.className = "material-symbols-outlined"
-            opener.innerText = "arrow_drop_up"
-            label.appendChild(opener)
+            let opener = element("div", "material-symbols-outlined", {"innerText": "arrow_drop_up"}, label)
 
-            let title = document.createElement("div")
-            title.innerText = getColumnFromID(schema).name
-            title.className = "comment-title-text"
-            label.appendChild(title)
+            let title = element("div", "comment-title-text", {"innerText": getColumnFromID(schema).name}, label)
 
-            let contents = document.createElement("div")
-            contents.className = "comment-holder"
-            content.appendChild(contents)
+            let contents = element("div", "comment-holder", {}, content)
 
-            findComments(schema, mapping[schema].data, contents, mapping[schema]["alias"] ?? schema)
+            findComments(schema, mapping[schema].data, contents)
         }
 
         if (usingTBA) {
@@ -1609,27 +1395,22 @@ class Matches extends Widget {
         this.minWidth = 250
         this.minHeight = 70
 
-        this.teamDropdown = document.createElement("select")
+        this.teamDropdown = element("select")
         this._header.name.insertAdjacentElement("beforebegin", this.teamDropdown)
         for (let num of Object.keys(team_data)) {
-            let team = document.createElement("option")
-            team.value = num
-            team.innerText = num + " " + team_data[num].Name
-            this.teamDropdown.appendChild(team)
+            let team = element("option", "", {"value": num, "innerText": num + " " + team_data[num].Name}, this.teamDropdown)
         }
         this.teamDropdown.addEventListener("change", () => {
             this.setTeam(this.teamDropdown.value)
         })
 
-        if (Object.keys(team_data).includes('4915')) this.setTeam('4915')
+        if (Object.keys(team_data).includes("4915")) this.setTeam("4915")
         else this.setTeam(Object.keys(team_data)[0])
     }
     setTeam(team) {
         this.content.innerHTML = ""
 
-        let matchHolder = document.createElement("div")
-        matchHolder.className = "match-holder"
-        this.content.appendChild(matchHolder)
+        let matchHolder = element("div", "match-holder", {}, this.content)
 
         if (usingTBAMatches) {
             this.name = team + " " + team_data[team].Name + " Matches"
@@ -1641,84 +1422,52 @@ class Matches extends Widget {
                     // Upcoming Check
                     if (!match["done"] && !upcoming) {
                         upcoming = true
-                        let upcomingWarning = document.createElement("div")
-                        upcomingWarning.className = "matches-upcoming"
-                        upcomingWarning.innerText = "Upcoming Matches"
-                        matchHolder.appendChild(upcomingWarning)
+                        let upcomingWarning = element("div", "matches-upcoming", {"innerText": "Upcoming Matches"}, matchHolder)
                     }
 
-                    let matchEl = document.createElement("div")
-                    matchEl.className = "match"
+                    let matchEl = element("div", "match", {}, matchHolder)
 
                     let includeAlliance = "blue"
 
                     // TODO add way to watch video in-app
 
-                    let numHolder = document.createElement("div")
-                    numHolder.className = "match-score-holder"
-                    matchEl.appendChild(numHolder)
+                    let numHolder = element("div", "match-score-holder", {}, matchEl)
 
-                    let matchNum = document.createElement("a")
-                    matchNum.className = "match-number"
-                    matchNum.innerText = num
-                    matchNum.href = "https://www.thebluealliance.com/match/" + eventKey + "_qm" + num
-                    matchNum.target = "_blank"
-                    matchNum.rel = "noopener noreferrer"
-                    numHolder.appendChild(matchNum)
+                    let matchNum = element("a", "match-number", {"innerText": num, "href": "https://www.thebluealliance.com/match/" + eventKey + "_qm" + num, "target": "_blank", "rel": "noopener noreferrer"}, numHolder)
 
-                    let allianceHolder = document.createElement("div")
-                    allianceHolder.className = "match-alliance-holder"
-                    matchEl.appendChild(allianceHolder)
+                    let allianceHolder = element("div", "match-alliance-holder", {}, matchEl)
 
-                    let redAlliance = document.createElement("div")
-                    redAlliance.className = "match-alliance red"
+                    let redAlliance = element("div", "match-alliance red", {}, allianceHolder)
                     for (let t of match.red) {
-                        let tEl = document.createElement("div")
-                        tEl.className = "match-alliance-team"
-                        tEl.innerText = t
+                        let tEl = element("div", "match-alliance-team", {"innerText": t}, redAlliance)
                         if (t == team) {
                             includeAlliance = "red"
                             tEl.style.order = "-1"
                         }
                         if (match["winner"] === "red") tEl.style.fontWeight = "bold"
-                        redAlliance.appendChild(tEl)
                     }
 
-                    let blueAlliance = document.createElement("div")
-                    blueAlliance.className = "match-alliance blue"
+                    let blueAlliance = element("div", "match-alliance blue", {}, allianceHolder)
                     for (let t of match.blue) {
-                        let tEl = document.createElement("div")
-                        tEl.className = "match-alliance-team"
-                        tEl.innerText = t
+                        let tEl = element("div", "match-alliance-team", {"innerText": t}, blueAlliance)
                         if (t == team) {
                             tEl.style.order = "-1"
                         }
                         if ("blue" === match["winner"]) tEl.style.fontWeight = "bold"
-                        blueAlliance.appendChild(tEl)
                     }
 
                     if (!upcoming) {
-                        let scoreHolder = document.createElement("div")
-                        scoreHolder.className = "match-score-holder"
-                        matchEl.appendChild(scoreHolder)
+                        let scoreHolder = element("div", "match-score-holder", {}, matchEl)
 
-                        let redScore = document.createElement("div")
-                        redScore.className = "match-score"
-                        redScore.innerText = match["redScore"]
-                        scoreHolder.appendChild(redScore)
-
-                        let blueScore = document.createElement("div")
-                        blueScore.className = "match-score"
-                        blueScore.innerText = match["blueScore"]
-                        scoreHolder.appendChild(blueScore)
+                        let redScore = element("div", "match-score", {"innerText": match["redScore"]}, scoreHolder)
+                        let blueScore = element("div", "match-score", {"innerText": match["blueScore"]}, scoreHolder)
 
                         ;(includeAlliance === "blue" ? blueScore : redScore).style.order = "-1"
                     }
 
                     ;(includeAlliance === "blue" ? blueAlliance : redAlliance).style.order = "-1"
 
-                    let statusIcon = document.createElement("div")
-                    statusIcon.className = "match-status-icon"
+                    let statusIcon = element("div", "match-status-icon")
 
                     if (includeAlliance === match["winner"]) {
                         statusIcon.innerText = "trophy"
@@ -1727,11 +1476,7 @@ class Matches extends Widget {
                     } else {
                         statusIcon.innerText = "skull"
                     }
-
-                    allianceHolder.appendChild(redAlliance)
-                    allianceHolder.appendChild(blueAlliance)
-
-                    matchHolder.appendChild(matchEl)
+                    // TODO put status icon somewhere (maybe low opacity behind match number?)
                 }
             }
         } else {
@@ -1764,23 +1509,13 @@ class Welcome extends Widget {
 
         this.content.classList.add("orpheus-welcome")
 
-        let title = document.createElement("h1")
-        title.innerText = "Welcome to Orpheus!"
-        this.content.appendChild(title)
+        let title = element("h1", "", {"innerText": "Welcome to Orpheus!"}, this.content)
 
-        let description = document.createElement("div")
-        description.innerText = "Orpheus is 4915's scouting data analysis tool"
-        this.content.appendChild(description)
+        let description = element("div", "", {"innerText": "Orpheus is 4915's scouting data analysis tool."}, this.content)
 
-        let help = document.createElement("a")
-        help.innerText = "Orpheus Guide / User Manual"
-        help.setAttribute("target", "_blank")
-        help.setAttribute("rel", "noopener noreferrer")
-        help.href = "https://github.com/Sloth4915/Orpheus/blob/main/README.md"
-        this.content.appendChild(help)
+        let help = element("a", "", {"innerText": "Orpheus Guide / User Manual", "target": "_blank", "rel": "noopener noreferrer", "href": "https://github.com/Sloth4915/Orpheus/blob/main/README.md"}, this.content)
 
-        let demo = document.createElement("button")
-        demo.innerText = "Load Demo"
+        let demo = element("button", "", {"innerText": "Load Demo"})
         demo.addEventListener("click", () => {
             Events.on(Events.DATA_PROCESSED, () => {
                 let tabGroup = new WidgetTabGroup()
@@ -1830,30 +1565,16 @@ class Welcome extends Widget {
         })
         this.content.appendChild(demo)
 
-        let setupChecklist = document.createElement("div")
-        setupChecklist.className = "setup-checklist"
-        this.content.appendChild(setupChecklist)
+        let setupChecklist = element("div", "setup-checklist", {}, this.content)
 
-        let checklistTitle = document.createElement("b")
-        checklistTitle.innerText = "Setup Checklist"
-        setupChecklist.appendChild(checklistTitle)
+        let checklistTitle = element("b", "", {"innerText": "Setup Checklist"}, setupChecklist)
 
-        let item0 = document.createElement("div")
-        item0.className = "setup-list"
+        let item0 = element("div", "setup-list", {"innerText": "Set your event key"}, setupChecklist)
         if (typeof eventKey !== "undefined") item0.classList.add("strike")
-        item0.innerText = "Set your event key"
-        setupChecklist.appendChild(item0)
-
-        let item1 = document.createElement("div")
+        let item1 = element("div", "setup-list", {"innerText": "Upload a data mapping"}, setupChecklist)
         item1.className = "setup-list"
-        if (typeof mapping !== "undefined") item1.classList.add("strike")
-        item1.innerText = "Upload a mapping"
-        setupChecklist.appendChild(item1)
-
-        let item2 = document.createElement("div")
-        item2.className = "setup-list"
+        let item2 = element("div", "setup-list", {"innerText": "Upload your data"}, setupChecklist)
         if (isDataUploaded()) item2.classList.add("strike")
-        item2.innerText = "Upload your data"
         setupChecklist.appendChild(item2)
     }
 }

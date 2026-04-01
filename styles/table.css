@@ -106,6 +106,10 @@
     font-size: 2rem;
     backdrop-filter: blur(1px);
     transition: 200ms;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 10000;
 }
 .table-column-drag-remove:hover {
     background-color: rgba(255, 0, 0, 0.3);

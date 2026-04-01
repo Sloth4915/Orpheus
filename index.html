@@ -1,18 +1,20 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <!-- Basic Stuff -->
     <meta charset="UTF-8">
     <title class="tool-name">Orpheus</title>
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"/>
+    <link rel="icon" type="image/x-icon" href="images/favicon.ico">
 
     <!--PWA Stuff-->
     <link rel="manifest" href="manifest.json"/>
     <script>
-        if ("serviceWorker" in navigator) {
-            navigator.serviceWorker.register("scripts/sw.js");
-        }
+        if ("serviceWorker" in navigator) navigator.serviceWorker.register("scripts/sw.js");
     </script>
 
+    <!-- Styles -->
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"/>
     <!-- Orpheus Primary Stylesheets -->
     <link rel="stylesheet" href="styles/themes.css"/>
     <link rel="stylesheet" href="styles/global.css"/>
@@ -27,14 +29,25 @@
     <link rel="stylesheet" href="styles/team-info.css"/>
     <link rel="stylesheet" href="styles/comments.css"/>
     <link rel="stylesheet" href="styles/match.css"/>
-    <!-- Overrides -->
+    <!-- Style Overrides -->
     <link rel="stylesheet" href="styles/overrides.css"/>
     <link rel="stylesheet" href="styles/mobile.css"/>
-    <!-- Scripts -->
 
+    <!-- Scripts -->
+    <!-- Dependancies -->
     <script src="deps/localForage/dist/localforage.js"></script>
     <script src="deps/mathjs/math.js"></script>
+    <!-- This API key is only allowed for use on Orpheus. If you'd like to add Desmos to your fork of Orpheus or for use in your own project, please visit www.desmos.com/my-api or reach out to the Desmos Studio team at partnerships@desmos.com -->
+    <script src="https://www.desmos.com/api/v1.11/calculator.js?apiKey=14470c380841448eae58c1b5f832477f"
+            onload="
+        // This way, we can check if desmos successfully loaded. If it loaded late (maybe due to slow internet or something), it can call the functions to initialize the things that require it.
+        desmosReady = true;
+        if (typeof onDesmosLoad !== 'undefined') {for (f of onDesmosLoad) f();}"
+            onerror="
+        desmosReady = false;
+    "></script>
 
+    <!-- Set Theme -->
     <script>
         var theme = localStorage.getItem("theme4915") ?? "light"
         document.querySelector(":root").classList.remove("dark")
@@ -44,28 +57,18 @@
         localStorage.setItem("theme4915", theme)
     </script>
 
-    <!-- This API key is only allowed for use on Orpheus. If you'd like to add Desmos to your fork of Orpheus or for use in your own project, please visit www.desmos.com/my-api or reach out to the Desmos Studio team at partnerships@desmos.com -->
-    <script src="https://www.desmos.com/api/v1.11/calculator.js?apiKey=14470c380841448eae58c1b5f832477f" onload="
-        // This way, we can check if desmos successfully loaded. If it loaded late (maybe due to slow internet or something), it can call the functions to initialize the things that require it.
-        desmosReady = true;
-        if (typeof onDesmosLoad !== 'undefined') {for (f of onDesmosLoad) f();}"
-    onerror="
-        desmosReady = false;
-    "></script>
+    <!-- Orpheus Scripts -->
     <script src="scripts/demo.js"></script>
     <script src="scripts/uihandler.js" defer></script>
     <script src="scripts/widgets.js" defer></script>
     <script src="scripts/script.js" defer></script>
-    <link rel="icon" type="image/x-icon" href="images/favicon.ico">
 </head>
 <body>
     <div class="sticky-header">
         <div class="horizontal-scroll" id="top-controls">
             <button id="top-control-data" class="dropdown-button">Data</button>
             <dialog class="top-control-dropdown" for="top-control-data">
-                <div id="top-data-buttons">
-
-                </div>
+                <div id="top-data-buttons"></div>
 
                 <div class="data-buttons-title">Mapping</div>
                 <div class="top-button-cluster">
@@ -156,16 +159,12 @@
         </div>
 
         <div class="name-holder">
-            <div class="tool-name">
-                Orpheus
-            </div>
+            <div class="tool-name">Orpheus</div>
             <div id="connectivity-warning" class="hidden material-symbols-outlined" title="You may not be connected to the internet and thus some data may be outdated.">signal_cellular_connected_no_internet_0_bar</div>
         </div>
     </div>
 
-    <div class="content">
-
-    </div>
+    <div class="content"></div>
 
     <footer>
         <span class="version"></span>
@@ -177,23 +176,13 @@
         <a href="https://www.statbotics.io/">Thanks to Statbotics</a>
     </footer>
 
-    <div class="edit-columns hidden">
-
-    </div>
-
     <div class="context-menu" hidden>
-        <div class="context-menu-options">
-
-        </div>
+        <div class="context-menu-options"></div>
         <div class="context-menu-themes">
             <button class="context-theme" onclick="changeThemeTo('light')"><span class="material-symbols-outlined">light_mode</span></button>
             <button class="context-theme" onclick="changeThemeTo('dark')"><span class="material-symbols-outlined">dark_mode</span></button>
             <button class="context-theme" onclick="changeThemeTo('4915')"><img src="images/spartronics.jpg" alt="Spartronics Mode"></button>
         </div>
-    </div>
-
-    <div class="notebook-stars hidden">
-
     </div>
 
     <div id="loading">

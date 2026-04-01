@@ -103,6 +103,7 @@ h1 {
 footer {
     display: flex;
     width: 100%;
+    font-size: 0.7rem;
 }
 footer a {
     margin: 0 .1rem;
