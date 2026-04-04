@@ -33,4 +33,5 @@ html, body {
 * {
     color: var(--font);
     z-index: inherit;
+    user-select: none;
 }

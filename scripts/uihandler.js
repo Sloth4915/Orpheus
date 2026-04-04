@@ -45,8 +45,6 @@ function element(type, classes = "", attributes = {}, appendTo = null) {
 
 let _touchpos = [0,0]
 let _moveEvents = []
-let _upEvents = []
-let _cancelEvents = []
 document.body.addEventListener("touchstart", (e) => {
     _touchpos = [e.touches[0].clientX, e.touches[0].clientY]
 })

@@ -34,6 +34,7 @@ let team_data = {}
 let api_data = {}
 let tba_match_data = {}
 let matches = {}
+let scheduleReleased = false
 
 let mapping
 let gameMapping = {
@@ -136,7 +137,8 @@ document.addEventListener("click", () => {
 })
 //#endregion
 
-//#region Event Loading
+//#region Data Processing, Event loading, Mappings, Data Uploads
+
 document.querySelector("#top-load-event").onclick = function() {
     let x = prompt("What event code do you want? For example: 2024wabon, 2025waahs, 2025pncmp, etc")
     if (x === "get") alert(eventKey)
@@ -162,7 +164,7 @@ function loadEvent() {
             "type": "",
             "table": true
         }
-        load("event/" + eventKey + "/teams", function (data) {
+        loadTBA("event/" + eventKey + "/teams", function (data) {
             event_data = data
 
             for (let team of data) {
@@ -177,7 +179,7 @@ function loadEvent() {
                 processedData["orpheus"]["data"]["number"][teamNum] = teamNum
                 main.hardRefresh()
                 if (usingTBAMedia) {
-                    load("team/frc" + teamNum + "/media/" + gameMapping.year, function (data) {
+                    loadTBA("team/frc" + teamNum + "/media/" + gameMapping.year, function (data) {
                         team_data[teamNum].TBA.images = []
 
                         for (let x of data) {
@@ -212,41 +214,44 @@ function loadEvent() {
             }
         })
         if (usingTBAMatches) {
-            load("event/" + eventKey + "/matches", function (data) {
+            loadTBA("event/" + eventKey + "/matches", function (data) {
                 tba_match_data = {}
-                for (let m of data) {
-                    if (m["comp_level"] === "qm") {
-                        tba_match_data[m["match_number"]] = m
+                if (data.length !== 0) {
+                    scheduleReleased = true
+                    for (let m of data) {
+                        if (m["comp_level"] === "qm") {
+                            tba_match_data[m["match_number"]] = m
 
-                        let red = []
-                        let blue = []
-                        for (let x of m["alliances"]["red"]["team_keys"]) red.push(x.substring(3))
-                        for (let x of m["alliances"]["blue"]["team_keys"]) blue.push(x.substring(3))
+                            let red = []
+                            let blue = []
+                            for (let x of m["alliances"]["red"]["team_keys"]) red.push(x.substring(3))
+                            for (let x of m["alliances"]["blue"]["team_keys"]) blue.push(x.substring(3))
 
-                        if (m["score_breakdown"] !== null) {
-                            matches[m["match_number"]] = {
-                                red: red,
-                                blue: blue,
-                                teams: red.concat(blue),
-                                redScore: m["score_breakdown"]["red"]["totalPoints"],
-                                blueScore: m["score_breakdown"]["blue"]["totalPoints"],
-                                winner: m["winning_alliance"],
-                                videos: m["videos"],
-                                done: true
+                            if (m["score_breakdown"] !== null) {
+                                matches[m["match_number"]] = {
+                                    red: red,
+                                    blue: blue,
+                                    teams: red.concat(blue),
+                                    redScore: m["score_breakdown"]["red"]["totalPoints"],
+                                    blueScore: m["score_breakdown"]["blue"]["totalPoints"],
+                                    winner: m["winning_alliance"],
+                                    videos: m["videos"],
+                                    done: true
+                                }
+                            } else {
+                                matches[m["match_number"]] = {
+                                    red: red,
+                                    blue: blue,
+                                    teams: red.concat(blue),
+                                    done: false
+                                }
                             }
-                        } else {
-                            matches[m["match_number"]] = {
-                                red: red,
-                                blue: blue,
-                                teams: red.concat(blue),
-                                done: false
-                            }
+
                         }
-
                     }
                 }
             })
-            load("event/" + eventKey + "/oprs", function (data) {
+            loadTBA("event/" + eventKey + "/oprs", function (data) {
                 internalMapping["TBA Insights"] = {}
                 processedData["orpheus"]["data"]["TBA Insights"] = {}
                 processedData["orpheus"]["data"]["TBA Insights"]["OPR"] = {}
@@ -259,7 +264,7 @@ function loadEvent() {
                     processedData["orpheus"]["data"]["TBA Insights"]["OPR"][parseInt(team.substring(3))] = data["oprs"][team]
                 }
             })
-            load("event/" + eventKey + "/rankings", function (data) {
+            loadTBA("event/" + eventKey + "/rankings", function (data) {
                 for (let extra in data["extra_stats_info"]) {
                     internalMapping[data["extra_stats_info"][extra]["name"]] = {
                         "alias": data["extra_stats_info"][extra]["name"],
@@ -279,17 +284,25 @@ function loadEvent() {
                     }
                 }
             })
-            load("event/" + eventKey + "/alliances", function (data) {
+            loadTBA("event/" + eventKey + "/alliances", function (data) {
                 console.log("alliances", data)
+                if (data.length > 0) {
+                    alliances = {}
+                    for (let alliance of data) {
+                        let teams = []
+                        for (let team of alliance["picks"]) {
+                            teams.push(team.substring(3))
+                        }
+                        alliances[alliance["name"]] = teams
+                    }
+                }
             })
         }
     } else {
         processData()
     }
 }
-//#endregion
 
-//#region Data Processing, Mappings, Data Uploads
 // Import mapping button
 document.querySelector("#top-mapping").onclick = function() {
     loadFile(".json", (result) => {
@@ -369,8 +382,6 @@ function processData() {
             team_data[t]["TBA"]["matches"] = matches
         }
     }
-
-    // TODO: offline matches. see loadEvent and Matches widget
 
     let dataOut = {}
     let teamMedia = {}
@@ -456,7 +467,7 @@ function processData() {
                             }, context, otherBots)
 
                             if (datumMapping[x]["type"] === "number" || datumMapping[x]["type"] === "text") data[team][matchNum] = evaluate(datumMapping[x]["formula"], schema, evalContext)
-                            if (datumMapping[x]["type"] === "ratio") {
+                            else if (datumMapping[x]["type"] === "ratio") {
                                 let num = evaluate(datumMapping[x]["numerator"], schema, evalContext)
                                 let den = evaluate(datumMapping[x]["denominator"], schema, evalContext)
                                 data[team][matchNum] = {
@@ -465,7 +476,7 @@ function processData() {
                                     "ratio": num/den
                                 }
                             }
-                            if (datumMapping[x]["type"] === "accuracy") {
+                            else if (datumMapping[x]["type"] === "accuracy") {
                                 let fromData = evaluate(datumMapping[x]["formula"], schema, evalContext)
                                 let expected = evaluate(datumMapping[x]["expected"], schema, evalContext)
 
@@ -500,29 +511,29 @@ function processData() {
                                         if (datumMapping[x]["type"] === "accuracy") val += Math.abs(parseFloat(data[team][match]["difference"]))
                                     }
                                     val /= Object.keys(data[team]).length
-                                    data[team]["summarized"] = val
+                                    data[team]["summarized"] = parseFloat(val)
                                 } else if (summarize === "min") {
-                                    data[team]["summarized"] = Math.min(...Object.values(data[team]))
+                                    data[team]["summarized"] = parseFloat(Math.min(...Object.values(data[team])))
                                 } else if (summarize === "max") {
-                                    data[team]["summarized"] = Math.max(...Object.values(data[team]))
+                                    data[team]["summarized"] = parseFloat(Math.max(...Object.values(data[team])))
                                 } else if (summarize === "sum") {
                                     let val = 0
                                     for (let match of Object.keys(data[team])) {
-                                        if (datumMapping[x]["type"] === "number") val += data[team][match]
-                                        if (datumMapping[x]["type"] === "ratio") val += data[team][match]["ratio"]
-                                        if (datumMapping[x]["type"] === "accuracy") val += Math.abs(data[team][match]["difference"])
+                                        if (datumMapping[x]["type"] === "number") val += parseFloat(data[team][match])
+                                        if (datumMapping[x]["type"] === "ratio") val += parseFloat(data[team][match]["ratio"])
+                                        if (datumMapping[x]["type"] === "accuracy") val += parseFloat(Math.abs(data[team][match]["difference"]))
                                     }
-                                    data[team]["summarized"] = val
+                                    data[team]["summarized"] = parseFloat(val)
                                 } else if (summarize === "ratio") {
                                     let num = 0
                                     let den = 0
                                     for (let match of Object.keys(data[team])) {
-                                        num += data[team][match]["numerator"]
-                                        den += data[team][match]["denominator"]
+                                        num += parseFloat(data[team][match]["numerator"])
+                                        den += parseFloat(data[team][match]["denominator"])
                                     }
-                                    data[team]["summarized"] = num / den
-                                    data[team]["sum_num"] = num
-                                    data[team]["sum_den"] = den
+                                    data[team]["summarized"] = parseFloat(num / den)
+                                    data[team]["sum_num"] = parseFloat(num)
+                                    data[team]["sum_den"] = parseFloat(den)
                                 }
                                 // Todo geomean, median, mode
                             }
@@ -537,19 +548,20 @@ function processData() {
                                 "functions": mapping[schema]["functions"]
                             }, context)
 
-                            if (datumMapping[x]["type"] === "number" || datumMapping[x]["type"] === "text") data[team] = evaluate(datumMapping[x]["formula"], schema, evalContext)
-                            if (datumMapping[x]["type"] === "ratio") {
-                                let num = evaluate(datumMapping[x]["numerator"], schema, evalContext)
-                                let den = evaluate(datumMapping[x]["denominator"], schema, evalContext)
+                            if (datumMapping[x]["type"] === "number") data[team] = parseFloat(evaluate(datumMapping[x]["formula"], schema, evalContext))
+                            else if (datumMapping[x]["type"] === "text") data[team] = evaluate(datumMapping[x]["formula"], schema, evalContext)
+                            else if (datumMapping[x]["type"] === "ratio") {
+                                let num = parseFloat(evaluate(datumMapping[x]["numerator"], schema, evalContext))
+                                let den = parseFloat(evaluate(datumMapping[x]["denominator"], schema, evalContext))
                                 data[team] = {
                                     "numerator": num,
                                     "denominator": den,
                                     "ratio": num/den
                                 }
                             }
-                            if (datumMapping[x]["type"] === "accuracy") {
-                                let fromData = evaluate(datumMapping[x]["formula"], schema, evalContext)
-                                let expected = evaluate(datumMapping[x]["expected"], schema, evalContext)
+                            else if (datumMapping[x]["type"] === "accuracy") {
+                                let fromData = parseFloat(evaluate(datumMapping[x]["formula"], schema, evalContext))
+                                let expected = parseFloat(evaluate(datumMapping[x]["expected"], schema, evalContext))
 
                                 data[team] = {
                                     "data": fromData,
@@ -751,8 +763,12 @@ function getColumnFromID(id) {
         for (let x of location) col = col[x]
     }
     else {
-        col = mapping[data]["data"]
-        for (let x of location) col = col[x]
+        try {
+            col = mapping[data]["data"]
+            for (let x of location) col = col[x]
+        } catch {
+            return null
+        }
     }
 
     let dataCol = processedData[data]["data"]
@@ -1189,6 +1205,11 @@ const Lists = {
                 el.appendChild(deleteButton)
             }
 
+            let listTeams = element("div", "material-symbols-outlined list-teams", {"innerText": "groups_3", "title": list.teams}, el)
+            for (let team of list.teams) {
+                element("div", "list-team", {"innerText": team}, listTeams)
+            }
+
             panel.appendChild(el)
         }
 
@@ -1413,7 +1434,7 @@ document.addEventListener("keyup", (e) => {
 
 //#region File and API loading functions (+ download, API Toggles)
 // Loads data from TheBlueAlliance
-async function load(sub, onload) {
+async function loadTBA(sub, onload) {
     return loadOther(`https://www.thebluealliance.com/api/v3/${sub}?X-TBA-Auth-Key=${TBA_KEY}`, onload)
 }
 async function loadOther(url, onload) {
@@ -1452,7 +1473,7 @@ async function loadOther(url, onload) {
         console.log("An error happened! Might not have any internet :( or website is down", url)
         if (api_data[url]) {
             onload(api_data[url])
-            // 100ms pause to prevent race condition given nonexistant load times
+            // 100ms pause to prevent race condition given nonexistent load times
             setTimeout(() => {
                 loading--
                 checkLoading()

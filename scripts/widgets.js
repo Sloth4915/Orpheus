@@ -40,6 +40,7 @@ class Table extends Widget {
             this.hardRefresh()
         }, this)
         Events.on(Events.LIST_CHANGE, this.sortRows, this)
+        Events.on(Events.DATA_PROCESSED, this.onDataProcessed, this)
 
         this.content.classList.add("table")
 
@@ -616,6 +617,18 @@ class Table extends Widget {
         this.refresh()
     }
 
+    // Redoes column data
+    onDataProcessed() {
+        for (let column of this.columns) {
+            let newCol = getColumnFromID(column.columnId ?? column.id)
+            if (newCol === null) {
+                this.removeColumn(column)
+            }
+            column.data = newCol.data
+        }
+        this.hardRefresh()
+    }
+
     out() {
         return super.out({
             activeColumn: this.activeColumn,
@@ -640,6 +653,7 @@ class Table extends Widget {
         let active = a["activeColumn"]
         delete a["activeColumn"]
         super.in(a)
+        this.onDataProcessed()
         this.setActiveColumn(active, a["sort"])
     }
 }

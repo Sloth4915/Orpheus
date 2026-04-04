@@ -14,6 +14,7 @@
     flex-direction: row;
     align-items: center;
     border-radius: 0.5rem;
+    flex-wrap: wrap;
 }
 
 .list button.material-symbols-outlined {
@@ -71,4 +72,8 @@
 
 .list-move-btn {
     cursor: pointer;
+}
+
+.list-teams {
+    flex-basis: 100%;
 }
