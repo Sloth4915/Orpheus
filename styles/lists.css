@@ -17,6 +17,16 @@
     flex-wrap: wrap;
 }
 
+.list-info-holder {
+    display: flex;
+    flex-direction: column;
+}
+
+.list-info-horizontal {
+    display: flex;
+    flex-direction: row !important;
+}
+
 .list button.material-symbols-outlined {
     border: 0;
     width: 0;
@@ -74,6 +84,6 @@
     cursor: pointer;
 }
 
-.list-teams {
-    flex-basis: 100%;
+.list-team {
+    font-family: var(--font-family);
 }

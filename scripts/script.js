@@ -1103,11 +1103,12 @@ const Lists = {
             })
             moveListHolder.appendChild(moveDown)
 
+
             let icon = document.createElement("div")
             icon.className = "material-symbols-outlined filled list-icon"
             icon.innerText = list.icon
             icon.style.color = list.color.color
-            el.appendChild(icon)
+            listSetup.appendChild(icon)
 
             let iconChanger = document.createElement("div")
             iconChanger.className = "hidden"
@@ -1152,11 +1153,11 @@ const Lists = {
             document.addEventListener("click", (e) => {
                 if (!iconChanger.contains(e.target)) iconChanger.classList.add("hidden")
             })
-            el.appendChild(iconChanger)
+            listSetup.appendChild(iconChanger)
 
             let name = document.createElement("div")
             name.innerText = list.name
-            el.appendChild(name)
+            listSetup.appendChild(name)
 
             let nameEditButton = document.createElement("button")
             nameEditButton.className = "material-symbols-outlined list-name-edit"
@@ -1169,7 +1170,7 @@ const Lists = {
                 main.hardRefresh()
                 Events.emit(Events.LIST_CHANGE)
             })
-            el.appendChild(nameEditButton)
+            listSetup.appendChild(nameEditButton)
 
             let dropdown = document.createElement("select")
             let options = {
@@ -1205,7 +1206,7 @@ const Lists = {
                 el.appendChild(deleteButton)
             }
 
-            let listTeams = element("div", "material-symbols-outlined list-teams", {"innerText": "groups_3", "title": list.teams}, el)
+            let listTeams = element("div", "material-symbols-outlined list-info-horizontal", {"innerText": "groups_3", "title": list.teams}, listMain)
             for (let team of list.teams) {
                 element("div", "list-team", {"innerText": team}, listTeams)
             }
@@ -1229,6 +1230,10 @@ const Lists = {
             let useAlliances = document.createElement("button")
             useAlliances.innerText = (List.red == null) ? "Use Alliances" : "Hide Alliances"
             panel.appendChild(useAlliances)
+
+            //let modeSelect = element("select", "", {"default": Lists.selectMode}, panel)
+            //let qualMode = element("option", "", {"value": "qual", "innerText": "Qual Match"}, modeSelect)
+            //let allianceMode = element("option", "", {"value": "alliance", "innerText": "Playoff Alliance"}, modeSelect)
 
             function setMatch(match) {
                 List.allianceMatch = match
