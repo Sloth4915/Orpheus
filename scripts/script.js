@@ -1036,6 +1036,8 @@ class List {
     }
 }
 const Lists = {
+    selectMode: "qual", // qual, alliance, playoff <- coming soon
+
     /**
      * List priority goes from 0 to length where 0 is highest priority.
      */
@@ -1103,6 +1105,9 @@ const Lists = {
             })
             moveListHolder.appendChild(moveDown)
 
+            let listMain = element("div", "list-info-holder", {}, el)
+
+            let listSetup = element("div", "list-info-horizontal", {}, listMain)
 
             let icon = document.createElement("div")
             icon.className = "material-symbols-outlined filled list-icon"
