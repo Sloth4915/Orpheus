@@ -235,7 +235,8 @@ class Table extends Widget {
         this.refresh()
     }
     removeColumn(...[columns]) {
-        if (typeof columns !== "object") columns = [columns]
+        if (typeof columns !== "object" || typeof columns[0] === "undefined") columns = [columns]
+        console.log(columns)
         for (let col of columns) {
             let column = col
             if (typeof col === "string") column = this.getColumnById(col)
@@ -267,6 +268,7 @@ class Table extends Widget {
     addTeam(...[teams]) {
         if (typeof teams !== "object") teams = [teams]
         for (let team of teams) {
+            if (typeof team_data[team] === "undefined") continue
             team = team + ""
             if(this.teams.includes(team + "")) continue
             this.teams.push(team + "")
@@ -623,6 +625,7 @@ class Table extends Widget {
             let newCol = getColumnFromID(column.columnId ?? column.id)
             if (newCol === null) {
                 this.removeColumn(column)
+                continue
             }
             column.data = newCol.data
         }
@@ -643,6 +646,7 @@ class Table extends Widget {
         console.log(JSON.parse(JSON.stringify(a)))
         let teams = a["teams"]
         for (let team of teams) {
+            if (typeof team_data[team] === "undefined") continue
             this.addTeam(team)
         }
         for (let team of a["columns"]) {

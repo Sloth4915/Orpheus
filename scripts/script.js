@@ -22,7 +22,7 @@ const storageKeys = {
 const MISSING_LOGO = "https://frc-cdn.firstinspires.org/eventweb_frc/ProgramLogos/FIRSTicon_RGB_withTM.png"
 
 const toolName = "Orpheus"
-const version = "2.5"
+const version = "2.5.1"
 
 let eventKey
 let event_data
@@ -771,9 +771,12 @@ function getColumnFromID(id) {
         }
     }
 
+    if (typeof col === "undefined") return null
+
     let dataCol = processedData[data]["data"]
     for (let x of location) dataCol = dataCol[x]
 
+    console.log(id, col)
     let name = col["alias"] ? col["alias"] : id.split("`")[id.split("`").length - 1]
 
     return {
