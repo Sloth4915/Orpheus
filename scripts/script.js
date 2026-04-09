@@ -22,7 +22,7 @@ const storageKeys = {
 const MISSING_LOGO = "https://frc-cdn.firstinspires.org/eventweb_frc/ProgramLogos/FIRSTicon_RGB_withTM.png"
 
 const toolName = "Orpheus"
-const version = "2.5.8"
+const version = "2.5.9"
 
 let eventKey
 let event_data
@@ -284,7 +284,7 @@ function loadEvent() {
                     }
                 }
             })
-            loadTBA("event/" + eventKey + "/alliances", function (data) {
+            /*loadTBA("event/" + eventKey + "/alliances", function (data) {
                 console.log("alliances", data)
                 if (data.length > 0) {
                     alliances = {}
@@ -296,7 +296,7 @@ function loadEvent() {
                         alliances[alliance["name"]] = teams
                     }
                 }
-            })
+            })*/
         }
     } else {
         processData()
@@ -1461,7 +1461,7 @@ async function loadOther(url, onload) {
     if (usingOffline) {
         if (api_data[url]) onload(api_data[url])
         else {
-            console.log("No API data saved")
+            console.warn("No API data saved")
             fullyOffline = true
             setLoadingIndicator()
         }
@@ -1487,7 +1487,7 @@ async function loadOther(url, onload) {
         checkLoading()
     }).catch(() => {
         document.querySelector("#connectivity-warning").classList.remove("hidden")
-        console.log("An error happened! Might not have any internet :( or website is down", url)
+        console.error("An error happened! Might not have any internet :( or website is down", url)
         if (api_data[url]) {
             onload(api_data[url])
             // 100ms pause to prevent race condition given nonexistent load times
@@ -1496,7 +1496,7 @@ async function loadOther(url, onload) {
                 checkLoading()
             }, 100)
         } else {
-            console.log("No API data saved")
+            console.warn("No API data saved")
             fullyOffline = true
             setLoadingIndicator()
         }
@@ -1792,7 +1792,7 @@ localforage.getItem(storageKeys.SAVED_API_DATA, (err, val) => {
     if (!navigator.onLine) {
         document.querySelector(":root").classList.add("offline")
         document.querySelector("#connectivity-warning").classList.remove("hidden")
-        console.log("No Internet")
+        console.warn("No Internet")
         usingOffline = true
     }
     if (!--initLoading) finishInit()

@@ -1,6 +1,6 @@
 // PWA code from https://developer.mozilla.org/en-US/docs/Web/Progressive_web_apps/Tutorials/CycleTracker/Service_workers
 
-const VERSION = "2.5.8"
+const VERSION = "2.5.9"
 const CACHE_NAME = `orpheus-4915-${VERSION}`
 
 const APP_STATIC_RESOURCES = [

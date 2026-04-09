@@ -874,7 +874,10 @@ class Graph extends Widget {
                 }
             }
 
-            let teamName = element("div", "graph-team-name", {"innerText": this.getShapeSymbol(this.getTeamShape(i)) + " " + (usingTBA ? t + " " + team_data[t]["Name"] : t), "title": this.getShapeSymbol(this.getTeamShape(i)) + " " + (usingTBA ? t + " " + team_data[t]["Name"] : t)}, teamEl)
+            if (typeof team_data[t] !== "undefined" && typeof team_data[t]["Name"] !== "undefined") {
+                element("div", "graph-team-name", {"innerText": this.getShapeSymbol(this.getTeamShape(i)) + " " + (t + " " + team_data[t]["Name"]), "title": this.getShapeSymbol(this.getTeamShape(i)) + " " + (t + " " + team_data[t]["Name"])}, teamEl)
+            }
+            element("div", "graph-team-name", {"innerText": this.getShapeSymbol(this.getTeamShape(i)) + " " + (t), "title": this.getShapeSymbol(this.getTeamShape(i)) + " " + (t)}, teamEl)
 
             teamEl.addEventListener("mousedown", (e) => {
                 e.preventDefault()
