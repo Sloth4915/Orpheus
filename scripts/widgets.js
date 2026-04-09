@@ -344,9 +344,13 @@ class Table extends Widget {
         if (this.activeColumn === id) { // Change Sort
             this.sort *= -1
         } else { // Change Column
-            if (this.activeColumn !== "") this.elements[this.activeColumn]["header"].classList.remove("selected")
+            if (this.activeColumn !== "") {
+                if (typeof this.elements[this.activeColumn] !== "undefined" && typeof this.elements[this.activeColumn]["header"] !== "undefined")
+                    this.elements[this.activeColumn]["header"].classList.remove("selected")
+            }
             this.activeColumn = id
-            this.elements[this.activeColumn]["header"].classList.add("selected")
+            if (typeof this.elements[this.activeColumn] !== "undefined" && typeof this.elements[this.activeColumn]["header"] !== "undefined")
+                this.elements[this.activeColumn]["header"].classList.add("selected")
             this.sort = -1
         }
         if (specificSort !== null) this.sort = specificSort
@@ -391,7 +395,9 @@ class Table extends Widget {
         if (this.teams.length === 0 || this.activeColumn === "" || this.parent === null) return
         this.content.scrollTop
         let teams = [...this.teams]
-        let data = this.getColumnById(this.activeColumn).data
+        let data = this.getColumnById(this.activeColumn)
+        if (data == null) return
+        data = data.data
         teams.sort((a, b) => {
             let valA = typeof data[a] === "object" ? data[a]["summarized"] : data[a]
             let valB = typeof data[b] === "object" ? data[b]["summarized"] : data[b]
@@ -728,7 +734,7 @@ class Graph extends Widget {
                     findGraphs(context + "`" + child, schema[child], undefined)
                 }
                 else if (schema[child]["graph"]) {
-                    let el = element("option", "", {"id": context + "`" + child, "value": context + "`" + child, "innerText": getColumnFromID(id).graph}, group)
+                    let el = element("option", "", {"id": context + "`" + child, "value": context + "`" + child, "innerText": getColumnFromID(context).graph}, group)
                 }
             }
             graphDropdown.appendChild(group)

@@ -22,7 +22,7 @@ const storageKeys = {
 const MISSING_LOGO = "https://frc-cdn.firstinspires.org/eventweb_frc/ProgramLogos/FIRSTicon_RGB_withTM.png"
 
 const toolName = "Orpheus"
-const version = "2.5.1"
+const version = "2.5.2"
 
 let eventKey
 let event_data
@@ -681,9 +681,10 @@ function evaluate(expression, schema, context) {
             }
 
             if (val === undefined || val === "") val = 0
-            if (typeof val === "string") val = `"${val}"`
+            if (typeof val === "string") val = `"${val.replaceAll('"', "\\\"").replaceAll("'", "\\\'")}"`
             exp = exp.replace(tag, val)
         }
+
         return exp
     }
 
@@ -698,7 +699,10 @@ function evaluate(expression, schema, context) {
                 return math.evaluate(replaceConstants(context["functions"][f]["returns"], parameters))
             }
 
-    return math.evaluate(replaceConstants(expression), functions)
+    console.log(replaceConstants(expression))
+    let evaled = math.evaluate(replaceConstants(expression), functions)
+    if (typeof evaled === "string") return evaled
+    return evaled
 }
 
 function csvToJson(csv) {
