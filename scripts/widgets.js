@@ -461,7 +461,7 @@ class Table extends Widget {
 
             dataEl.title = (Math.round(column.data[team]["summarized"] * rounding) / rounding)
         } else {
-            let value = typeof column.data[team] === "object" ? column.data[team]["summarized"] : column.data[team]
+            let value = (typeof column.data[team] === "object" && column.data[team] !== null) ? column.data[team]["summarized"] : column.data[team]
             if (typeof value === "undefined") dataEl.innerText = ""
             else if (typeof value === "number") dataEl.innerText = (Math.round(value * rounding) / rounding) + ""
             else dataEl.innerText = value
