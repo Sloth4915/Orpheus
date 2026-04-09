@@ -992,14 +992,22 @@ main.height = window.innerHeight - document.querySelector(".sticky-header").offs
 //#endregion
 
 // Required for Widget loading
-setTimeout(() => {
-    WidgetBase.WidgetTypes["base"] = WidgetBase
-    WidgetBase.WidgetTypes["group"] = WidgetGroup
-    WidgetBase.WidgetTypes["tabs"] = WidgetTabGroup
-    WidgetBase.WidgetTypes["table"] = Table
-    WidgetBase.WidgetTypes["graph"] = Graph
-    WidgetBase.WidgetTypes["info"] = TeamInfo
-    WidgetBase.WidgetTypes["media"] = TeamMedia
-    WidgetBase.WidgetTypes["comments"] = Comments
-    WidgetBase.WidgetTypes["matches"] = Matches
-}, 0)
+function setupTypes() {
+    try {
+        setTimeout(() => {
+            WidgetBase.WidgetTypes["base"] = WidgetBase
+            WidgetBase.WidgetTypes["group"] = WidgetGroup
+            WidgetBase.WidgetTypes["tabs"] = WidgetTabGroup
+            WidgetBase.WidgetTypes["table"] = Table
+            WidgetBase.WidgetTypes["graph"] = Graph
+            WidgetBase.WidgetTypes["info"] = TeamInfo
+            WidgetBase.WidgetTypes["media"] = TeamMedia
+            WidgetBase.WidgetTypes["comments"] = Comments
+            WidgetBase.WidgetTypes["matches"] = Matches
+        }, 0)
+    } catch (e) {
+        console.log("Error in widget types setup, trying again in 5ms")
+        setTimeout(setupTypes, 5)
+    }
+}
+setupTypes()
