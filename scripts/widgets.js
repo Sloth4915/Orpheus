@@ -1608,3 +1608,10 @@ class Welcome extends Widget {
         setupChecklist.appendChild(item2)
     }
 }
+
+WidgetBase.WidgetTypes["table"] = Table
+WidgetBase.WidgetTypes["graph"] = Graph
+WidgetBase.WidgetTypes["info"] = TeamInfo
+WidgetBase.WidgetTypes["media"] = TeamMedia
+WidgetBase.WidgetTypes["comments"] = Comments
+WidgetBase.WidgetTypes["matches"] = Matches
