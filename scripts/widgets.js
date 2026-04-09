@@ -865,7 +865,8 @@ class Graph extends Widget {
             let teamEl = element("div", "graph-team", {}, this.teamsEl)
 
             if (usingTBAMedia) {
-                let logo = element("img", "graph-logo", {"data-team-logo": t, "data-id": this.id, "src": team_data[t].Icon ?? MISSING_LOGO}, teamEl)
+                if (typeof team_data[t] !== "undefined")
+                    let logo = element("img", "graph-logo", {"data-team-logo": t, "data-id": this.id, "src": team_data[t].Icon ?? MISSING_LOGO}, teamEl)
             }
 
             let teamName = element("div", "graph-team-name", {"innerText": this.getShapeSymbol(this.getTeamShape(i)) + " " + (usingTBA ? t + " " + team_data[t]["Name"] : t), "title": this.getShapeSymbol(this.getTeamShape(i)) + " " + (usingTBA ? t + " " + team_data[t]["Name"] : t)}, teamEl)
