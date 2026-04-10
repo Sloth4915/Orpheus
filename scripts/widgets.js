@@ -734,7 +734,7 @@ class Graph extends Widget {
                     findGraphs(context + "`" + child, schema[child], undefined)
                 }
                 else if (schema[child]["graph"]) {
-                    let el = element("option", "", {"id": context + "`" + child, "value": context + "`" + child, "innerText": getColumnFromID(context).graph}, group)
+                    let el = element("option", "", {"id": context + "`" + child, "value": context + "`" + child, "innerText": getColumnFromID(context + "`" + child).graph ?? getColumnFromID()}, group)
                 }
             }
             graphDropdown.appendChild(group)
@@ -748,6 +748,8 @@ class Graph extends Widget {
             this.redoWidget()
         })
         graphDropdown.value = ""
+
+        this.graphDropdown = graphDropdown
     }
 
     refresh() {
@@ -875,9 +877,17 @@ class Graph extends Widget {
             }
 
             if (typeof team_data[t] !== "undefined" && typeof team_data[t]["Name"] !== "undefined") {
-                element("div", "graph-team-name", {"innerText": this.getShapeSymbol(this.getTeamShape(i)) + " " + (t + " " + team_data[t]["Name"]), "title": this.getShapeSymbol(this.getTeamShape(i)) + " " + (t + " " + team_data[t]["Name"])}, teamEl)
+                element("div", "graph-team-name", {
+                    "innerText": this.getShapeSymbol(this.getTeamShape(i)) + " " + (t + " " + team_data[t]["Name"]),
+                    "title": this.getShapeSymbol(this.getTeamShape(i)) + " " + (t + " " + team_data[t]["Name"]),
+                    "style": {"color": this.getTeamColor(i)}
+                }, teamEl)
             }
-            element("div", "graph-team-name", {"innerText": this.getShapeSymbol(this.getTeamShape(i)) + " " + (t), "title": this.getShapeSymbol(this.getTeamShape(i)) + " " + (t)}, teamEl)
+            else element("div", "graph-team-name", {
+                "innerText": this.getShapeSymbol(this.getTeamShape(i)) + " " + (t),
+                "title": this.getShapeSymbol(this.getTeamShape(i)) + " " + (t),
+                "style": {"color": this.getTeamColor(i)}
+            }, teamEl)
 
             teamEl.addEventListener("mousedown", (e) => {
                 e.preventDefault()
@@ -1015,6 +1025,10 @@ class Graph extends Widget {
             list: this.list,
             column: this.column,
         })
+    }
+    in(a) {
+        super.in(a)
+        this.graphDropdown.value = this.column.id ?? this.column.columnId
     }
 }
 
