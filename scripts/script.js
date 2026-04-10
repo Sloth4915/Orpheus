@@ -1577,6 +1577,10 @@ document.querySelector("#top-toggle-use-statbotics").addEventListener("click", (
     setEnabledAPIS()
 })
 
+document.querySelector("#top-refresh-page").addEventListener("click", () => {
+    location.reload()
+})
+
 // Saves enabled apis
 function setEnabledAPIS() {
     localforage.setItem(storageKeys.ENABLED_APIS, {
