@@ -22,7 +22,7 @@ const storageKeys = {
 const MISSING_LOGO = "https://frc-cdn.firstinspires.org/eventweb_frc/ProgramLogos/FIRSTicon_RGB_withTM.png"
 
 const toolName = "Orpheus"
-const version = "2.5.10"
+const version = "2.5.12"
 
 let eventKey
 let event_data
@@ -284,7 +284,7 @@ function loadEvent() {
                     }
                 }
             })
-            /*loadTBA("event/" + eventKey + "/alliances", function (data) {
+            loadTBA("event/" + eventKey + "/alliances", function (data) {
                 console.log("alliances", data)
                 if (data.length > 0) {
                     alliances = {}
@@ -296,7 +296,7 @@ function loadEvent() {
                         alliances[alliance["name"]] = teams
                     }
                 }
-            })*/
+            }, function() { /* Error, do nothing (means no alliances are out */})
         }
     } else {
         processData()
@@ -1218,7 +1218,7 @@ const Lists = {
                 el.appendChild(deleteButton)
             }
 
-            let listTeams = element("div", "material-symbols-outlined list-info-horizontal", {"innerText": "groups_3", "title": list.teams}, listMain)
+            let listTeams = element("div", "material-symbols-outlined list-info-horizontal teams", {"innerText": "groups_3", "title": list.teams}, listMain)
             for (let team of list.teams) {
                 element("div", "list-team", {"innerText": team}, listTeams)
             }
@@ -1240,7 +1240,7 @@ const Lists = {
 
         if (usingTBAMatches) {
             let useAlliances = document.createElement("button")
-            useAlliances.innerText = (List.red == null) ? "Use Alliances" : "Hide Alliances"
+            useAlliances.innerText = (List.red == null) ? "Use Qual Match" : "Back to Lists"
             panel.appendChild(useAlliances)
 
             //let modeSelect = element("select", "", {"default": Lists.selectMode}, panel)
@@ -1302,6 +1302,26 @@ const Lists = {
                 }
                 Lists.setListEditPanel()
             })
+
+            if (alliances !== null) {
+                let addAllianceHolder = element("div", "list-info-horizontal add-playoff-alliance", {}, panel)
+
+                let alliancesSelect = element("select", "", {}, addAllianceHolder)
+                for (let key of Object.keys(alliances)) {
+                    let allianceOption = element("option", "", {"innerText": key, "value": key}, alliancesSelect)
+                }
+
+                let addAlliance = element("button", "", {"innerText": "Add Playoff Alliance"}, addAllianceHolder)
+                addAlliance.addEventListener("click", () => {
+                    Lists.add(new List(alliancesSelect.value,
+                        List.ICONS[Math.floor(Math.random() * List.ICONS.length)],
+                        List.Colors[Object.keys(List.Colors)[Math.floor(Math.random() * Object.keys(List.Colors).length)]],
+                        List.Sort.SORT_ABOVE,
+                        alliances[alliancesSelect.value]
+                    ))
+                    this.setListEditPanel()
+                })
+            }
         }
     },
     /**
@@ -1451,10 +1471,10 @@ document.addEventListener("keyup", (e) => {
 
 //#region File and API loading functions (+ download, API Toggles)
 // Loads data from TheBlueAlliance
-async function loadTBA(sub, onload) {
-    return loadOther(`https://www.thebluealliance.com/api/v3/${sub}?X-TBA-Auth-Key=${TBA_KEY}`, onload)
+async function loadTBA(sub, onload, onError = null) {
+    return loadOther(`https://www.thebluealliance.com/api/v3/${sub}?X-TBA-Auth-Key=${TBA_KEY}`, onload, onError)
 }
-async function loadOther(url, onload) {
+async function loadOther(url, onload, onError = null) {
     loading++
     setLoadingIndicator()
 
@@ -1477,6 +1497,7 @@ async function loadOther(url, onload) {
         if (!response.ok) {
             throw new Error("Network response was not ok")
         }
+        console.log(url.includes("alliances"), response.clone().text())
         return response.json()
     }).then(data => {
         onload(data)
@@ -1486,19 +1507,25 @@ async function loadOther(url, onload) {
         loading--
         checkLoading()
     }).catch(() => {
-        document.querySelector("#connectivity-warning").classList.remove("hidden")
-        console.error("An error happened! Might not have any internet :( or website is down", url)
-        if (api_data[url]) {
-            onload(api_data[url])
-            // 100ms pause to prevent race condition given nonexistent load times
-            setTimeout(() => {
-                loading--
-                checkLoading()
-            }, 100)
+        if (onError == null) {
+            document.querySelector("#connectivity-warning").classList.remove("hidden")
+            console.error("An error happened! Might not have any internet :( or website is down", url)
+            if (api_data[url]) {
+                onload(api_data[url])
+                // 100ms pause to prevent race condition given nonexistent load times
+                setTimeout(() => {
+                    loading--
+                    checkLoading()
+                }, 100)
+            } else {
+                console.warn("No API data saved")
+                fullyOffline = true
+                setLoadingIndicator()
+            }
         } else {
-            console.warn("No API data saved")
-            fullyOffline = true
-            setLoadingIndicator()
+            onError()
+            loading--
+            checkLoading()
         }
     })
 }

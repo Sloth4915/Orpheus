@@ -26,6 +26,14 @@
     display: flex;
     flex-direction: row !important;
 }
+.list-info-horizontal.teams {
+    width: fit-content;
+    max-width: max(min(40vw, 300px), 100px);
+    flex-wrap: wrap;
+}
+.list-info-horizontal.add-playoff-alliance * {
+    flex-grow: 1;
+}
 
 .list button.material-symbols-outlined {
     border: 0;
