@@ -452,19 +452,22 @@ class Table extends Widget {
         let dataEl = element("div", "data", {"data-id": this.id})
         this.elements[column.id ?? column.columnId][team] = dataEl
 
-        if (column.mapping.type === "ratio" && (typeof column.mapping["summarize"] === "undefined" || column.mapping["summarize"] === "ratio")) {
-            dataEl.innerHTML = ""
 
-            element("div", "numerator", {"innerText": (Math.round(column.data[team]["sum_num"] * rounding) / rounding) + ""}, dataEl)
-            element("div", "ratio-divider", {}, dataEl)
-            element("div", "denominator", {"innerText": (Math.round(column.data[team]["sum_den"] * rounding) / rounding) + ""}, dataEl)
+        if (typeof column.data[team] !== "undefined") {
+            if (column.mapping.type === "ratio" && (typeof column.mapping["summarize"] === "undefined" || column.mapping["summarize"] === "ratio")) {
+                dataEl.innerHTML = ""
 
-            dataEl.title = (Math.round(column.data[team]["summarized"] * rounding) / rounding)
-        } else {
-            let value = (typeof column.data[team] === "object" && column.data[team] !== null) ? column.data[team]["summarized"] : column.data[team]
-            if (typeof value === "undefined") dataEl.innerText = ""
-            else if (typeof value === "number") dataEl.innerText = (Math.round(value * rounding) / rounding) + ""
-            else dataEl.innerText = value
+                element("div", "numerator", {"innerText": (Math.round(column.data[team]["sum_num"] * rounding) / rounding) + ""}, dataEl)
+                element("div", "ratio-divider", {}, dataEl)
+                element("div", "denominator", {"innerText": (Math.round(column.data[team]["sum_den"] * rounding) / rounding) + ""}, dataEl)
+
+                dataEl.title = (Math.round(column.data[team]["summarized"] * rounding) / rounding)
+            } else {
+                let value = (typeof column.data[team] === "object" && column.data[team] !== null) ? column.data[team]["summarized"] : column.data[team]
+                if (typeof value === "undefined") dataEl.innerText = ""
+                else if (typeof value === "number") dataEl.innerText = (Math.round(value * rounding) / rounding) + ""
+                else dataEl.innerText = value
+            }
         }
 
         return dataEl
