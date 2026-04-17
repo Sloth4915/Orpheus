@@ -22,7 +22,7 @@ const storageKeys = {
 const MISSING_LOGO = "https://frc-cdn.firstinspires.org/eventweb_frc/ProgramLogos/FIRSTicon_RGB_withTM.png"
 
 const toolName = "Orpheus"
-const version = "2.5.13"
+const version = "2.5.14"
 
 let eventKey
 let event_data
@@ -265,6 +265,18 @@ function loadEvent() {
                 }
             })
             loadTBA("event/" + eventKey + "/rankings", function (data) {
+
+                internalMapping["matches_played"] = {
+                    "alias": "Matches Played",
+                    "type": "",
+                    "table": true
+                }
+                internalMapping["ranking"] = {
+                    "alias": "Event Rank",
+                    "type": "",
+                    "table": true
+                }
+
                 for (let extra in data["extra_stats_info"]) {
                     internalMapping[data["extra_stats_info"][extra]["name"]] = {
                         "alias": data["extra_stats_info"][extra]["name"],
@@ -328,16 +340,6 @@ let internalMapping = {
         "type": "",
         "table": true
     },
-    "matches_played": {
-        "alias": "Matches Played",
-        "type": "",
-        "table": usingTBAMatches
-    },
-    "ranking": {
-        "alias": "Event Rank",
-        "type": "",
-        "table": usingTBAMatches
-    }
 }
 
 function findMatchData(schema, team, match) {
