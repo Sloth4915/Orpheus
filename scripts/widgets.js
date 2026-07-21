@@ -1031,7 +1031,7 @@ class Graph extends Widget {
     }
     in(a) {
         super.in(a)
-        this.graphDropdown.value = this.column.id ?? this.column.columnId
+        this.graphDropdown.value = (typeof this.column === "object" && this.column !== null) ? (this.column.id ?? this.column.columnId) : ""
     }
 }
 
@@ -1565,8 +1565,8 @@ class Welcome extends Widget {
 
         let help = element("a", "", {"innerText": "Orpheus Guide / User Manual", "target": "_blank", "rel": "noopener noreferrer", "href": "https://github.com/Sloth4915/Orpheus/blob/main/README.md"}, this.content)
 
-        let demo = element("button", "", {"innerText": "Load Demo"})
-        demo.addEventListener("click", () => {
+        let demo2025 = element("button", "", {"innerText": "Load Demo (2025 Reefscape)"})
+        demo2025.addEventListener("click", () => {
             Events.on(Events.DATA_PROCESSED, () => {
                 let tabGroup = new WidgetTabGroup()
 
@@ -1613,7 +1613,18 @@ class Welcome extends Widget {
 
             this.parent.removeChild(this)
         })
-        this.content.appendChild(demo)
+        this.content.appendChild(demo2025)
+
+        let demo2026 = element("button", "", {"innerText": "Load Demo (2026 Rebuilt)"})
+        demo2026.addEventListener("click", () => {
+
+        })
+        demo2026.disabled = true
+        this.content.appendChild(demo2026)
+
+        let quickSetup = element("button", "", {"innerText": "Quick Setup (Mapping Generator)"})
+        quickSetup.addEventListener("click", openMappingGenerator)
+        this.content.appendChild(quickSetup)
 
         let setupChecklist = element("div", "setup-checklist", {}, this.content)
 
@@ -1626,6 +1637,266 @@ class Welcome extends Widget {
         let item2 = element("div", "setup-list", {"innerText": "Upload your data"}, setupChecklist)
         if (isDataUploaded()) item2.classList.add("strike")
         setupChecklist.appendChild(item2)
+    }
+}
+
+class MappingGenerator extends Widget {
+    constructor() {
+        super();
+
+        this.name = "Mapping Generator"
+
+        this.content.classList.add("mapping-generator")
+
+        let title = element("h1", "", {"innerText": "Mapping Generator"}, this.content)
+
+        let description = element("div", "", {"innerText": "The mapping generator creates a basic data mapping from your data to get you started with Orpheus. WARNING: This feature is experimental and may not be reliable or polished. Currently, it is recommended that you make your mapping manually for full control and feature support."}, this.content)
+
+        let holder = element("div", "generator-holder", {}, this.content)
+
+        let schemaHolder = element("div", "schema-holder", {}, holder)
+        let dataHolder = element("div", "data-holder", {}, holder)
+
+        let selectedIndex
+        let schemas = []
+
+        let addButton = element("button", "", {"innerText": "Add Schema"}, schemaHolder)
+        addButton.addEventListener("click", () => {
+            let index = schemas.length
+            let id = WidgetBase.generateId()
+            let schema = element("div", "schema", {}, schemaHolder)
+            let nameHolder = element("div", "schema-chunk", {}, schema)
+            let fileHolder = element("div", "schema-chunk", {}, schema)
+            schema.addEventListener("click", () => selectSchema(index))
+            schemas.push({
+                schema,
+                nameLabel: element("label", "", {for: id+"__name", innerText: "Schema Name"}, nameHolder),
+                nameInput: element("input", "", {id: id+"__name", value: "Unnamed Schema"}, nameHolder),
+                fileInput: element("button", "", {
+                        innerText: "Upload Data",
+                        events: {
+                            click: function() {
+                                loadFile(".csv,.json", (result, filetype) => {
+                                    let data
+                                    filetype = filetype === "csv" || filetype === "json" ? filetype : prompt("What is the filetype? (csv/json)").toLowerCase().trim()
+                                    if (filetype === "csv") data = csvToJson(result) // Converts CSV to JSON
+                                    else if (filetype === "json") data = JSON.parse(result) // Parses json
+                                    else {
+                                        alert("Must be a CSV or JSON file.")
+                                        return
+                                    }
+
+                                    let mapping = {
+                                        "alias": "",
+                                        "input_format": "",
+                                        "match_key": "",
+                                        "team_key": "",
+                                        "data": {},
+                                        "functions": {},
+                                        "constants": {},
+                                    }
+
+                                    if (!Array.isArray(data)) {
+                                        let validKeys = []
+                                        for (let key of Object.keys(data)) {
+                                            if (Array.isArray(data[key])) validKeys.push(key)
+                                        }
+
+                                        if (validKeys.length === 1) {
+                                            mapping["data_holder"] = validKeys[0]
+                                            data = data[validKeys[0]]
+                                        } else if (validKeys.length === 0) {
+                                            alert("There is no array of data entries available in this JSON")
+                                            return
+                                        } else {
+                                            let key = prompt(`What is the key to the array of data entries?\n\nAvailable keys: ${validKeys}`)
+                                            if (key === null || !Array.isArray(data[key])) return
+                                            mapping["data_holder"] = key
+                                            data = data[key]
+                                        }
+                                    }
+
+                                    let type = ""
+                                    if (data.length > 100) type = "match"
+                                    else while (type !== "match" && type !== "team") {
+                                        type = prompt("Is this schema covering data in just one match or overall? Type 'match' or 'team' without the quotes.")
+                                        if (type === null) return
+                                        type = type.trim().toLowerCase()
+                                    }
+                                    mapping["input_format"] = type
+
+                                    let fieldOptions = []
+                                    function processData(data, mapping, nesting = "") {
+                                        for (let key of Object.keys(data)) {
+                                            if (typeof data[key] === "object" && !Array.isArray(data[key])) {
+                                                let a = {}
+                                                processData(data[key], a, nesting + key + ".")
+                                                if (Object.keys(a).length > 0) mapping[key] = a
+                                            } else {
+                                                fieldOptions.push(`${nesting}${key}`)
+                                                if (typeof data[key] === "number") {
+                                                    mapping[key] = {
+                                                        "alias": `${nesting}${key}`.replaceAll(".", " "),
+                                                        "type": "number",
+                                                        "summarize": "average",
+                                                        "formula": `[${nesting}${key}]`,
+                                                        "graph": true,
+                                                        "table": true,
+                                                    }
+                                                } else if (typeof data[key] === "string") {
+                                                    if (type === "match") {
+                                                        mapping[key] = {
+                                                            "type": "comment",
+                                                            "formula": `[${nesting+key}]`
+                                                        }
+                                                    } else {
+                                                        mapping[key] = {
+                                                            "type": "text",
+                                                            "formula": `[${nesting+key}]`,
+                                                            "table": true,
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                    processData(data[0], mapping["data"])
+
+                                    schemas[index].fieldOptions = [...new Set(fieldOptions)]
+                                    schemas[index].mapping = mapping
+                                    schemas[index].status.innerText = "Data uploaded"
+                                    selectSchema(index)
+                                })
+                            }
+                        }
+                    }, fileHolder),
+                status: element("div", "", {innerText: "Please upload a data sample"}, fileHolder),
+                removeButton: element("button", "", {
+                        innerText: "Remove Schema",
+                        events: {
+                            click: function() {
+                                schemas[index].deleted = true
+                                schemas[index].schema.style.display = "none"
+
+                                setTimeout(() => {
+                                    let i = 0;
+                                    while (i < schemas.length) {
+                                        if (!schemas[i].deleted) {
+                                            selectSchema(i)
+                                            return;
+                                        }
+                                        i++
+                                    }
+                                    addButton.click()
+                                },0)
+                            }
+                        }
+                    }, schema),
+                deleted: false,
+                data: null
+            })
+            selectSchema(index)
+        })
+        addButton.click()
+
+        function selectSchema(index = selectedIndex) {
+            selectedIndex = index
+            for (let i in schemas) {
+                if (i == index) schemas[i].schema.classList.add("selected")
+                else schemas[i].schema.classList.remove("selected")
+            }
+
+            let schema = schemas[index]
+            let mapping = schema.mapping
+            console.log(schema, mapping)
+
+            dataHolder.innerHTML = ""
+            if (typeof mapping === "undefined") {
+                dataHolder.innerText = "Please upload a data sample"
+            } else {
+                let keyHolder = element("div", "", {}, dataHolder)
+                let keyHeader = element("h2", "", {"innerText": "Data Keys"}, keyHolder)
+                let keys = element("div", "keys-holder", {"innerText": schema.fieldOptions.join(", ")}, keyHolder)
+
+                let schemaInfo = element("div", "", {}, dataHolder)
+                let infoHeader = element("h2", "", {"innerText": "Basic Schema Info"}, schemaInfo)
+
+                let id = WidgetBase.generateId()
+                let inputFormatHolder = element("div", "", {}, schemaInfo)
+                let inputFormatLabel = element("label", "", {"for": id+"__inputDropdown", innerText: "Input Format"}, inputFormatHolder)
+                let inputFormatDropdown = element("select", "", {"id": id+"__inputDropdown"}, inputFormatHolder)
+                inputFormatDropdown.addEventListener("change", () => {
+                    mapping["input_format"] = inputFormatDropdown.value
+                    selectSchema()
+                })
+                element("option", "", {value: "team", innerText: "Team"}, inputFormatDropdown)
+                element("option", "", {value: "match", innerText: "Match"}, inputFormatDropdown)
+                inputFormatDropdown.value = mapping["input_format"]
+
+                if (mapping["input_format"] === "match") {
+                    let matchKeyHolder = element("div", "", {}, schemaInfo)
+                    let matchLabel = element("label", "", {"for": id+"__match", innerText: "Match Key"}, matchKeyHolder)
+                    let matchInput = element("input", "", {"id": id+"__match", "value": mapping["match_key"]}, matchKeyHolder)
+                    matchInput.addEventListener("change", () => {
+                        mapping["match_key"] = matchInput.value
+                        selectSchema()
+                    })
+                }
+
+                let teamKeyHolder = element("div", "", {}, schemaInfo)
+                let teamLabel = element("label", "", {"for": id+"__match", innerText: "Match Key"}, teamKeyHolder)
+                let teamInput = element("input", "", {"id": id+"__match", "value": mapping["match_key"]}, teamKeyHolder)
+                teamInput.addEventListener("change", () => {
+                    mapping["team_key"] = teamInput.value
+                    selectSchema()
+                })
+
+                let dataElements = element("div", "data-elements", {}, dataHolder)
+
+                function createDataElements(data, appendTo) {
+                    for (let i in data) {
+                        let id = WidgetBase.generateId()
+                        let holder = element("div", "data-element", {}, appendTo)
+
+                        let removeButton = element("button", "", {"innerText": "Remove"}, holder)
+
+                        let nameLabel = element("label", "", {for: id+"__name", innerText: "Display Name"}, holder)
+                        let nameInput = element("input", "", {id: id+"__name"}, holder)
+
+                        let formulaLabel = element("label", "", {for: id+"__formula", innerText: "Formula"}, holder)
+                        let formulaInput = element("input", "", {id: id+"__formula"}, holder)
+
+                        let tableLabel = element("label", "", {for: id+"__table", innerText: "Table"}, holder)
+                        let tableBox = element("input", "", {id: id+"__table", type: "checkbox"}, holder)
+
+                        let graphLabel = element("label", "", {for: id+"__graph", innerText: "Graph"}, holder)
+                        let graphBox = element("input", "", {id: id+"__graph", type: "checkbox"}, holder)
+                    }
+                }
+                createDataElements(mapping.data, dataElements)
+            }
+        }
+
+        let finish = element("button", "generator-finish", {"innerText": "Generate Mapping"}, schemaHolder)
+        finish.addEventListener("click", () => {
+            let finalMapping = {}
+            for (let schema of schemas) {
+                if (schema.deleted) continue
+                let name = schema.nameInput.value.trim()
+                let id = name.toLowerCase().replaceAll(/\s/g, "")
+                if (Object.keys(finalMapping).includes(id)) {
+                    alert("Two schemas may not have the same name")
+                    return
+                }
+                if (typeof schema["mapping"] === "undefined") {
+                    alert("Please upload a data sample for all schemas")
+                    return
+                }
+                schema["mapping"]["alias"] = name
+                finalMapping[id] = schema["mapping"]
+            }
+            console.log(finalMapping)
+        })
     }
 }
 

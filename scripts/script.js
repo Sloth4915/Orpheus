@@ -22,7 +22,7 @@ const storageKeys = {
 const MISSING_LOGO = "https://frc-cdn.firstinspires.org/eventweb_frc/ProgramLogos/FIRSTicon_RGB_withTM.png"
 
 const toolName = "Orpheus"
-const version = "2.5.14"
+const version = "2.6.0"
 
 let eventKey
 let event_data
@@ -392,7 +392,7 @@ function processData() {
     let teams = new Set()
     for (let schema of Object.keys(mapping)) {
         if (typeof uploadedData[schema] === "undefined") uploadedData[schema] = []
-        console.log(schema, uploadedData[schema])
+        if (!Array.isArray(uploadedData[schema]) && typeof uploadedData[schema] === "object") uploadedData[schema] = uploadedData[schema][mapping[schema]["data_holder"]]
         for (let datum of uploadedData[schema]) {
             let team = getTeam(schema, datum[mapping[schema]["team_key"]])
             teams.add(team)
@@ -655,8 +655,10 @@ function evaluate(expression, schema, context) {
 
         while (exp.includes("[")) {
             let tag = exp.substring(exp.indexOf("["),exp.indexOf("]") + 1)
-            let search = exp.substring(exp.indexOf("[") + 1,exp.indexOf("]")).split(".")
+            let search = exp.substring(exp.indexOf("[") + 1,exp.indexOf("]")).split(/(?<=[^\\])\./g)
             let val = 0
+
+            for (let i in search) search[i] = search[i].replaceAll("\\.", ".")
 
             if (search.length === 1) {
                 if (params[search[0]]) val = params[search[0]]
@@ -675,11 +677,13 @@ function evaluate(expression, schema, context) {
                     }
                 }
             } else {
-                if (["red 1", "red 2", "red 3", "blue 1", "blue 2", "blue 3", "other 1", "other 2"].includes(search[0].toLowerCase()))
+                let specifier = search
+                if (["red 1", "red 2", "red 3", "blue 1", "blue 2", "blue 3", "other 1", "other 2"].includes(search[0].toLowerCase())) {
                     val = findMatchData(schema, context[search[0].toLowerCase()], context.match)
+                    specifier = search.slice(1)
+                }
                 else val = context.data
 
-                let specifier = search.slice(1)
                 for (let i of specifier)
                     val = val[i]
             }
@@ -917,6 +921,11 @@ document.querySelector("#top-upload-shared-data").addEventListener("click", () =
         })
     })
 })
+
+function openMappingGenerator() {
+    for (let child of main.children) main.removeChild(child.widget)
+    main.addChild(new MappingGenerator())
+}
 
 //#endregion
 
@@ -1499,7 +1508,6 @@ async function loadOther(url, onload, onError = null) {
         if (!response.ok) {
             throw new Error("Network response was not ok")
         }
-        console.log(url.includes("alliances"), response.clone().text())
         return response.json()
     }).then(data => {
         onload(data)
@@ -1781,6 +1789,7 @@ localforage.getItem(storageKeys.SETTINGS, (err, settings) => {
 localforage.getItem(storageKeys.DATA, (err, val) => {
     uploadedData = val == null ? undefined : val
     if (uploadedData !== null && typeof uploadedData !== "undefined") {
+        console.log(uploadedData)
         for (let schema of Object.keys(uploadedData)) {
             if (typeof uploadedData[schema] === "string") {
                 dataUrls[schema] = uploadedData[schema]

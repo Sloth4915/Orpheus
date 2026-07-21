@@ -36,6 +36,11 @@ function element(type, classes = "", attributes = {}, appendTo = null) {
         el.innerText = attributes["innerText"]
         delete attributes["innerText"]
     }
+    if (typeof attributes["events"] !== "undefined") {
+        for (let s of Object.keys(attributes["events"])) {
+            el.addEventListener(s, attributes["events"][s])
+        }
+    }
     for (let attr of Object.keys(attributes)) {
         el.setAttribute(attr, attributes[attr])
     }

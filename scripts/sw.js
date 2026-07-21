@@ -1,6 +1,6 @@
 // PWA code from https://developer.mozilla.org/en-US/docs/Web/Progressive_web_apps/Tutorials/CycleTracker/Service_workers
 
-const VERSION = "2.5.14"
+const VERSION = "2.6.0"
 const CACHE_NAME = `orpheus-4915-${VERSION}`
 
 const APP_STATIC_RESOURCES = [
@@ -25,19 +25,24 @@ const APP_STATIC_RESOURCES = [
     "https://www.desmos.com/api/v1.11/calculator.js?apiKey=14470c380841448eae58c1b5f832477f",
 
     // Styles
-    "styles/comments.css",
-    "styles/context_menu.css",
-    "styles/global.css",
-    "styles/graph.css",
-    "styles/inputs.css",
-    "styles/lists.css",
-    "styles/main.css",
-    "styles/match.css",
-    "styles/overrides.css",
-    "styles/table.css",
-    "styles/team-info.css",
     "styles/themes.css",
+    "styles/global.css",
+    "styles/main.css",
+    "styles/inputs.css",
+    "styles/context-menu.css",
     "styles/widgets.css",
+    "styles/lists.css",
+
+    "styles/table.css",
+    "styles/graph.css",
+    "styles/team-info.css",
+    "styles/comments.css",
+    "styles/match.css",
+    "styles/welcome.css",
+    "styles/mapping-generator.css",
+
+    "styles/overrides.css",
+    "styles/mobile.css",
 
     // Icons
     "https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"

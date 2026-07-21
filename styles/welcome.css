@@ -1,0 +1,12 @@
+.orpheus-welcome {
+    justify-content: center;
+    align-items: center;
+}
+.orpheus-welcome * {
+    display: flex;
+    justify-content: center;
+    min-width: 450px;
+}
+.setup-checklist {
+    flex-direction: column;
+}

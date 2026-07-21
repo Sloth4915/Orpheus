@@ -30,6 +30,10 @@ Orpheus is still under active development but should be usable. It is also impro
 
 ## 3. Creating your mapping
 
+The following will be quite in-depth, but if you are short on time or have simple data, you might want to consider using the Mapping Generator within Orpheus. It can be found in the Data menu, and by providing your data it can generate a simple mapping for you. 
+
+___
+
 The mapping is a JSON file that tells Orpheus how to use your data. If you are not familiar with JSON, it is a file format where data is stored in a key/value pair. Please familiarize yourself with JSON before continuing.
 
 Here is a quick example mapping:
@@ -123,6 +127,10 @@ Inside of each, there are a few things you will have:
    "alias": "", // Changes the visible name inside of Orpheus. Defaults to whatever the key for this object is, which is also the internal name.
    "functions": {}, // Allows you to make custom functions to simplify your data processing later on.
    "constants": {}, // Allows you to define constants that'll be used later on. Maybe useful for point values or RP thresholds
+  
+   // This would only be needed if your data is in JSON format, but the top level of the JSON is not an array. 
+   // Do not include data_holder if your JSON is an array. It is the key that points to the array containing data entries.
+   "data_holder": "", 
 }
 ```
 
@@ -244,6 +252,8 @@ Formulas are used in all the column types except for those which use only a key.
 
 The primary thing to know is that in order to get a value, you put the key in square brackets, like so: `[key]`. This is also how you get a user-defined constant, `[constant]`.
 
+If you are using a layered JSON, you can access data in a lower layer as such: `[outerKey.innerKey]`. You can continue to do this as needed. If your key name includes a period, use a slash beforehand, as so: `\\.` (Note: there must be two slashes used, otherwise it will be treated as simply a period, google "escape sequences json" for more info)
+
 #### 3.8.1 TBA Integration
 
 You can get information from The Blue Alliance (this will only compute when TBA Matches is enabled and the match data is synced) in a similar way. First, you need to add `tba.` as a prefix. For example:
@@ -255,18 +265,16 @@ See the [TBA API documentation](https://www.thebluealliance.com/apidocs/v3) for 
 
 You can also get data from a specific alliance by doing `tba.ALLIANCE COLOR.key` where alliance color is either `blue` or `red`.
 
-#### 3.8.2 Dynamic Stuff
+#### 3.8.2 Placeholders
 
-If anyone has a better name to describe this, let me know. These are automatically replaced with the information they represent.
-
-| Dynamic Thing | What does it do?                                       |
+| Placeholders | What does it do?                                       |
 |---------------|--------------------------------------------------------|
 | #team#        | Team number                                            | 
 | #alliance#    | The robot's alliance: `blue` or `red`                  |
 | #position#    | The robot's position on the field. Such as 1, 2, or 3. |
 | #match# | The match number                                       |
 
-One potential use case for this is to automate climb data or auto leave data.
+One potential use case for this is automated climb data or auto leave data.
 For example, you could get if a robot left the starting line in 2025 with the expression `[tba.#alliance#.autoLineRobot#position#]`
 
 #### 3.8.3 Strings

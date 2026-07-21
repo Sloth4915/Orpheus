@@ -1,0 +1,67 @@
+.mapping-generator {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    padding: 1rem;
+    overflow: hidden;
+}
+
+.generator-holder {
+    display: flex;
+    flex-direction: row;
+    gap: 1rem;
+}
+
+.schema-holder {
+    border-right: 1px solid var(--line);
+    padding: 0.5rem;
+    gap: 1rem;
+    display: flex;
+    flex-direction: column;
+    width: 20rem;
+}
+
+.generator-holder .schema {
+    border: 1px solid var(--line);
+    padding: 0.5rem;
+    border-radius: 0.5rem;
+}
+
+.generator-holder .schema.selected {
+    background-color: var(--highlight);
+}
+
+.schema-chunk {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+}
+
+.schema-holder button.generator-finish {
+    min-height: 3rem;
+    font-size: 1.3rem;
+    order: 10000;
+}
+
+.generator-holder .data-holder {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    max-width: calc(100vw - 6rem - 20rem);
+}
+
+.generator-holder .keys-holder {
+    white-space: normal;
+    overflow-wrap: break-word;
+    user-select: text;
+    max-width: 100%;
+}
+
+.generator-holder .data-elements {
+
+}
+
+.generator-holder .data-element {
+
+}
