@@ -140,7 +140,7 @@ document.addEventListener("click", () => {
 //#region Data Processing, Event loading, Mappings, Data Uploads
 
 document.querySelector("#top-load-event").onclick = function() {
-    let x = prompt("What event code do you want? For example: 2024wabon, 2025waahs, 2025pncmp, etc")
+    let x = prompt("What is your event code? This can be found on The Blue Alliance. Examples: 2024wabon, 2025pncmp, 2026mil")
     if (x === "get") alert(eventKey)
     else if (x === "clear") {
         localforage.removeItem(storageKeys.EVENT, () => {
@@ -862,6 +862,7 @@ function dataButtons() {
 
 // Mapping Download
 document.querySelector("#top-mapping-download").onclick = () => download("mapping.json", JSON.stringify(mapping))
+document.querySelector("#top-mapping-generate").addEventListener("click", openMappingGenerator)
 
 document.querySelector("#top-rounding").onclick = function() {
     let x = prompt("Round to how many digits?")
@@ -1740,7 +1741,7 @@ function addLoadLayoutButton(layoutName) {
 
 main.addRefreshHook(() => saveLayout())
 
-document.querySelector(".top-layout-reset").addEventListener("click", () => {
+document.querySelector("#top-layout-reset").addEventListener("click", () => {
     for (let child of main.children) main.removeChild(child.widget)
     let table = new Table()
     main.addChild(table)
@@ -1789,7 +1790,6 @@ localforage.getItem(storageKeys.SETTINGS, (err, settings) => {
 localforage.getItem(storageKeys.DATA, (err, val) => {
     uploadedData = val == null ? undefined : val
     if (uploadedData !== null && typeof uploadedData !== "undefined") {
-        console.log(uploadedData)
         for (let schema of Object.keys(uploadedData)) {
             if (typeof uploadedData[schema] === "string") {
                 dataUrls[schema] = uploadedData[schema]
@@ -1811,6 +1811,7 @@ localforage.getItem(storageKeys.MAPPING, (err, val) => {
     if (val == null) {
         document.querySelector("#top-mapping-download").disabled = true
     } else {
+        console.log(mapping)
         mapping = val["data"]
         gameMapping = val["game"]
     }
@@ -1999,7 +2000,11 @@ function finishInit() {
                     table.addColumn(["orpheus`number"])
                     if (usingTBA) table.addColumn(["orpheus`name"])
                 } else {
-                    main.in(JSON.parse(JSON.stringify(savedLayouts["_default"])))
+                    try {
+                        main.in(JSON.parse(JSON.stringify(savedLayouts["_default"])))
+                    } catch {
+                        document.querySelector("#top-layout-reset").click()
+                    }
                 }
                 loadingLayout = false
                 saveLayout()

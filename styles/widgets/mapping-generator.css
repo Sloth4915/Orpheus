@@ -10,6 +10,7 @@
     display: flex;
     flex-direction: row;
     gap: 1rem;
+    max-height: 100%;
 }
 
 .schema-holder {
@@ -49,6 +50,7 @@
     flex-direction: column;
     gap: 1rem;
     max-width: calc(100vw - 6rem - 20rem);
+    overflow-y: scroll;
 }
 
 .generator-holder .keys-holder {
@@ -63,5 +65,12 @@
 }
 
 .generator-holder .data-element {
-
+    display: flex;
+    flex-direction: row;
+    border: 1px solid var(--line);
+    gap: 0.2rem;
+    padding: 0.2rem 0.2rem 0.2rem 0.5rem;
+}
+.data-element.list {
+    flex-direction: column;
 }

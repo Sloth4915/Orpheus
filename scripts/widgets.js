@@ -1660,6 +1660,10 @@ class MappingGenerator extends Widget {
         let selectedIndex
         let schemas = []
 
+        let yearHolder = element("div", "", {}, schemaHolder)
+        let yearLabel = element("label", "", {for: "mapping-generator-year", innerText: "Year"}, yearHolder)
+        let yearInput = element("input", "", {id: "mapping-generator-year", type: "number", min: 2000, max: new Date().getFullYear(), value: new Date().getFullYear()}, yearHolder)
+
         let addButton = element("button", "", {"innerText": "Add Schema"}, schemaHolder)
         addButton.addEventListener("click", () => {
             let index = schemas.length
@@ -1728,15 +1732,16 @@ class MappingGenerator extends Widget {
                                     let fieldOptions = []
                                     function processData(data, mapping, nesting = "") {
                                         for (let key of Object.keys(data)) {
+                                            if (fieldOptions.includes(`${nesting}${key}`)) continue
                                             if (typeof data[key] === "object" && !Array.isArray(data[key])) {
                                                 let a = {}
                                                 processData(data[key], a, nesting + key + ".")
                                                 if (Object.keys(a).length > 0) mapping[key] = a
                                             } else {
                                                 fieldOptions.push(`${nesting}${key}`)
-                                                if (typeof data[key] === "number") {
+                                                if (typeof data[key] === "number" || parseFloat(data[key]) == data[key]) {
                                                     mapping[key] = {
-                                                        "alias": `${nesting}${key}`.replaceAll(".", " "),
+                                                        "alias": key.split(/[-\.]/g).join(" ").split(/(?=[A-Z])/g).map((str) => { return str.trim().charAt(0).toUpperCase() + str.trim().slice(1) } ).join(" "),
                                                         "type": "number",
                                                         "summarize": "average",
                                                         "formula": `[${nesting}${key}]`,
@@ -1745,13 +1750,14 @@ class MappingGenerator extends Widget {
                                                     }
                                                 } else if (typeof data[key] === "string") {
                                                     if (type === "match") {
-                                                        mapping[key] = {
+                                                        mapping[key.split(/[-\.]/g).join(" ").split(/(?=[A-Z])/g).map((str) => { return str.trim().charAt(0).toUpperCase() + str.trim().slice(1) } ).join(" ")] = {
                                                             "type": "comment",
-                                                            "formula": `[${nesting+key}]`
+                                                            "key": `${nesting+key}`
                                                         }
                                                     } else {
                                                         mapping[key] = {
                                                             "type": "text",
+                                                            "alias": key.split(/[-\.]/g).join(" ").split(/(?=[A-Z])/g).map((str) => { return str.trim().charAt(0).toUpperCase() + str.trim().slice(1) } ).join(" "),
                                                             "formula": `[${nesting+key}]`,
                                                             "table": true,
                                                         }
@@ -1760,11 +1766,12 @@ class MappingGenerator extends Widget {
                                             }
                                         }
                                     }
-                                    processData(data[0], mapping["data"])
+                                    for (let entry of data) processData(entry, mapping["data"])
 
                                     schemas[index].fieldOptions = [...new Set(fieldOptions)]
                                     schemas[index].mapping = mapping
                                     schemas[index].status.innerText = "Data uploaded"
+                                    schemas[index].userData = data
                                     selectSchema(index)
                                 })
                             }
@@ -1808,7 +1815,6 @@ class MappingGenerator extends Widget {
 
             let schema = schemas[index]
             let mapping = schema.mapping
-            console.log(schema, mapping)
 
             dataHolder.innerHTML = ""
             if (typeof mapping === "undefined") {
@@ -1844,8 +1850,8 @@ class MappingGenerator extends Widget {
                 }
 
                 let teamKeyHolder = element("div", "", {}, schemaInfo)
-                let teamLabel = element("label", "", {"for": id+"__match", innerText: "Match Key"}, teamKeyHolder)
-                let teamInput = element("input", "", {"id": id+"__match", "value": mapping["match_key"]}, teamKeyHolder)
+                let teamLabel = element("label", "", {"for": id+"__match", innerText: "Team Number Key"}, teamKeyHolder)
+                let teamInput = element("input", "", {"id": id+"__match", "value": mapping["team_key"]}, teamKeyHolder)
                 teamInput.addEventListener("change", () => {
                     mapping["team_key"] = teamInput.value
                     selectSchema()
@@ -1855,22 +1861,67 @@ class MappingGenerator extends Widget {
 
                 function createDataElements(data, appendTo) {
                     for (let i in data) {
+                        let obj = data[i]
                         let id = WidgetBase.generateId()
                         let holder = element("div", "data-element", {}, appendTo)
 
-                        let removeButton = element("button", "", {"innerText": "Remove"}, holder)
+                        if (typeof obj["type"] === "undefined") {
+                            let nameLabel = element("div", "", {innerText: i}, holder)
+                            holder.classList.add("list")
+                            createDataElements(obj, holder)
+                        } else {
+                            let removeButton = element("button", "", {"innerText": "Remove"}, holder)
+                            removeButton.addEventListener("click", () => {
+                                delete data[i]
+                                selectSchema()
+                            })
 
-                        let nameLabel = element("label", "", {for: id+"__name", innerText: "Display Name"}, holder)
-                        let nameInput = element("input", "", {id: id+"__name"}, holder)
+                            let typeLabel = element("label", "", {for: id+"__type", innerText: "Type"}, holder)
+                            let typeSelect = element("select", "", {id: id+"__name"}, holder)
+                            element("option", "", {value: "number", innerText: "Number"}, typeSelect)
+                            //element("option", "", {value: "ratio", innerText: "ratio"}, typeSelect)
+                            //element("option", "", {value: "accuracy", innerText: "accuracy"}, typeSelect)
+                            element("option", "", {value: "text", innerText: "text"}, typeSelect)
+                            //element("option", "", {value: "media", innerText: "media"}, typeSelect)
+                            element("option", "", {value: "comment", innerText: "Comment"}, typeSelect)
+                            typeSelect.addEventListener("change", () => {
+                                obj["type"] = typeSelect.value
+                                selectSchema()
+                            })
+                            typeSelect.value = obj["type"]
 
-                        let formulaLabel = element("label", "", {for: id+"__formula", innerText: "Formula"}, holder)
-                        let formulaInput = element("input", "", {id: id+"__formula"}, holder)
+                            let nameLabel = element("label", "", {for: id+"__name", innerText: "Display Name"}, holder)
+                            let nameInput = element("input", "", {id: id+"__name", value: obj["alias"] ?? i}, holder)
+                            nameInput.addEventListener("change", () => {
+                                let x = data[i]
+                                delete data[i]
+                                x["alias"] = nameInput.value
+                                if (obj["type"] === "comment") delete x["alias"]
+                                data[nameInput] = x
+                                selectSchema()
+                            })
 
-                        let tableLabel = element("label", "", {for: id+"__table", innerText: "Table"}, holder)
-                        let tableBox = element("input", "", {id: id+"__table", type: "checkbox"}, holder)
+                            let formulaLabel = element("label", "", {for: id+"__formula", innerText: obj["type"] === "comment" ? "Comment Key" : "Formula"}, holder)
+                            let formulaInput = element("input", "", {id: id+"__formula", value: obj["formula"] ?? obj["key"]}, holder)
+                            formulaInput.addEventListener("change", () => {
+                                obj["key"] = formulaInput.value
+                            })
 
-                        let graphLabel = element("label", "", {for: id+"__graph", innerText: "Graph"}, holder)
-                        let graphBox = element("input", "", {id: id+"__graph", type: "checkbox"}, holder)
+                            if (obj["type"] == "number" || (obj["type"] === "text" && mapping["input_format"] == "team")) {
+                                let tableLabel = element("label", "", {for: id+"__table", innerText: "Table"}, holder)
+                                let tableBox = element("input", "", {id: id+"__table", type: "checkbox", checked: obj["table"]}, holder)
+                                tableBox.addEventListener("change", () => {
+                                    obj["table"] = tableBox.checked
+                                })
+                            }
+                            if (obj["type"] == "number" && mapping["input_format"] == "match") {
+                                let graphLabel = element("label", "", {for: id+"__graph", innerText: "Graph"}, holder)
+                                let graphBox = element("input", "", {id: id+"__graph", type: "checkbox", checked: obj["graph"]}, holder)
+                                graphBox.addEventListener("change", () => {
+                                    obj["graph"] = graphBox.checked
+                                })
+                            }
+                        }
                     }
                 }
                 createDataElements(mapping.data, dataElements)
@@ -1880,6 +1931,7 @@ class MappingGenerator extends Widget {
         let finish = element("button", "generator-finish", {"innerText": "Generate Mapping"}, schemaHolder)
         finish.addEventListener("click", () => {
             let finalMapping = {}
+            uploadedData = {}
             for (let schema of schemas) {
                 if (schema.deleted) continue
                 let name = schema.nameInput.value.trim()
@@ -1894,8 +1946,20 @@ class MappingGenerator extends Widget {
                 }
                 schema["mapping"]["alias"] = name
                 finalMapping[id] = schema["mapping"]
+                uploadedData[id] = schema["userData"]
             }
-            console.log(finalMapping)
+
+            localforage.setItem(storageKeys.DATA, uploadedData, () => {
+                localforage.setItem(storageKeys.MAPPING, {
+                    "mapping_version": 2,
+                    game: { "year": yearInput.value },
+                    data: finalMapping
+                }, () => {
+                    document.querySelector("#top-load-event").click()
+                    document.querySelector("#top-layout-reset").click()
+                    setTimeout(() => location.reload(), 0)
+                })
+            })
         })
     }
 }
