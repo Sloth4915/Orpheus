@@ -121,7 +121,7 @@ Inside of each, there are a few things you will have:
    "data": {} // Includes all columns and information. More on this in 3.5 Columns and Data
    
    // Required for input_format "match".
-   "match_key": "", // The key to the match number. This must be a number, like 1, 2, or 53.
+   "match_key": "", // The key to the match number. Orpheus currently only supports qualification matches, and the match must be either a string such as qm5 or qm17, or be a plain number, like 5 or 17.
    
    // The following fields are optional
    "alias": "", // Changes the visible name inside of Orpheus. Defaults to whatever the key for this object is, which is also the internal name.

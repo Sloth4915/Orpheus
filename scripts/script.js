@@ -439,6 +439,8 @@ function processData() {
                         for (let match of uploadedData[schema]) {
                             let team = getTeam(schema, match[mapping[schema]["team_key"]])
                             let matchNum = match[mapping[schema]["match_key"]]
+                            if (typeof matchNum === "string" && matchNum.startsWith("qm")) matchNum = matchNum.slice(2)
+                            matchNum = parseInt(matchNum)
 
                             let otherBots = {}
                             let alliance

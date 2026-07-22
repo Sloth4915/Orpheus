@@ -13,6 +13,11 @@
     max-height: 100%;
 }
 
+.generator-holder .data-holder {
+    max-height: calc(100% - 12rem);
+    overflow-y: scroll;
+}
+
 .schema-holder {
     border-right: 1px solid var(--line);
     padding: 0.5rem;

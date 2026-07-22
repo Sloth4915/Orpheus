@@ -706,17 +706,19 @@ class Graph extends Widget {
 
         this.teamsEl = element("div", "graph-teams", {}, this.content)
 
-        if (desmosReady) this.createCalculator()
-        else onDesmosLoad.push(this.createCalculator)
+        if (usingDesmos) {
+            if (desmosReady) this.createCalculator()
+            else onDesmosLoad.push(this.createCalculator)
+        } else this.calcEl.innerText = "Please enable the Desmos API"
 
         this.createTeamList()
 
         Events.on(Events.LIST_CHANGE, () => {
-            if (this.list !== null) {
-                this.list = Lists.getFromId(this.list.id)
-                this.teams = JSON.parse(JSON.stringify(this.list.teams))
-                this.redoWidget()
-            }
+                if (this.list !== null) {
+                    this.list = Lists.getFromId(this.list.id)
+                    this.teams = JSON.parse(JSON.stringify(this.list.teams))
+                    this.redoWidget()
+                }
         }, this)
         Events.on(Events.GRAPH_SETTINGS, this.hardRefresh, this)
         Events.on(Events.SET_LISTS_MODE, () => {
@@ -778,6 +780,7 @@ class Graph extends Widget {
         this.createExpressions()
     }
     createExpressions(maintainBounds = false, clearExpressions = true) {
+        if (!usingDesmos) return
         if (clearExpressions) {
             this.calculator.getExpressions().forEach((expression) => {
                 this.calculator.removeExpression(expression)
@@ -1892,11 +1895,11 @@ class MappingGenerator extends Widget {
                             let nameLabel = element("label", "", {for: id+"__name", innerText: "Display Name"}, holder)
                             let nameInput = element("input", "", {id: id+"__name", value: obj["alias"] ?? i}, holder)
                             nameInput.addEventListener("change", () => {
-                                let x = data[i]
+                                let x = JSON.parse(JSON.stringify(data[i]))
                                 delete data[i]
                                 x["alias"] = nameInput.value
                                 if (obj["type"] === "comment") delete x["alias"]
-                                data[nameInput] = x
+                                data[nameInput.value] = x
                                 selectSchema()
                             })
 
