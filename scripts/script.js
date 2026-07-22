@@ -22,7 +22,7 @@ const storageKeys = {
 const MISSING_LOGO = "https://frc-cdn.firstinspires.org/eventweb_frc/ProgramLogos/FIRSTicon_RGB_withTM.png"
 
 const toolName = "Orpheus"
-const version = "2.6.0"
+const version = "2.6.1"
 
 let eventKey
 let event_data
@@ -863,7 +863,11 @@ function dataButtons() {
 }
 
 // Mapping Download
-document.querySelector("#top-mapping-download").onclick = () => download("mapping.json", JSON.stringify(mapping))
+document.querySelector("#top-mapping-download").onclick = () => download("mapping.json", JSON.stringify({
+    game: gameMapping,
+    mapping_version: 2,
+    data: mapping
+}))
 document.querySelector("#top-mapping-generate").addEventListener("click", openMappingGenerator)
 
 document.querySelector("#top-rounding").onclick = function() {
