@@ -1636,6 +1636,7 @@ class Welcome extends Widget {
         let item0 = element("div", "setup-list", {"innerText": "Set your event key"}, setupChecklist)
         if (typeof eventKey !== "undefined") item0.classList.add("strike")
         let item1 = element("div", "setup-list", {"innerText": "Upload a data mapping"}, setupChecklist)
+        if (typeof mapping !== "undefined") item1.classList.add("strike")
         item1.className = "setup-list"
         let item2 = element("div", "setup-list", {"innerText": "Upload your data"}, setupChecklist)
         if (isDataUploaded()) item2.classList.add("strike")

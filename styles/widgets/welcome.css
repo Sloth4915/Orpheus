@@ -10,3 +10,9 @@
 .setup-checklist {
     flex-direction: column;
 }
+.setup-checklist div::before {
+    content: "☐"
+}
+.setup-checklist div.strike::before {
+    content: "☑"
+}
