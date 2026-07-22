@@ -1732,7 +1732,6 @@ class MappingGenerator extends Widget {
                                     let fieldOptions = []
                                     function processData(data, mapping, nesting = "") {
                                         for (let key of Object.keys(data)) {
-                                            if (fieldOptions.includes(`${nesting}${key}`)) continue
                                             if (typeof data[key] === "object" && !Array.isArray(data[key])) {
                                                 let a = {}
                                                 processData(data[key], a, nesting + key + ".")
