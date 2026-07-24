@@ -22,7 +22,7 @@ const storageKeys = {
 const MISSING_LOGO = "https://frc-cdn.firstinspires.org/eventweb_frc/ProgramLogos/FIRSTicon_RGB_withTM.png"
 
 const toolName = "Orpheus"
-const version = "2.6.3"
+const version = "2.7.0"
 
 let eventKey
 let event_data
@@ -1487,7 +1487,7 @@ document.addEventListener("keyup", (e) => {
 })
 //#endregion
 
-//#region File and API loading functions (+ download, API Toggles)
+//#region File and API loading functions (+ download, API Toggles, log download)
 // Loads data from TheBlueAlliance
 async function loadTBA(sub, onload, onError = null) {
     return loadOther(`https://www.thebluealliance.com/api/v3/${sub}?X-TBA-Auth-Key=${TBA_KEY}`, onload, onError)
@@ -1637,6 +1637,49 @@ function setEnabledAPIS() {
         location.reload()
     })
 }
+
+document.querySelector("#top-share-logs").addEventListener("click", () => {
+    if (confirm("This will create a file containing a lot of information so an Orpheus developer can help to solve an issue. Would you like to proceed?")) {
+        let data = JSON.parse(JSON.stringify(uploadedData))
+        if (confirm("Would you like any text within your scouting data to be cleared? A situation in which you might want this is if you have comments that you wish to hide or scouter names that you wish to keep private. If you select 'cancel', your full unedited data will be included.")) {
+            function anon(chunk) {
+                if (Array.isArray(chunk)) {
+                    for (let i of chunk) anon(i)
+                } else if (typeof chunk === "object") {
+                    for (let key of Object.keys(chunk)) {
+                        if (typeof chunk[key] === "string" && isNaN(parseFloat(chunk[key]))) chunk[key] = ""
+                        else if (typeof chunk[key] === "object") anon(chunk[key])
+                    }
+                }
+            }
+            try {
+                anon(data)
+            } catch (e) {
+                console.error("EXCEPTION. Unable to sanitize data", e)
+                if (confirm("Unable to sanitize data. Would you still like to proceed? Strings within your data will remain unchanged.")) {
+                    data = JSON.parse(JSON.stringify(uploadedData))
+                } else return
+            }
+        }
+        if (confirm("For full transparency, the following information is included in the log: Orpheus Version, Current Time, Logs, Data, Mapping, Event Key, Orpheus Settings, Layouts, Lists, Browser Details. Would you like to proceed?")) {
+            download("orpheus_log.json", JSON.stringify({
+                version,
+                "time": new Date() + "",
+                logs,
+                errorLogs,
+                data,
+                mapping,
+                gameMapping,
+                graphSettings,
+                apis: {usingTBA, usingTBAMatches, usingTBAMedia, usingDesmos, usingStatbotics},
+                savedLayouts,
+                eventKey,
+                lists: Lists.lists,
+            }))
+        }
+    }
+})
+
 //#endregion
 
 //#region Context menu (right click menu)
