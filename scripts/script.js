@@ -22,7 +22,7 @@ const storageKeys = {
 const MISSING_LOGO = "https://frc-cdn.firstinspires.org/eventweb_frc/ProgramLogos/FIRSTicon_RGB_withTM.png"
 
 const toolName = "Orpheus"
-const version = "2.7.0"
+const version = "2.7.1"
 
 let eventKey
 let event_data
@@ -1675,6 +1675,15 @@ document.querySelector("#top-share-logs").addEventListener("click", () => {
                 savedLayouts,
                 eventKey,
                 lists: Lists.lists,
+                navigator: {
+                    onLine: navigator.onLine,
+                    userAgent: navigator.userAgent,
+                    language: navigator.language,
+                    platform: navigator.platform,
+                    vendor: navigator.vendor,
+                    mineTypes: navigator.mimeTypes,
+                    appVersion: navigator.appVersion,
+                }
             }))
         }
     }
